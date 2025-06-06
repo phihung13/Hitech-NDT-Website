@@ -1,0 +1,327 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block title %}Tùy chỉnh trang chủ | Hitech NDT Admin{% endblock %}
+
+{% block extrastyle %}
+<style>
+    .preview-container {
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        padding: 20px;
+        margin-bottom: 20px;
+        background-color: #f9f9f9;
+    }
+    .preview-title {
+        font-size: 18px;
+        font-weight: bold;
+        margin-bottom: 15px;
+        color: #333;
+    }
+    .preview-image {
+        max-width: 100%;
+        height: auto;
+        margin-bottom: 10px;
+        border-radius: 5px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .color-preview {
+        display: inline-block;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        margin-right: 10px;
+        vertical-align: middle;
+        border: 1px solid #ddd;
+    }
+    .section-title {
+        font-size: 20px;
+        font-weight: bold;
+        margin: 30px 0 15px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #eee;
+        color: #2c3e50;
+    }
+    .form-row {
+        margin-bottom: 15px;
+    }
+    .form-row label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: 500;
+    }
+    .form-row input[type="text"],
+    .form-row input[type="url"],
+    .form-row textarea,
+    .form-row select {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+    }
+    .form-row textarea {
+        min-height: 100px;
+    }
+    .btn-primary {
+        background-color: #2c3e50;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+    .btn-primary:hover {
+        background-color: #1a252f;
+    }
+    .help-text {
+        font-size: 12px;
+        color: #666;
+        margin-top: 5px;
+    }
+</style>
+{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">Trang chủ</a> &rsaquo; 
+    <a href="{% url 'admin:app_list' app_label='api' %}">API</a> &rsaquo; 
+    <a href="{% url 'admin:api_sitesettings_changelist' %}">Cấu hình website</a> &rsaquo; 
+    Tùy chỉnh trang chủ
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+    <h1>Tùy chỉnh giao diện trang chủ</h1>
+    
+    <div class="preview-container">
+        <div class="preview-title">Xem trước Hero Section</div>
+        {% if site_settings.hero_bg_image %}
+            <img src="{{ site_settings.hero_bg_image.url }}" alt="Hero Background" class="preview-image">
+        {% else %}
+            <div style="height: 150px; background-color: {{ site_settings.hero_bg_color }}; display: flex; align-items: center; justify-content: center; color: white; border-radius: 5px;">
+                <span>Màu nền: {{ site_settings.hero_bg_color }}</span>
+            </div>
+        {% endif %}
+    </div>
+    
+    <form method="post" enctype="multipart/form-data" action="{% url 'admin:api_sitesettings_change' site_settings.id %}">
+        {% csrf_token %}
+        
+        <div class="section-title">Hero Section</div>
+        
+        <div class="form-row">
+            <label for="id_hero_bg_image">Hình nền Hero Section:</label>
+            {% if site_settings.hero_bg_image %}
+                <p>Hình ảnh hiện tại: <a href="{{ site_settings.hero_bg_image.url }}" target="_blank">{{ site_settings.hero_bg_image }}</a></p>
+            {% endif %}
+            <input type="file" name="hero_bg_image" id="id_hero_bg_image">
+            <p class="help-text">Để trống nếu bạn muốn sử dụng màu nền thay vì hình ảnh.</p>
+        </div>
+        
+        <div class="form-row">
+            <label for="id_hero_bg_color">Màu nền Hero Section:</label>
+            <div>
+                <span class="color-preview" style="background-color: {{ site_settings.hero_bg_color }}"></span>
+                <input type="text" name="hero_bg_color" value="{{ site_settings.hero_bg_color }}" id="id_hero_bg_color">
+            </div>
+            <p class="help-text">Màu nền sẽ được sử dụng khi không có hình ảnh nền.</p>
+        </div>
+        
+        <div class="form-row">
+            <label for="id_hero_title">Tiêu đề Hero Section:</label>
+            <input type="text" name="hero_title" value="{{ site_settings.hero_title }}" id="id_hero_title">
+        </div>
+        
+        <div class="form-row">
+            <label for="id_hero_subtitle">Mô tả Hero Section:</label>
+            <textarea name="hero_subtitle" id="id_hero_subtitle">{{ site_settings.hero_subtitle }}</textarea>
+        </div>
+        
+        <div class="form-row">
+            <label for="id_hero_image">Hình ảnh Hero Section:</label>
+            {% if site_settings.hero_image %}
+                <p>Hình ảnh hiện tại: <a href="{{ site_settings.hero_image.url }}" target="_blank">{{ site_settings.hero_image }}</a></p>
+            {% endif %}
+            <input type="file" name="hero_image" id="id_hero_image">
+        </div>
+        
+        <div class="section-title">Nút Hero Section</div>
+        
+        <div class="form-row">
+            <label for="id_hero_btn_primary_text">Nút chính - Văn bản:</label>
+            <input type="text" name="hero_btn_primary_text" value="{{ site_settings.hero_btn_primary_text }}" id="id_hero_btn_primary_text">
+        </div>
+        
+        <div class="form-row">
+            <label for="id_hero_btn_primary_url">Nút chính - Liên kết:</label>
+            <input type="text" name="hero_btn_primary_url" value="{{ site_settings.hero_btn_primary_url }}" id="id_hero_btn_primary_url">
+        </div>
+        
+        <div class="form-row">
+            <label for="id_hero_btn_secondary_text">Nút phụ - Văn bản:</label>
+            <input type="text" name="hero_btn_secondary_text" value="{{ site_settings.hero_btn_secondary_text }}" id="id_hero_btn_secondary_text">
+        </div>
+        
+        <div class="form-row">
+            <label for="id_hero_btn_secondary_url">Nút phụ - Liên kết:</label>
+            <input type="text" name="hero_btn_secondary_url" value="{{ site_settings.hero_btn_secondary_url }}" id="id_hero_btn_secondary_url">
+        </div>
+        
+        <!-- Services Section -->
+        <div class="section-title">Dịch vụ</div>
+        
+        <div class="form-row">
+            <label for="id_services_title">Tiêu đề phần Dịch vụ:</label>
+            <input type="text" name="services_title" value="{{ site_settings.services_title }}" id="id_services_title">
+        </div>
+        
+        <div class="form-row">
+            <label for="id_services_subtitle">Mô tả phần Dịch vụ:</label>
+            <textarea name="services_subtitle" id="id_services_subtitle">{{ site_settings.services_subtitle }}</textarea>
+        </div>
+        
+        <div class="form-row">
+            <label for="id_services_bg_color">Màu nền phần Dịch vụ:</label>
+            <div>
+                <span class="color-preview" style="background-color: {{ site_settings.services_bg_color }}"></span>
+                <input type="text" name="services_bg_color" value="{{ site_settings.services_bg_color }}" id="id_services_bg_color">
+            </div>
+        </div>
+        
+        <!-- About Section -->
+        <div class="section-title">Giới thiệu</div>
+        
+        <div class="form-row">
+            <label for="id_about_title">Tiêu đề phần Giới thiệu:</label>
+            <input type="text" name="about_title" value="{{ site_settings.about_title }}" id="id_about_title">
+        </div>
+        
+        <div class="form-row">
+            <label for="id_about_content">Nội dung phần Giới thiệu:</label>
+            <textarea name="about_content" id="id_about_content">{{ site_settings.about_content }}</textarea>
+        </div>
+        
+        <div class="form-row">
+            <label for="id_about_image">Hình ảnh phần Giới thiệu:</label>
+            {% if site_settings.about_image %}
+                <p>Hình ảnh hiện tại: <a href="{{ site_settings.about_image.url }}" target="_blank">{{ site_settings.about_image }}</a></p>
+            {% endif %}
+            <input type="file" name="about_image" id="id_about_image">
+        </div>
+        
+        <div class="form-row">
+            <label for="id_about_bg_color">Màu nền phần Giới thiệu:</label>
+            <div>
+                <span class="color-preview" style="background-color: {{ site_settings.about_bg_color }}"></span>
+                <input type="text" name="about_bg_color" value="{{ site_settings.about_bg_color }}" id="id_about_bg_color">
+            </div>
+        </div>
+        
+        <!-- Projects Section -->
+        <div class="section-title">Dự án tiêu biểu</div>
+        
+        <div class="form-row">
+            <label for="id_projects_title">Tiêu đề phần Dự án:</label>
+            <input type="text" name="projects_title" value="{{ site_settings.projects_title }}" id="id_projects_title">
+        </div>
+        
+        <div class="form-row">
+            <label for="id_projects_subtitle">Mô tả phần Dự án:</label>
+            <textarea name="projects_subtitle" id="id_projects_subtitle">{{ site_settings.projects_subtitle }}</textarea>
+        </div>
+        
+        <div class="form-row">
+            <label for="id_projects_bg_color">Màu nền phần Dự án:</label>
+            <div>
+                <span class="color-preview" style="background-color: {{ site_settings.projects_bg_color }}"></span>
+                <input type="text" name="projects_bg_color" value="{{ site_settings.projects_bg_color }}" id="id_projects_bg_color">
+            </div>
+        </div>
+        
+        <!-- Testimonials Section -->
+        <div class="section-title">Đánh giá khách hàng</div>
+        
+        <div class="form-row">
+            <label for="id_testimonials_title">Tiêu đề phần Đánh giá:</label>
+            <input type="text" name="testimonials_title" value="{{ site_settings.testimonials_title }}" id="id_testimonials_title">
+        </div>
+        
+        <div class="form-row">
+            <label for="id_testimonials_bg_color">Màu nền phần Đánh giá:</label>
+            <div>
+                <span class="color-preview" style="background-color: {{ site_settings.testimonials_bg_color }}"></span>
+                <input type="text" name="testimonials_bg_color" value="{{ site_settings.testimonials_bg_color }}" id="id_testimonials_bg_color">
+            </div>
+        </div>
+        
+        <!-- Clients Section -->
+        <div class="section-title">Đối tác</div>
+        
+        <div class="form-row">
+            <label for="id_clients_title">Tiêu đề phần Đối tác:</label>
+            <input type="text" name="clients_title" value="{{ site_settings.clients_title }}" id="id_clients_title">
+        </div>
+        
+        <div class="form-row">
+            <label for="id_clients_bg_color">Màu nền phần Đối tác:</label>
+            <div>
+                <span class="color-preview" style="background-color: {{ site_settings.clients_bg_color }}"></span>
+                <input type="text" name="clients_bg_color" value="{{ site_settings.clients_bg_color }}" id="id_clients_bg_color">
+            </div>
+        </div>
+        
+        <div class="form-row">
+            <label for="id_client_logo1">Logo đối tác 1:</label>
+            {% if site_settings.client_logo1 %}
+                <p>Hình ảnh hiện tại: <a href="{{ site_settings.client_logo1.url }}" target="_blank">{{ site_settings.client_logo1 }}</a></p>
+            {% endif %}
+            <input type="file" name="client_logo1" id="id_client_logo1">
+        </div>
+        
+        <div class="form-row">
+            <label for="id_client_logo2">Logo đối tác 2:</label>
+            {% if site_settings.client_logo2 %}
+                <p>Hình ảnh hiện tại: <a href="{{ site_settings.client_logo2.url }}" target="_blank">{{ site_settings.client_logo2 }}</a></p>
+            {% endif %}
+            <input type="file" name="client_logo2" id="id_client_logo2">
+        </div>
+        
+        <div class="form-row">
+            <label for="id_client_logo3">Logo đối tác 3:</label>
+            {% if site_settings.client_logo3 %}
+                <p>Hình ảnh hiện tại: <a href="{{ site_settings.client_logo3.url }}" target="_blank">{{ site_settings.client_logo3 }}</a></p>
+            {% endif %}
+            <input type="file" name="client_logo3" id="id_client_logo3">
+        </div>
+        
+        <div class="form-row">
+            <label for="id_client_logo4">Logo đối tác 4:</label>
+            {% if site_settings.client_logo4 %}
+                <p>Hình ảnh hiện tại: <a href="{{ site_settings.client_logo4.url }}" target="_blank">{{ site_settings.client_logo4 }}</a></p>
+            {% endif %}
+            <input type="file" name="client_logo4" id="id_client_logo4">
+        </div>
+        
+        <div class="form-row">
+            <label for="id_client_logo5">Logo đối tác 5:</label>
+            {% if site_settings.client_logo5 %}
+                <p>Hình ảnh hiện tại: <a href="{{ site_settings.client_logo5.url }}" target="_blank">{{ site_settings.client_logo5 }}</a></p>
+            {% endif %}
+            <input type="file" name="client_logo5" id="id_client_logo5">
+        </div>
+        
+        <div class="form-row">
+            <label for="id_client_logo6">Logo đối tác 6:</label>
+            {% if site_settings.client_logo6 %}
+                <p>Hình ảnh hiện tại: <a href="{{ site_settings.client_logo6.url }}" target="_blank">{{ site_settings.client_logo6 }}</a></p>
+            {% endif %}
+            <input type="file" name="client_logo6" id="id_client_logo6">
+        </div>
+        
+        <div class="submit-row">
+            <input type="submit" value="Lưu thay đổi" class="btn-primary">
+        </div>
+    </form>
+</div>
+{% endblock %}

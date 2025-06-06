@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ post.title }} - Hitech NDT{% endblock %}
+
+{% block content %}
+<div class="container mx-auto py-8 px-4">
+    <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+        <!-- Header -->
+        <div class="relative">
+            {% if post.featured_image %}
+            <img src="{{ post.featured_image.url }}" alt="{{ post.title }}" class="w-full h-64 md:h-96 object-cover">
+            {% else %}
+            <div class="w-full h-64 md:h-96 bg-gray-200 flex items-center justify-center">
+                <span class="text-gray-500">Không có hình ảnh</span>
+            </div>
+            {% endif %}
+            <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex items-end">
+                <div class="p-6 text-white">
+                    <div class="mb-2 flex items-center">
+                        <span class="bg-blue-600 text-white px-3 py-1 rounded-full text-sm mr-3">
+                            {{ post.category.name }}
+                        </span>
+                        <span class="text-sm">{{ post.created_at|date:"d/m/Y" }}</span>
+                    </div>
+                    <h1 class="text-3xl md:text-4xl font-bold mb-2">{{ post.title }}</h1>
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 bg-gray-300 rounded-full mr-2"></div>
+                        <span>{{ post.author.username }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Content -->
+        <div class="p-6">
+            <div class="flex items-center justify-between mb-8 text-sm text-gray-600">
+                <div class="flex items-center">
+                    <i class="fas fa-eye mr-1"></i> {{ post.view_count }} lượt xem
+                </div>
+                <div class="flex space-x-3">
+                    <a href="#" class="flex items-center hover:text-blue-600">
+                        <i class="fab fa-facebook-f mr-1"></i> Chia sẻ
+                    </a>
+                    <a href="#" class="flex items-center hover:text-blue-600">
+                        <i class="fab fa-twitter mr-1"></i> Tweet
+                    </a>
+                    <a href="#" class="flex items-center hover:text-blue-600">
+                        <i class="fab fa-linkedin-in mr-1"></i> LinkedIn
+                    </a>
+                </div>
+            </div>
+            
+            <div class="prose max-w-none mb-10">
+                {{ post.content|safe }}
+            </div>
+            
+            <!-- Tags (optional) -->
+            <div class="flex flex-wrap gap-2 mb-10">
+                <span class="bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-sm">Technology</span>
+                <span class="bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-sm">Programming</span>
+                <span class="bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-sm">Web Development</span>
+            </div>
+            
+            <!-- Author box -->
+            <div class="border-t border-b border-gray-200 py-6 my-6">
+                <div class="flex items-center">
+                    <div class="w-16 h-16 bg-gray-300 rounded-full mr-4"></div>
+                    <div>
+                        <h3 class="font-bold text-lg">{{ post.author.get_full_name|default:post.author.username }}</h3>
+                        <p class="text-gray-600">Tác giả tại Hitech NDT</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Related posts -->
+            {% if related_posts %}
+            <div class="mt-10">
+                <h2 class="text-2xl font-bold mb-6">Bài viết liên quan</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {% for related in related_posts %}
+                    <div class="bg-gray-50 rounded-lg overflow-hidden hover:shadow-md transition">
+                        <a href="{% url 'blog_detail' related.slug %}">
+                            {% if related.featured_image %}
+                            <img src="{{ related.featured_image.url }}" alt="{{ related.title }}" class="w-full h-40 object-cover">
+                            {% else %}
+                            <div class="w-full h-40 bg-gray-200 flex items-center justify-center">
+                                <span class="text-gray-500">Không có hình ảnh</span>
+                            </div>
+                            {% endif %}
+                        </a>
+                        <div class="p-4">
+                            <span class="text-sm text-blue-600 font-semibold">{{ related.category.name }}</span>
+                            <a href="{% url 'blog_detail' related.slug %}">
+                                <h3 class="font-bold hover:text-blue-600 transition">{{ related.title }}</h3>
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Comments section -->
+            <div class="mt-10">
+                <h2 class="text-2xl font-bold mb-6">Bình luận ({{ comments.count }})</h2>
+                
+                {% if comments %}
+                <div class="space-y-6 mb-8">
+                    {% for comment in comments %}
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <div class="flex items-center mb-2">
+                            <div class="w-10 h-10 bg-gray-300 rounded-full mr-2"></div>
+                            <div>
+                                <h4 class="font-bold">{{ comment.name }}</h4>
+                                <span class="text-sm text-gray-500">{{ comment.created_at|date:"d/m/Y H:i" }}</span>
+                            </div>
+                        </div>
+                        <p>{{ comment.content }}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                
+                <!-- Comment form -->
+                <div class="bg-gray-50 p-6 rounded-lg">
+                    <h3 class="text-xl font-bold mb-4">Để lại bình luận</h3>
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <label for="{{ comment_form.name.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">Tên</label>
+                                {{ comment_form.name }}
+                            </div>
+                            <div>
+                                <label for="{{ comment_form.email.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                                {{ comment_form.email }}
+                            </div>
+                        </div>
+                        <div class="mb-4">
+                            <label for="{{ comment_form.content.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">Nội dung</label>
+                            {{ comment_form.content }}
+                        </div>
+                        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition">Gửi bình luận</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

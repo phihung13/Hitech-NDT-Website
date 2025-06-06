@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Liên hệ - Hitech NDT{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="relative bg-blue-700 text-white">
+    <div class="absolute inset-0 bg-gradient-to-r from-blue-600 to-blue-800 opacity-90"></div>
+    <div class="container mx-auto px-4 py-20 relative z-10">
+        <div class="text-center">
+            <h1 class="text-4xl md:text-5xl font-bold mb-6">Liên hệ với chúng tôi</h1>
+            <p class="text-xl max-w-3xl mx-auto">Chúng tôi luôn sẵn sàng lắng nghe và hỗ trợ bạn. Hãy liên hệ với Hitech NDT qua các phương thức dưới đây.</p>
+        </div>
+    </div>
+</section>
+
+<!-- Contact Information -->
+<section class="py-16">
+    <div class="container mx-auto px-4">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+            <div class="bg-white p-8 rounded-lg shadow-md text-center">
+                <div class="text-blue-600 text-4xl mb-4 flex justify-center">
+                    <i class="fas fa-map-marker-alt"></i>
+                </div>
+                <h3 class="text-xl font-bold mb-3">Địa chỉ</h3>
+                <p class="text-gray-700">123 Đường ABC<br>Quận 1, TP. Hồ Chí Minh<br>Việt Nam</p>
+            </div>
+            
+            <div class="bg-white p-8 rounded-lg shadow-md text-center">
+                <div class="text-blue-600 text-4xl mb-4 flex justify-center">
+                    <i class="fas fa-phone-alt"></i>
+                </div>
+                <h3 class="text-xl font-bold mb-3">Điện thoại</h3>
+                <p class="text-gray-700 mb-2">Hỗ trợ: +84 123 456 789</p>
+                <p class="text-gray-700">Kinh doanh: +84 987 654 321</p>
+            </div>
+            
+            <div class="bg-white p-8 rounded-lg shadow-md text-center">
+                <div class="text-blue-600 text-4xl mb-4 flex justify-center">
+                    <i class="fas fa-envelope"></i>
+                </div>
+                <h3 class="text-xl font-bold mb-3">Email</h3>
+                <p class="text-gray-700 mb-2">info@hitechndt.com</p>
+                <p class="text-gray-700">support@hitechndt.com</p>
+            </div>
+        </div>
+        
+        <!-- Contact Form -->
+        <div class="bg-white p-8 rounded-lg shadow-lg">
+            <h2 class="text-3xl font-bold mb-6 text-center">Gửi tin nhắn cho chúng tôi</h2>
+            <form method="post">
+                {% csrf_token %}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div>
+                        <label for="name" class="block text-gray-700 font-medium mb-2">Họ và tên</label>
+                        <input type="text" id="name" name="name" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    </div>
+                    <div>
+                        <label for="email" class="block text-gray-700 font-medium mb-2">Email</label>
+                        <input type="email" id="email" name="email" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    </div>
+                </div>
+                <div class="mb-6">
+                    <label for="subject" class="block text-gray-700 font-medium mb-2">Tiêu đề</label>
+                    <input type="text" id="subject" name="subject" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                </div>
+                <div class="mb-6">
+                    <label for="message" class="block text-gray-700 font-medium mb-2">Nội dung</label>
+                    <textarea id="message" name="message" rows="6" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required></textarea>
+                </div>
+                <div class="text-center">
+                    <button type="submit" class="bg-blue-600 text-white px-8 py-3 rounded-md font-bold hover:bg-blue-700 transition">Gửi tin nhắn</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+
+<!-- Map Section -->
+<section class="py-16 bg-gray-50">
+    <div class="container mx-auto px-4">
+        <h2 class="text-3xl font-bold mb-8 text-center">Tìm chúng tôi trên bản đồ</h2>
+        <div class="h-96 bg-gray-300 rounded-lg overflow-hidden">
+            <!-- Thay thế bằng Google Maps iframe -->
+            <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3919.4241674197655!2d106.69277187486755!3d10.778428089318654!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x31752f4670702e31%3A0xe4dba75bc0a49468!2zTmd1eeG7hW4gSHXhu4csIELhur9uIE5naGUsIFF14bqtbiAxLCBUaMOgbmggcGjhu5EgSOG7kyBDaMOtIE1pbmgsIFZp4buHdCBOYW0!5e0!3m2!1svi!2s!4v1693322585408!5m2!1svi!2s" width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+        </div>
+    </div>
+</section>
+
+<!-- FAQ Section -->
+<section class="py-16">
+    <div class="container mx-auto px-4">
+        <h2 class="text-3xl font-bold mb-8 text-center">Câu hỏi thường gặp</h2>
+        <div class="max-w-4xl mx-auto">
+            <div class="mb-6">
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h3 class="text-xl font-bold mb-3">Làm thế nào để đăng ký khóa học?</h3>
+                    <p class="text-gray-700">Để đăng ký khóa học, bạn cần tạo tài khoản trên Hitech NDT, sau đó truy cập trang khóa học bạn muốn tham gia và nhấn nút "Đăng ký". Bạn sẽ được hướng dẫn qua quy trình thanh toán và bắt đầu học ngay sau khi hoàn tất.</p>
+                </div>
+            </div>
+            <div class="mb-6">
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h3 class="text-xl font-bold mb-3">Tôi có thể truy cập khóa học trong bao lâu?</h3>
+                    <p class="text-gray-700">Sau khi đăng ký khóa học, bạn sẽ có quyền truy cập vĩnh viễn vào nội dung của khóa học đó. Bạn có thể học theo tiến độ riêng và xem lại bài học bất cứ khi nào.</p>
+                </div>
+            </div>
+            <div class="mb-6">
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h3 class="text-xl font-bold mb-3">Làm thế nào để nhận hỗ trợ kỹ thuật?</h3>
+                    <p class="text-gray-700">Nếu bạn gặp vấn đề kỹ thuật, vui lòng gửi email đến support@hitechndt.com hoặc sử dụng mẫu liên hệ trên trang này. Đội ngũ hỗ trợ của chúng tôi sẽ phản hồi trong vòng 24 giờ làm việc.</p>
+                </div>
+            </div>
+            <div>
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h3 class="text-xl font-bold mb-3">Các phương thức thanh toán được chấp nhận?</h3>
+                    <p class="text-gray-700">Hitech NDT chấp nhận nhiều phương thức thanh toán khác nhau, bao gồm thẻ tín dụng/ghi nợ (Visa, Mastercard), chuyển khoản ngân hàng, ví điện tử như Momo, ZaloPay và VNPay.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Newsletter -->
+<section class="py-16 bg-blue-700 text-white">
+    <div class="container mx-auto px-4 text-center">
+        <h2 class="text-3xl font-bold mb-6">Đăng ký nhận tin</h2>
+        <p class="text-xl mb-8 max-w-3xl mx-auto">Đăng ký để nhận thông tin về khóa học mới, bài viết hữu ích và khuyến mãi đặc biệt từ Hitech NDT.</p>
+        <form class="max-w-md mx-auto">
+            <div class="flex flex-col sm:flex-row gap-4">
+                <input type="email" placeholder="Nhập email của bạn" class="flex-grow px-4 py-3 rounded-full focus:outline-none text-gray-700">
+                <button type="submit" class="bg-white text-blue-700 px-6 py-3 rounded-full font-bold hover:bg-gray-100 transition">Đăng ký</button>
+            </div>
+        </form>
+    </div>
+</section>
+{% endblock %} 

@@ -1,0 +1,583 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Hitech NDT{% endblock %}</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <style>
+        /* Search icon styles */
+        .nav-item .fa-search {
+            font-size: 1.0rem;
+        }
+        
+        /* Search dropdown styles */
+        .search-dropdown {
+            display: none;
+            position: absolute;
+            top: 100%;
+            right: 0;
+            width: 300px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            z-index: 1000;
+        }
+
+        .search-dropdown.show {
+            display: block;
+        }
+        
+        .search-dropdown .input-group .form-control {
+            border-radius: 4px 0 0 4px;
+            border: 1px solid #ced4da;
+            padding: 0.5rem 1rem;
+        }
+        
+        .search-dropdown .input-group .btn {
+            border-radius: 0 4px 4px 0;
+            padding: 0.5rem 1rem;
+        }
+        
+        /* Tùy chỉnh navbar */
+        .navbar-brand {
+            font-size: {% if site_settings %}{{ site_settings.navbar_brand_size }}{% else %}18px{% endif %};
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+        .navbar-nav .nav-link {
+            font-size: {% if site_settings %}{{ site_settings.navbar_link_size }}{% else %}14px{% endif %};
+            font-weight: 500;
+            margin: 0 10px;
+            transition: color 0.3s;
+            text-transform: uppercase;
+        }
+        .navbar-nav .nav-link:hover {
+            color:rgb(223, 223, 223) !important;
+        }
+        /* Language selector styles */
+        .language-selector {
+            margin-left: 10px;
+        }
+        .language-selector .nav-link {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 6px 12px;
+            display: flex;
+            align-items: center;
+        }
+        .language-selector .flag-icon {
+            width: 24px;
+            height: 16px;
+            margin-right: 8px;
+        }
+        .language-selector .dropdown-menu {
+            min-width: 150px;
+            padding: 0.5rem 0;
+            display: none;
+        }
+        .language-selector:hover .dropdown-menu {
+            display: block;
+        }
+        .language-selector .dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+        }
+        .language-selector .dropdown-item:hover {
+            background-color: #f8f9fa;
+        }
+        /* Dropdown styles */
+        .dropdown:hover .dropdown-menu {
+            display: block;
+            margin-top: 0;
+        }
+        .dropdown-menu {
+            border: none;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            animation: fadeIn 0.3s ease-in;
+        }
+        .dropdown-item {
+            padding: 8px 20px;
+            font-size: 1rem;
+            transition: background-color 0.2s;
+        }
+        .dropdown-item:hover {
+            background-color: #f8f9fa;
+            color: #0d6efd;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+ <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark" style="background-color: {% if site_settings %}{{ site_settings.navbar_bg_color }}{% else %}#212529{% endif %}; color: {% if site_settings %}{{ site_settings.navbar_text_color }}{% else %}#ffffff{% endif %};">
+        <div class="container">
+            <a class="navbar-brand" href="{% url "home" %}">
+                {% if site_settings and site_settings.logo %}
+                    <img src="{{ site_settings.logo.url }}" alt="{{ site_settings.company_name }} Logo" height="40" class="d-inline-block align-text-center me-2">
+                {% else %}
+                    <img src="https://i.imgur.com/QMfyRXg.png" alt="Hitech NDT Logo" height="40" class="d-inline-block align-text-center me-2">
+                {% endif %}
+                {% if site_settings %}{{ site_settings.company_name }}{% else %}Hitech NDT{% endif %}
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="{% url "home" %}" data-vi="Trang chủ" data-en="Home">Trang chủ</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url "about" %}" data-vi="Giới thiệu" data-en="About">Giới thiệu</a></li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="{% url "blog_list" %}" id="blogDropdown" role="button" data-bs-hover="dropdown" aria-expanded="false" data-vi="Bài viết" data-en="Blog">Bài viết</a>
+                        <ul class="dropdown-menu" aria-labelledby="blogDropdown">
+                            {% for category in categories %}
+                                <li><a class="dropdown-item" href="/blog/{{ category.slug }}">{{ category.name }}</a></li>
+                            {% endfor %}
+                        </ul>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="{% url "course_list" %}" id="courseDropdown" role="button" data-bs-hover="dropdown" aria-expanded="false" data-vi="Chứng chỉ" data-en="Certificates">Chứng chỉ</a>
+                        <ul class="dropdown-menu" aria-labelledby="courseDropdown">
+                            {% for category in course_categories %}
+                                <li><a class="dropdown-item" href="/khoa-hoc/{{ category.slug }}">
+                                    {% if category.icon %}<i class="{{ category.icon }} me-2"></i>{% endif %}
+                                    {{ category.name }}
+                                </a></li>
+                            {% endfor %}
+                        </ul>
+                    </li>
+                    <li class="nav-item"><a class="nav-link" href="{% url "contact" %}" data-vi="Liên hệ" data-en="Contact">Liên hệ</a></li>
+                    <li class="nav-item position-relative">
+                        <a class="nav-link" href="#" id="searchToggle">
+                            <i class="fas fa-search"></i>
+                        </a>
+                        <div id="searchDropdown" class="search-dropdown">
+                            <form action="{% url "search_results" %}" method="get" class="p-3">
+                                <div class="input-group">
+                                    <input type="text" class="form-control" name="q" placeholder="Nhập từ khóa tìm kiếm..." required>
+                                    <button class="btn btn-primary" type="submit">
+                                        <i class="fas fa-search"></i>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </li>
+                    <li class="nav-item dropdown language-selector">
+                        <a class="nav-link" href="#" id="languageDropdown" role="button" data-bs-hover="dropdown" aria-expanded="false">
+                            <img src="{% static 'images/flags/vietnam.svg' %}" alt="VI" class="flag-icon"> VI
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="languageDropdown">
+                            <li><a class="dropdown-item" href="#" data-lang="vi"><img src="{% static 'images/flags/vietnam.svg' %}" alt="VI" class="flag-icon">Tiếng Việt</a></li>
+                            <li><a class="dropdown-item" href="#" data-lang="en"><img src="{% static 'images/flags/usa.svg' %}" alt="EN" class="flag-icon">English</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Main Content -->
+    <div class="container mt-4">
+    <style>
+        .scroll-to-top {
+            width: 48px;
+            height: 48px;
+            position: fixed;
+            right: 50px;
+            bottom: 20%;  /* Adjust this value to lower the button */
+            visibility: hidden;
+            background-color: #5e5e5e;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            padding: 10px;
+            cursor: pointer;
+            z-index: 1000;
+        }
+        
+        .scroll-to-top.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .scroll-to-top:hover {
+            background-color: #0056b3;
+            transform: translateY(-3px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        
+        .scroll-to-top i {
+            font-size: 20px;
+        }
+        </style>
+        {% block content %}{% endblock %}
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchToggle = document.getElementById('searchToggle');
+            const searchDropdown = document.getElementById('searchDropdown');
+            
+            searchToggle.addEventListener('click', function(e) {
+                e.preventDefault();
+                searchDropdown.classList.toggle('show');
+            });
+            
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!searchToggle.contains(e.target) && !searchDropdown.contains(e.target)) {
+                    searchDropdown.classList.remove('show');
+                }
+            });
+
+            // Language switching functionality
+            const languageLinks = document.querySelectorAll('[data-lang]');
+            languageLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const lang = this.getAttribute('data-lang');
+                    localStorage.setItem('preferredLanguage', lang);
+                    
+                    // Update all text elements with data attributes
+                    document.querySelectorAll('[data-vi]').forEach(el => {
+                        if (el.dataset[lang]) {
+                            el.textContent = el.dataset[lang];
+                        }
+                    });
+                    
+                    // Update page language attribute
+                    document.documentElement.lang = lang;
+                    
+                    // Update navbar items and flag
+                    if (lang === 'en') {
+                        document.querySelector('a[href="{% url "home" %}"]').textContent = 'Home';
+                        document.querySelector('a[href="{% url "about" %}"]').textContent = 'About';
+                        document.querySelector('a[href="{% url "blog_list" %}"]').textContent = 'Blog';
+                        document.querySelector('a[href="{% url "course_list" %}"]').textContent = 'Certificates';
+                        document.querySelector('a[href="{% url "contact" %}"]').textContent = 'Contact';
+                        document.querySelector('input[name="q"]').placeholder = 'Enter search keyword...';
+                        document.querySelector('#languageDropdown img').src = "{% static 'images/flags/usa.svg' %}";
+                        document.querySelector('#languageDropdown').innerHTML = '<img src="{% static 'images/flags/usa.svg' %}" alt="EN" class="flag-icon"> EN';
+                    } else {
+                        document.querySelector('a[href="{% url "home" %}"]').textContent = 'Trang chủ';
+                        document.querySelector('a[href="{% url "about" %}"]').textContent = 'Giới thiệu';
+                        document.querySelector('a[href="{% url "blog_list" %}"]').textContent = 'Bài viết';
+                        document.querySelector('a[href="{% url "course_list" %}"]').textContent = 'Chứng chỉ';
+                        document.querySelector('a[href="{% url "contact" %}"]').textContent = 'Liên hệ';
+                        document.querySelector('input[name="q"]').placeholder = 'Nhập từ khóa tìm kiếm...';
+                        document.querySelector('#languageDropdown img').src = "{% static 'images/flags/vietnam.svg' %}";
+                        document.querySelector('#languageDropdown').innerHTML = '<img src="{% static 'images/flags/vietnam.svg' %}" alt="VI" class="flag-icon"> VI';
+                    }
+                });
+            });
+
+            // Set initial language from localStorage
+            const preferredLanguage = localStorage.getItem('preferredLanguage') || 'vi';
+            if (preferredLanguage === 'en') {
+                document.documentElement.lang = 'en';
+                // Update text content to English
+                document.querySelectorAll('[data-vi]').forEach(el => {
+                    if (el.dataset.en) {
+                        el.textContent = el.dataset.en;
+                    }
+                });
+                // Update navbar items
+                document.querySelector('a[href="{% url "home" %}"]').textContent = 'Home';
+                document.querySelector('a[href="{% url "about" %}"]').textContent = 'About';
+                document.querySelector('a[href="{% url "blog_list" %}"]').textContent = 'Blog';
+                document.querySelector('a[href="{% url "course_list" %}"]').textContent = 'Certificates';
+                document.querySelector('a[href="{% url "contact" %}"]').textContent = 'Contact';
+                document.querySelector('input[name="q"]').placeholder = 'Enter search keyword...';
+            }
+        });
+    </script>
+
+    <!-- Footer -->
+    <footer class="py-5 mt-5" style="background-color: {% if site_settings %}{{ site_settings.footer_bg_color }}{% else %}#212529{% endif %}; color: {% if site_settings %}{{ site_settings.footer_text_color }}{% else %}#ffffff{% endif %};">
+        <div class="container">
+            <div class="row g-4">
+                <!-- Company Info -->
+                <div class="col-lg-4 col-md-6">
+                    <div class="mb-4">
+                        {% if site_settings and site_settings.logo %}
+                            <img src="{{ site_settings.logo.url }}" alt="{{ site_settings.company_name }} Logo" height="40" class="mb-3">
+                        {% else %}
+                            <img src="https://i.imgur.com/QMfyRXg.png" alt="Hitech NDT Logo" height="40" class="mb-3">
+                        {% endif %}
+                        <p class="mb-3" data-vi="{% if site_settings %}{{ site_settings.company_description }}{% else %}Hitech NDT tự hào là đơn vị hàng đầu trong lĩnh vực kiểm tra không phá hủy và đào tạo chứng chỉ NDT tại Việt Nam{% endif %}" data-en="{% if site_settings %}{{ site_settings.company_description }}{% else %}Hitech NDT is proud to be the leading unit in non-destructive testing and NDT certification training in Vietnam{% endif %}">{% if site_settings %}{{ site_settings.company_description }}{% else %}Hitech NDT tự hào là đơn vị hàng đầu trong lĩnh vực kiểm tra không phá hủy và đào tạo chứng chỉ NDT tại Việt Nam{% endif %}</p>
+                    </div>
+                </div>
+                
+                <!-- Quick Links -->
+                <div class="col-lg-2 col-md-6">
+                    <h5 class="mb-3" data-vi="Liên kết nhanh" data-en="Quick Links">Liên kết nhanh</h5>
+                    <ul class="list-unstyled footer-links">
+                        <li><a href="{% url 'home' %}" class="text-decoration-none" style="color: {% if site_settings %}{{ site_settings.footer_link_color }}{% else %}#6c757d{% endif %};" data-vi="Trang chủ" data-en="Home">Trang chủ</a></li>
+                        <li><a href="{% url 'about' %}" class="text-decoration-none" style="color: {% if site_settings %}{{ site_settings.footer_link_color }}{% else %}#6c757d{% endif %};" data-vi="Giới thiệu" data-en="About">Giới thiệu</a></li>
+                        <li><a href="{% url 'blog_list' %}" class="text-decoration-none" style="color: {% if site_settings %}{{ site_settings.footer_link_color }}{% else %}#6c757d{% endif %};" data-vi="Bài viết" data-en="Blog">Bài viết</a></li>
+                        <li><a href="{% url 'course_list' %}" class="text-decoration-none" style="color: {% if site_settings %}{{ site_settings.footer_link_color }}{% else %}#6c757d{% endif %};" data-vi="Chứng chỉ" data-en="Certificates">Chứng chỉ</a></li>
+                        <li><a href="{% url 'contact' %}" class="text-decoration-none" style="color: {% if site_settings %}{{ site_settings.footer_link_color }}{% else %}#6c757d{% endif %};" data-vi="Liên hệ" data-en="Contact">Liên hệ</a></li>
+                    </ul>
+                </div>
+                
+                <!-- Contact Info -->
+                <div class="col-lg-3 col-md-6">
+                    <h5 class="mb-3" data-vi="Thông tin liên hệ" data-en="Contact Info">Thông tin liên hệ</h5>
+                    <ul class="list-unstyled footer-links">
+                        <li class="d-flex align-items-center mb-2">
+                            <i class="fas fa-map-marker-alt me-2"></i>
+                            <span data-vi="{% if site_settings %}{{ site_settings.footer_address }}{% else %}123 Đường ABC, Quận XYZ, TP.HCM{% endif %}" data-en="{% if site_settings %}{{ site_settings.footer_address }}{% else %}123 ABC Street, XYZ District, HCMC{% endif %}">{% if site_settings %}{{ site_settings.footer_address }}{% else %}123 Đường ABC, Quận XYZ, TP.HCM{% endif %}</span>
+                        </li>
+                        <li class="d-flex align-items-center mb-2">
+                            <i class="fas fa-phone me-2"></i>
+                            <a href="tel:{% if site_settings %}{{ site_settings.footer_phone }}{% else %}+84123456789{% endif %}" class="text-decoration-none" style="color: {% if site_settings %}{{ site_settings.footer_link_color }}{% else %}#6c757d{% endif %};">{% if site_settings %}{{ site_settings.footer_phone }}{% else %}+84 123 456 789{% endif %}</a>
+                        </li>
+                        <li class="d-flex align-items-center mb-2">
+                            <i class="fas fa-envelope me-2"></i>
+                            <a href="mailto:{% if site_settings %}{{ site_settings.footer_email }}{% else %}info@hitechndt.com{% endif %}" class="text-decoration-none" style="color: {% if site_settings %}{{ site_settings.footer_link_color }}{% else %}#6c757d{% endif %};">{% if site_settings %}{{ site_settings.footer_email }}{% else %}info@hitechndt.com{% endif %}</a>
+                        </li>
+                    </ul>
+                </div>
+                
+                <!-- Social Media -->
+                <div class="col-lg-3 col-md-6">
+                    <h5 class="mb-3" data-vi="Kết nối với chúng tôi" data-en="Connect With Us">Kết nối với chúng tôi</h5>
+                    <div class="social-links">
+                        {% if site_settings and site_settings.facebook_url %}
+                            <a href="{{ site_settings.facebook_url }}" class="social-icon"><i class="fab fa-facebook"></i></a>
+                        {% else %}
+                            <a href="#" class="social-icon"><i class="fab fa-facebook"></i></a>
+                        {% endif %}
+                        {% if site_settings and site_settings.linkedin_url %}
+                            <a href="{{ site_settings.linkedin_url }}" class="social-icon"><i class="fab fa-linkedin"></i></a>
+                        {% else %}
+                            <a href="#" class="social-icon"><i class="fab fa-linkedin"></i></a>
+                        {% endif %}
+                        {% if site_settings and site_settings.youtube_url %}
+                            <a href="{{ site_settings.youtube_url }}" class="social-icon"><i class="fab fa-youtube"></i></a>
+                        {% else %}
+                            <a href="#" class="social-icon"><i class="fab fa-youtube"></i></a>
+                        {% endif %}
+                        {% if site_settings and site_settings.twitter_url %}
+                            <a href="{{ site_settings.twitter_url }}" class="social-icon"><i class="fab fa-twitter"></i></a>
+                        {% else %}
+                            <a href="#" class="social-icon"><i class="fab fa-twitter"></i></a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Copyright -->
+            <div class="border-top border-secondary pt-4 mt-4 text-center">
+                <p class="mb-0" data-vi="&copy; 2025 {% if site_settings %}{{ site_settings.company_name }} - {{ site_settings.company_slogan }}{% else %}Hitech NDT - Giải pháp công nghệ hàng đầu{% endif %}" data-en="&copy; 2025 {% if site_settings %}{{ site_settings.company_name }} - {{ site_settings.company_slogan }}{% else %}Hitech NDT - Leading technology solutions{% endif %}">&copy; 2025 {% if site_settings %}{{ site_settings.company_name }} - {{ site_settings.company_slogan }}{% else %}Hitech NDT - Giải pháp công nghệ hàng đầu{% endif %}</p>
+            </div>
+        </div>
+    </footer>
+
+    <style>
+    /* Footer Styles */
+    .footer-links li {
+        margin-bottom: 10px;
+    }
+    .footer-links a {
+        transition: color 0.3s ease;
+    }
+    .footer-links a:hover {
+        color: #fff !important;
+    }
+    .social-links {
+        display: flex;
+        gap: 15px;
+    }
+    .social-icon {
+        width: 40px;
+        height: 40px;
+        background-color: rgba(255, 255, 255, 0.1);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 18px;
+        transition: all 0.3s ease;
+    }
+    .social-icon:hover {
+        background-color: var(--primary, #0d6efd);
+        transform: translateY(-3px);
+        color: white;
+    }
+    </style>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Script để ẩn/hiện navbar khi cuộn
+        let prevScrollpos = window.pageYOffset;
+        const navbar = document.querySelector('.navbar');
+        
+        // Thêm class để navbar có thể chuyển đổi mượt mà
+        navbar.style.transition = "top 0.3s";
+        navbar.style.position = "fixed";
+        navbar.style.width = "100%";
+        navbar.style.top = "0";
+        navbar.style.zIndex = "1000";
+        
+        // Thêm padding cho body để tránh nội dung bị đẩy lên khi navbar fixed
+        document.body.style.paddingTop = navbar.offsetHeight + "px";
+        
+        window.onscroll = function() {
+            let currentScrollPos = window.pageYOffset;
+            
+            // Ẩn navbar khi cuộn xuống, hiện khi cuộn lên
+            if (prevScrollpos > currentScrollPos) {
+                navbar.style.top = "0";
+            } else {
+                navbar.style.top = -navbar.offsetHeight + "px";
+            }
+            
+            prevScrollpos = currentScrollPos;
+        }
+    
+        // Script để set màu cho avatar letter
+        document.querySelectorAll('.avatar-letter').forEach(avatar => {
+            const color = avatar.dataset.color;
+            avatar.style.setProperty('--color', color);
+        });
+    </script>
+
+    <button class="scroll-to-top">
+        <i class="fas fa-chevron-up"></i>
+    </button>
+
+    <script>
+        // Script to control the scroll-to-top button
+        const scrollToTopBtn = document.querySelector('.scroll-to-top');
+
+        window.addEventListener('scroll', () => {
+            if (window.pageYOffset > 300) {
+                scrollToTopBtn.classList.add('visible');
+            } else {
+                scrollToTopBtn.classList.remove('visible');
+            }
+        });
+
+        scrollToTopBtn.addEventListener('click', () => {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        });
+    </script>
+</body>
+</html>
+<!-- Zalo Logo và Menu Chat -->
+<div id="zalo-chat-widget" style="display: none; position: fixed; bottom: 10%; right: 120px; width: 300px; background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 1000;">
+    <div style="padding: 15px; background: #0068ff; color: white; border-radius: 10px 10px 0 0; display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-weight: bold;">Chat với chúng tôi</span>
+        <span onclick="closeZaloChat()" style="cursor: pointer;">✕</span>
+    </div>
+    <div style="padding: 20px;">
+        <div style="text-align: center; margin-bottom: 20px;">
+            <img src="/static/image/Icon_of_Zalo.png" alt="Zalo Logo" style="width: 50px; height: 50px; margin-bottom: 10px;">
+            <p style="margin: 0;">Chào bạn!</p>
+            <p style="margin: 5px 0;">Chọn phương thức chat:</p>
+        </div>
+        
+        <!-- Hai nút chat -->
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+            <a href="https://zalo.me/0369617913" target="_blank" style="display: block; background: #0068ff; color: white; text-decoration: none; padding: 12px; border-radius: 5px; text-align: center;">
+                <i class="fab fa-facebook-messenger" style="margin-right: 8px;"></i>
+                Chat qua Zalo
+            </a>
+            
+            <button onclick="openQuickChat()" style="background: #28a745; color: white; border: none; padding: 12px; border-radius: 5px; cursor: pointer;">
+                <i class="fas fa-comments" style="margin-right: 8px;"></i>
+                Chat với Admin
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Cửa sổ Quick Chat -->
+<div id="quick-chat-window" style="display: none; position: fixed; bottom: 10%; right: 120px; width: 300px; background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 1000;">
+    <div style="padding: 15px; background: #28a745; color: white; border-radius: 10px 10px 0 0; display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-weight: bold;">Chat với Admin</span>
+        <span onclick="closeQuickChat()" style="cursor: pointer;">✕</span>
+    </div>
+    <div style="padding: 20px; height: 300px; display: flex; flex-direction: column;">
+        <div id="chat-messages" style="flex-grow: 1; overflow-y: auto; margin-bottom: 10px;">
+            <!-- Tin nhắn sẽ được thêm vào đây -->
+            <div style="text-align: center; color: #666; margin: 10px 0;">Bắt đầu cuộc trò chuyện</div>
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <input type="text" id="quick-chat-input" placeholder="Nhập tin nhắn..." style="flex-grow: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+            <button onclick="sendQuickMessage()" style="background: #28a745; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer;">
+                Gửi
+            </button>
+        </div>
+    </div>
+</div>
+
+<div id="zalo-logo" onclick="toggleZaloChat()" style="cursor: pointer;">
+    <img src="/static/image/Icon_of_Zalo.png" alt="Zalo Logo" style="width: 50px; height: 50px; position: fixed; bottom: 10%; right: 50px;">
+</div>
+
+<script>
+function toggleZaloChat() {
+    var widget = document.getElementById('zalo-chat-widget');
+    var quickChat = document.getElementById('quick-chat-window');
+    if (widget.style.display === 'none') {
+        widget.style.display = 'block';
+        quickChat.style.display = 'none';
+    } else {
+        widget.style.display = 'none';
+    }
+}
+
+function closeZaloChat() {
+    document.getElementById('zalo-chat-widget').style.display = 'none';
+}
+
+function openQuickChat() {
+    document.getElementById('zalo-chat-widget').style.display = 'none';
+    document.getElementById('quick-chat-window').style.display = 'block';
+}
+
+function closeQuickChat() {
+    document.getElementById('quick-chat-window').style.display = 'none';
+}
+
+function sendQuickMessage() {
+    var input = document.getElementById('quick-chat-input');
+    var message = input.value.trim();
+    
+    if (message) {
+        var messagesDiv = document.getElementById('chat-messages');
+        var messageElement = document.createElement('div');
+        messageElement.style.cssText = 'background: #e9ecef; padding: 8px; border-radius: 4px; margin: 5px 0; align-self: flex-end;';
+        messageElement.textContent = message;
+        
+        messagesDiv.appendChild(messageElement);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        input.value = '';
+        
+        // Thêm phản hồi tự động từ admin (có thể thay thế bằng logic backend thực tế)
+        setTimeout(() => {
+            var adminResponse = document.createElement('div');
+            adminResponse.style.cssText = 'background: #28a745; color: white; padding: 8px; border-radius: 4px; margin: 5px 0; align-self: flex-start;';
+            adminResponse.textContent = 'Cảm ơn bạn đã liên hệ. Chúng tôi sẽ phản hồi sớm nhất có thể!';
+            messagesDiv.appendChild(adminResponse);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }, 1000);
+    }
+}
+</script>
+</html>

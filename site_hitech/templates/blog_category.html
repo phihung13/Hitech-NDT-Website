@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ category.name }} - Hitech NDT{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/style.css' %}">
+<link rel="stylesheet" href="{% static 'css/blog.css' %}">
+{% endblock %}
+
+{% block content %}
+    <!-- Breadcrumb Section -->
+    <div class="breadcrumb-section">
+        <div class="container">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/">Trang chủ</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'blog_list' %}">Bài viết</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">{{ category.name }}</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Category Header Section -->
+    <section class="category-header">
+        <div class="container">
+            <h1 class="category-title">{{ category.name }}</h1>
+            {% if category.description %}
+            <p class="category-description">{{ category.description }}</p>
+            {% endif %}
+        </div>
+    </section>
+
+    <!-- Blog List Section -->
+    <section class="section">
+        <div class="container">
+            <div class="row">
+                <!-- Main Content -->
+                <div class="col-lg-8">
+                    <!-- Blog Posts -->
+                    <div class="row">
+                        {% for post in posts %}
+                            <div class="col-md-6 mb-4">
+                                <div class="blog-card">
+                                    <div class="blog-card-image">
+                                        <a href="{{ post.get_absolute_url }}">
+                                            {% if post.featured_image %}
+                                                <img src="{{ post.featured_image.url }}" alt="{{ post.title }}">
+                                            {% else %}
+                                                <div class="placeholder-image">
+                                                    {% if post.category.slug == 'du-an' %}
+                                                        <img src="{% static 'images/project-placeholder.svg' %}" alt="Project Icon">
+                                                    {% elif post.category.slug == 'tin-tuc' %}
+                                                        <img src="{% static 'images/news-placeholder.svg' %}" alt="News Icon">
+                                                    {% elif post.category.slug == 'dich-vu' %}
+                                                        <img src="{% static 'images/service-placeholder.svg' %}" alt="Service Icon">
+                                                    {% else %}
+                                                        <img src="{% static 'images/article-placeholder.svg' %}" alt="Article Icon">
+                                                    {% endif %}
+                                                </div>
+                                            {% endif %}
+                                        </a>
+                                    </div>
+                                    <div class="blog-card-content">
+                                        <div class="blog-card-category">
+                                            <a href="{% url 'blog_category' category_slug=post.category.slug %}">{{ post.category.name }}</a>
+                                        </div>
+                                        <h3 class="blog-card-title">
+                                            <a href="{{ post.get_absolute_url }}">{{ post.title }}</a>
+                                        </h3>
+                                        <div class="blog-card-excerpt">
+                                            {{ post.excerpt|truncatewords:20 }}
+                                        </div>
+                                        <div class="blog-card-meta">
+                                            <div class="blog-card-meta-item">
+                                                <i class="far fa-calendar-alt"></i>
+                                                {{ post.created_at|date:"d/m/Y" }}
+                                            </div>
+                                            <div class="blog-card-meta-item">
+                                                <i class="far fa-eye"></i>
+                                                {{ post.view_count }} lượt xem
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% empty %}
+                            <div class="col-12">
+                                <div class="alert alert-info">
+                                    Không có bài viết nào trong chuyên mục này.
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Pagination -->
+                    {% if is_paginated %}
+                        <nav aria-label="Phân trang">
+                            <ul class="pagination blog-pagination">
+                                {% if page_obj.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page=1" aria-label="Trang đầu">
+                                            <span aria-hidden="true">&laquo;&laquo;</span>
+                                        </a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}" aria-label="Trang trước">
+                                            <span aria-hidden="true">&laquo;</span>
+                                        </a>
+                                    </li>
+                                {% endif %}
+
+                                {% for num in page_obj.paginator.page_range %}
+                                    {% if page_obj.number == num %}
+                                        <li class="page-item active">
+                                            <span class="page-link">{{ num }}</span>
+                                        </li>
+                                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+
+                                {% if page_obj.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.next_page_number }}" aria-label="Trang sau">
+                                            <span aria-hidden="true">&raquo;</span>
+                                        </a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}" aria-label="Trang cuối">
+                                            <span aria-hidden="true">&raquo;&raquo;</span>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                    {% endif %}
+                </div>
+
+                <!-- Sidebar -->
+                <div class="col-lg-4">
+                    <aside class="blog-sidebar">
+                        <!-- Search Widget -->
+                        <div class="sidebar-widget">
+                            <h4 class="sidebar-widget-title">Tìm kiếm</h4>
+                            <form action="{% url 'blog_search' %}" method="get" class="search-form">
+                                <input type="text" name="q" class="search-input" placeholder="Tìm kiếm bài viết...">
+                                <button type="submit" class="search-button">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Categories Widget -->
+                        <div class="sidebar-widget">
+                            <h4 class="sidebar-widget-title">Chuyên mục</h4>
+                            <ul class="sidebar-categories">
+                                {% for cat in categories %}
+                                    <li>
+                                        <a href="{% url 'blog_category' category_slug=cat.slug %}" {% if category.slug == cat.slug %}class="active"{% endif %}>
+                                            {{ cat.name }}
+                                            <span class="category-count">{{ cat.post_count }}</span>
+                                        </a>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+
+                        <!-- Recent Posts Widget -->
+                        <div class="sidebar-widget">
+                            <h4 class="sidebar-widget-title">Bài viết mới nhất</h4>
+                            {% for recent_post in recent_posts %}
+                                <div class="recent-post">
+                                    <div class="recent-post-image">
+                                        {% if recent_post.featured_image %}
+                                            <img src="{{ recent_post.featured_image.url }}" alt="{{ recent_post.title }}">
+                                        {% else %}
+                                            <div class="placeholder-image">
+                                                <span>Không có hình ảnh</span>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="recent-post-info">
+                                        <h5 class="recent-post-title">
+                                            <a href="{{ recent_post.get_absolute_url }}">{{ recent_post.title }}</a>
+                                        </h5>
+                                        <div class="recent-post-date">
+                                            {{ recent_post.created_at|date:"d/m/Y" }}
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Tags Widget -->
+                        <div class="sidebar-widget">
+                            <h4 class="sidebar-widget-title">Thẻ</h4>
+                            <div class="tag-cloud">
+                                {% for tag in tags %}
+                                    <a href="{% url 'blog_tag' tag_slug=tag.slug %}" class="tag-link">{{ tag.name }}</a>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </aside>
+                </div>
+            </div>
+        </div>
+    </section>
+{% endblock %}

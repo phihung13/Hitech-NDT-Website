@@ -1,0 +1,295 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load custom_filters %}
+{% block title %}{{ about_page.meta_title|default:"Giới thiệu - Hitech NDT" }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/style.css' %}">
+<style>
+/* Timeline Styles */
+.timeline-section {
+    padding: 60px 0;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 15px;
+    margin: 40px 0;
+}
+
+.timeline-container {
+    max-width: 800px;
+    margin: 0 auto;
+    position: relative;
+}
+
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 15px;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: linear-gradient(to bottom, #007bff, #28a745);
+    border-radius: 2px;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 40px;
+    padding-left: 40px;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -32px;
+    top: 8px;
+    width: 20px;
+    height: 20px;
+    background: #007bff;
+    border: 4px solid #fff;
+    border-radius: 50%;
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.2);
+    z-index: 2;
+}
+
+.timeline-content {
+    background: #fff;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    border-left: 4px solid #007bff;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.timeline-content:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+.timeline-year {
+    display: inline-block;
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-weight: bold;
+    font-size: 14px;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+}
+
+.timeline-title {
+    color: #2c3e50;
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 10px;
+    line-height: 1.3;
+}
+
+.timeline-description {
+    color: #6c757d;
+    font-size: 15px;
+    line-height: 1.6;
+    margin: 0;
+}
+
+.about-subtitle {
+    margin-top: 15px;
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+.subtitle-text {
+    font-size: 1.2em;
+    color: #666;
+    font-style: italic;
+    margin: 0;
+}
+
+@media (max-width: 768px) {
+    .timeline-container {
+        padding: 0 15px;
+    }
+    
+    .timeline {
+        padding-left: 20px;
+    }
+    
+    .timeline::before {
+        left: 10px;
+    }
+    
+    .timeline-marker {
+        left: -22px;
+        width: 16px;
+        height: 16px;
+    }
+    
+    .timeline-item {
+        padding-left: 30px;
+    }
+    
+    .timeline-content {
+        padding: 20px;
+    }
+    
+    .timeline-title {
+        font-size: 18px;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="about-us-page">
+    <div class="container">
+        <!-- Header Section -->
+        <div class="about-us-header">
+            <h2>{{ about_page.title|default:"Về Chúng Tôi" }}</h2>
+            <!-- Thanh phụ đề mới -->
+            <div class="about-subtitle">
+                <p class="subtitle-text">{{ about_page.subtitle|default:"Đơn vị hàng đầu trong lĩnh vực kiểm tra không phá hủy tại Việt Nam" }}</p>
+            </div>
+        </div>
+        
+        <!-- Main Content with Image -->
+        <div class="about-us-content">
+            <div class="row align-items-center">
+                <div class="col-lg-6 mb-4 mb-lg-0">
+                    <div class="about-us-image">
+                        {% if about_page.banner_image %}
+                            <img src="{{ about_page.banner_image.url }}" alt="{{ about_page.title }}" class="img-fluid">
+                        {% else %}
+                            <img src="{% static 'img/about-us.jpg' %}" alt="Về Hitech NDT" class="img-fluid">
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="about-us-text">
+                        {% if about_page.content %}
+                            {{ about_page.content|safe }}
+                        {% else %}
+                            <h3>Chúng tôi là ai</h3>
+                            <p>Hitech NDT được thành lập vào năm 20XX với sứ mệnh cung cấp các dịch vụ kiểm tra không phá hủy chất lượng cao, đáng tin cậy và hiệu quả. Chúng tôi tự hào về đội ngũ chuyên gia giàu kinh nghiệm và trang thiết bị hiện đại.</p>
+                            <p>Với hơn X năm kinh nghiệm trong ngành, chúng tôi đã phục vụ hàng trăm khách hàng từ nhiều lĩnh vực khác nhau như dầu khí, hàng không, xây dựng, và sản xuất công nghiệp.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Mission, Vision, Values -->
+        <div class="about-us-mission mt-5">
+            <div class="row">
+                <div class="col-md-4 mb-4 mb-md-0">
+                    <div class="mission-box text-center">
+                        <div class="mission-icon mb-3">
+                            <i class="fas fa-bullseye fa-3x text-primary"></i>
+                        </div>
+                        <h4 class="mission-title">Sứ mệnh</h4>
+                        <div class="mission-text">
+                            {% if about_page.mission %}
+                                {{ about_page.mission|safe }}
+                            {% else %}
+                                <p>Cung cấp dịch vụ kiểm tra không phá hủy chất lượng cao nhất, đảm bảo an toàn và độ tin cậy cho các công trình và thiết bị của khách hàng.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4 mb-md-0">
+                    <div class="mission-box text-center">
+                        <div class="mission-icon mb-3">
+                            <i class="fas fa-eye fa-3x text-primary"></i>
+                        </div>
+                        <h4 class="mission-title">Tầm nhìn</h4>
+                        <div class="mission-text">
+                            {% if about_page.vision %}
+                                {{ about_page.vision|safe }}
+                            {% else %}
+                                <p>Trở thành công ty hàng đầu trong lĩnh vực kiểm tra không phá hủy tại Việt Nam và khu vực Đông Nam Á.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mission-box text-center">
+                        <div class="mission-icon mb-3">
+                            <i class="fas fa-heart fa-3x text-primary"></i>
+                        </div>
+                        <h4 class="mission-title">Giá trị cốt lõi</h4>
+                        <div class="mission-text">
+                            {% if about_page.core_values %}
+                                {{ about_page.core_values|safe }}
+                            {% else %}
+                                <p>Chất lượng, Chuyên nghiệp, Đổi mới, Trách nhiệm và Hợp tác là những giá trị cốt lõi định hướng mọi hoạt động của chúng tôi.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Achievements Section (chỉ hiển thị nếu có dữ liệu) -->
+        {% if about_page.achievements %}
+        <div class="achievements-section mt-5">
+            <h2 class="text-center mb-4">Thành tựu</h2>
+            <div class="achievements-content">
+                {{ about_page.achievements|safe }}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Timeline Section (chỉ hiển thị nếu có dữ liệu) -->
+        {% if about_page.timeline %}
+        <div class="timeline-section mt-5">
+            <h2 class="text-center mb-5">{{ about_page.timeline_section_title|default:"Cột mốc phát triển" }}</h2>
+            <div class="timeline-container">
+                <div class="timeline">
+                    {% for line in about_page.timeline|linebreaksbr|split:"<br>" %}
+                        {% if "|" in line %}
+                            {% with parts=line|split:"|" %}
+                                {% if parts|length >= 3 %}
+                                <div class="timeline-item">
+                                    <div class="timeline-marker"></div>
+                                    <div class="timeline-content">
+                                        <div class="timeline-year">{{ parts.0|trim }}</div>
+                                        <h4 class="timeline-title">{{ parts.1|trim }}</h4>
+                                        <p class="timeline-description">{{ parts.2|trim }}</p>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            {% endwith %}
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Team Section (chỉ hiển thị nếu có dữ liệu) -->
+        {% if about_page.team_section_title or about_page.team_section_description %}
+        <div class="team-section mt-5">
+            <div class="team-header text-center mb-4">
+                <h2>{{ about_page.team_section_title|default:"Đội ngũ của chúng tôi" }}</h2>
+                {% if about_page.team_section_description %}
+                    {{ about_page.team_section_description|safe }}
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Certificates Section (chỉ hiển thị nếu có dữ liệu) -->
+        {% if about_page.certificates %}
+        <div class="certificates-section mt-5">
+            <h2 class="text-center mb-4">{{ about_page.certificates_section_title|default:"Chứng chỉ & Giấy phép" }}</h2>
+            <div class="certificates-content">
+                {{ about_page.certificates|safe }}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

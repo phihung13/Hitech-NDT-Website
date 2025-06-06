@@ -1,0 +1,18 @@
+<!-- main/templates/main/about.html -->
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Trang giới thiệu</title>
+</head>
+<body>
+    <h1>Trang giới thiệu</h1>
+    <nav>
+        <a href="{% url 'home' %}">Trang chủ</a> |
+        <a href="{% url 'news' %}">Tin tức</a> |
+        <a href="{% url 'about' %}">Giới thiệu</a> |
+        <a href="{% url 'contact' %}">Liên hệ</a>
+    </nav>
+    <p>Đây là trang giới thiệu của bạn.</p>
+</body>
+</html>
