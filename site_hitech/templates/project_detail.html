@@ -1,0 +1,545 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ project.name }} - Chi tiết dự án{% endblock %}
+
+{% block extra_head %}
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+<style>
+    :root {
+        --primary: #2563eb;
+        --secondary: #64748b;
+        --success: #10b981;
+        --warning: #f59e0b;
+        --danger: #ef4444;
+        --light: #f8fafc;
+        --dark: #1e293b;
+        --border: #e2e8f0;
+        --radius: 12px;
+        --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    body {
+        background: var(--light);
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        line-height: 1.6;
+    }
+
+    .page-header {
+        background: linear-gradient(135deg, var(--primary), #3b82f6);
+        color: white;
+        padding: 2rem 0;
+        margin-bottom: 2rem;
+    }
+
+    .card {
+        background: white;
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border);
+        margin-bottom: 1.5rem;
+        overflow: hidden;
+    }
+
+    .card-header {
+        background: #f1f5f9;
+        border-bottom: 1px solid var(--border);
+        padding: 1rem 1.5rem;
+        font-weight: 600;
+        color: var(--dark);
+    }
+
+    .card-body {
+        padding: 1.5rem;
+    }
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1rem;
+    }
+
+    .info-item {
+        display: flex;
+        align-items: center;
+        padding: 1rem;
+        background: #f8fafc;
+        border-radius: var(--radius);
+        border-left: 4px solid var(--primary);
+    }
+
+    .info-item i {
+        color: var(--primary);
+        font-size: 1.2rem;
+        margin-right: 1rem;
+        width: 20px;
+        text-align: center;
+    }
+
+    .info-content h6 {
+        margin: 0 0 0.25rem 0;
+        font-size: 0.875rem;
+        color: var(--secondary);
+        font-weight: 500;
+    }
+
+    .info-content p {
+        margin: 0;
+        font-weight: 600;
+        color: var(--dark);
+    }
+
+    .status-badge {
+        padding: 0.5rem 1rem;
+        border-radius: 50px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .status-planning { background: #fef3c7; color: #92400e; }
+    .status-active { background: #dbeafe; color: #1e40af; }
+    .status-completed { background: #d1fae5; color: #065f46; }
+    .status-cancelled { background: #fee2e2; color: #991b1b; }
+
+    .progress-circle {
+        position: relative;
+        width: 80px;
+        height: 80px;
+    }
+
+    .progress-circle svg {
+        transform: rotate(-90deg);
+    }
+
+    .progress-circle circle {
+        fill: none;
+        stroke-width: 8;
+    }
+
+    .progress-bg {
+        stroke: #e5e7eb;
+    }
+
+    .progress-bar {
+        stroke: var(--success);
+        stroke-linecap: round;
+        transition: stroke-dasharray 0.5s ease;
+    }
+
+    .progress-text {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-weight: 700;
+        color: var(--success);
+    }
+
+    .method-tag {
+        display: inline-block;
+        background: var(--primary);
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 50px;
+        font-size: 0.875rem;
+        margin: 0.25rem;
+    }
+
+    .equipment-item {
+        display: flex;
+        align-items: center;
+        padding: 1rem;
+        background: #f8fafc;
+        border-radius: var(--radius);
+        margin-bottom: 0.75rem;
+    }
+
+    .equipment-icon {
+        background: var(--warning);
+        color: white;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 1rem;
+    }
+
+    .btn {
+        padding: 0.75rem 1.5rem;
+        border-radius: var(--radius);
+        font-weight: 500;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .btn-primary {
+        background: var(--primary);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: #1d4ed8;
+        transform: translateY(-1px);
+    }
+
+    .btn-success {
+        background: var(--success);
+        color: white;
+    }
+
+    .btn-warning {
+        background: var(--warning);
+        color: white;
+    }
+
+    .btn-outline {
+        background: transparent;
+        border: 2px solid var(--primary);
+        color: var(--primary);
+    }
+
+    .btn-outline:hover {
+        background: var(--primary);
+        color: white;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: var(--secondary);
+    }
+
+    .empty-state i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+
+    .modal-content {
+        border-radius: var(--radius);
+        border: none;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    }
+
+    .modal-header {
+        background: var(--primary);
+        color: white;
+        border-bottom: none;
+    }
+
+    .form-control {
+        border-radius: var(--radius);
+        border: 1px solid var(--border);
+        padding: 0.75rem;
+    }
+
+    .form-control:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    @media (max-width: 768px) {
+        .info-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .page-header {
+            padding: 1.5rem 0;
+        }
+        
+        .card-body {
+            padding: 1rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-header">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="mb-2">{{ project.name }}</h1>
+                <p class="mb-0 opacity-75">Mã dự án: {{ project.code }}</p>
+            </div>
+            <div class="col-md-4 text-md-end">
+                <div class="d-flex gap-2 justify-content-md-end">
+                    <button class="btn btn-outline" onclick="editProject()">
+                        <i class="fas fa-edit"></i> Sửa dự án
+                    </button>
+                    <a href="{% url 'staff_dashboard' %}" class="btn btn-outline">
+                        <i class="fas fa-arrow-left"></i> Quay lại
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <div class="row">
+        <!-- Main Content -->
+        <div class="col-lg-8">
+            <!-- Project Information -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-info-circle me-2"></i>Thông tin dự án
+                </div>
+                <div class="card-body">
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <i class="fas fa-building"></i>
+                            <div class="info-content">
+                                <h6>Công ty</h6>
+                                <p>{{ project.company|default:"Chưa xác định" }}</p>
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <i class="fas fa-user-tie"></i>
+                            <div class="info-content">
+                                <h6>Quản lý dự án</h6>
+                                <p>{{ project.project_manager|default:"Chưa phân công" }}</p>
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <i class="fas fa-dollar-sign"></i>
+                            <div class="info-content">
+                                <h6>Giá trị hợp đồng</h6>
+                                <p>{% if project.contract_value %}{{ project.contract_value|floatformat:0 }} VNĐ{% else %}Chưa xác định{% endif %}</p>
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <i class="fas fa-calendar-plus"></i>
+                            <div class="info-content">
+                                <h6>Ngày tạo</h6>
+                                <p>{{ project.created_at|date:"d/m/Y" }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- NDT Methods -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-tools me-2"></i>Phương pháp NDT
+                </div>
+                <div class="card-body">
+                    {% if project.methods.all %}
+                        {% for method in project.methods.all %}
+                            <span class="method-tag">{{ method.name }} ({{ method.code }})</span>
+                        {% endfor %}
+                    {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-tools"></i>
+                            <p>Chưa có phương pháp nào được chỉ định</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Equipment -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-cogs me-2"></i>Thiết bị sử dụng
+                </div>
+                <div class="card-body">
+                    {% if project.equipment.all %}
+                        {% for equipment in project.equipment.all %}
+                            <div class="equipment-item">
+                                <div class="equipment-icon">
+                                    <i class="fas fa-wrench"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-1">{{ equipment.name }}</h6>
+                                    <small class="text-muted">{{ equipment.serial_number }} • {{ equipment.get_status_display }}</small>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-cogs"></i>
+                            <p>Chưa có thiết bị nào được chỉ định</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Status & Progress -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-chart-pie me-2"></i>Trạng thái & Tiến độ
+                </div>
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <span class="status-badge status-{{ project.status }}">
+                            <i class="fas fa-circle"></i>
+                            {{ project.get_status_display }}
+                        </span>
+                    </div>
+                    
+                    <div class="progress-circle mx-auto mb-3">
+                        <svg width="80" height="80">
+                            <circle class="progress-bg" cx="40" cy="40" r="36" stroke-dasharray="226.2" stroke-dashoffset="0"></circle>
+                            <circle class="progress-bar" cx="40" cy="40" r="36" stroke-dasharray="226.2" stroke-dashoffset="{{ progress_offset }}"></circle>
+                        </svg>
+                        <div class="progress-text">{{ project.completion_percentage|default:0 }}%</div>
+                    </div>
+                    
+                    <p class="text-muted mb-0">Tiến độ hoàn thành</p>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-bolt me-2"></i>Thao tác nhanh
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-primary" onclick="addReport()">
+                            <i class="fas fa-plus"></i> Thêm báo cáo
+                        </button>
+                        <button class="btn btn-success" onclick="updateProgress()">
+                            <i class="fas fa-chart-line"></i> Cập nhật tiến độ
+                        </button>
+                        <button class="btn btn-warning" onclick="manageTeam()">
+                            <i class="fas fa-users"></i> Quản lý nhóm
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Project Modal -->
+<div class="modal fade" id="editProjectModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-edit me-2"></i>Sửa thông tin dự án
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="editProjectForm" method="post">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Tên dự án</label>
+                            <input type="text" class="form-control" name="name" value="{{ project.name }}" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Mã dự án</label>
+                            <input type="text" class="form-control" name="code" value="{{ project.code }}" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Công ty</label>
+                            <input type="text" class="form-control" name="company" value="{{ project.company }}">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Quản lý dự án</label>
+                            <input type="text" class="form-control" name="project_manager" value="{{ project.project_manager }}">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Giá trị hợp đồng</label>
+                            <input type="number" class="form-control" name="contract_value" value="{{ project.contract_value }}">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Trạng thái</label>
+                            <select class="form-control" name="status">
+                                <option value="planning" {% if project.status == 'planning' %}selected{% endif %}>Lập kế hoạch</option>
+                                <option value="active" {% if project.status == 'active' %}selected{% endif %}>Đang thực hiện</option>
+                                <option value="completed" {% if project.status == 'completed' %}selected{% endif %}>Hoàn thành</option>
+                                <option value="cancelled" {% if project.status == 'cancelled' %}selected{% endif %}>Đã hủy</option>
+                            </select>
+                        </div>
+                        <div class="col-12 mb-3">
+                            <label class="form-label">Mô tả</label>
+                            <textarea class="form-control" name="description" rows="3">{{ project.description }}</textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Lưu thay đổi
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function editProject() {
+    new bootstrap.Modal(document.getElementById('editProjectModal')).show();
+}
+
+function addReport() {
+    // Implement add report functionality
+    alert('Tính năng thêm báo cáo sẽ được phát triển');
+}
+
+function updateProgress() {
+    // Implement update progress functionality
+    alert('Tính năng cập nhật tiến độ sẽ được phát triển');
+}
+
+function manageTeam() {
+    // Implement team management functionality
+    alert('Tính năng quản lý nhóm sẽ được phát triển');
+}
+
+// Handle form submission
+document.getElementById('editProjectForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    fetch(window.location.href, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Có lỗi xảy ra: ' + (data.error || 'Vui lòng thử lại'));
+        }
+    })
+    .catch(error => {
+        alert('Có lỗi xảy ra: ' + error.message);
+    });
+});
+
+// Calculate progress circle
+document.addEventListener('DOMContentLoaded', function() {
+    const percentage = {{ project.completion_percentage|default:0 }};
+    const circumference = 2 * Math.PI * 36;
+    const offset = circumference - (percentage / 100) * circumference;
+    
+    document.querySelector('.progress-bar').style.strokeDashoffset = offset;
+});
+</script>
+{% endblock %}

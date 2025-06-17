@@ -64,6 +64,215 @@
 .scroll-to-top i {
     font-size: 20px;
 }
+
+/* Enhanced Contact Info Section Styles */
+.contact-info-section {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%) !important;
+    border-radius: 20px !important;
+    padding: 3rem !important;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.08) !important;
+    position: relative !important;
+    overflow: hidden !important;
+    transition: all 0.3s ease !important;
+}
+
+.contact-info-section:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 25px 50px rgba(0,0,0,0.12);
+}
+
+.contact-info-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: linear-gradient(90deg, #007bff, #0056b3);
+    border-radius: 20px 20px 0 0;
+}
+
+.contact-title {
+    color: #2c3e50;
+    font-size: 2.2rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    position: relative;
+    padding-bottom: 15px;
+}
+
+.contact-title::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 60px;
+    height: 3px;
+    background: linear-gradient(90deg, #007bff, #0056b3);
+    border-radius: 2px;
+}
+
+.contact-info-section > p {
+    color: #6c757d;
+    font-size: 1.1rem;
+    line-height: 1.6;
+    margin-bottom: 2.5rem;
+}
+
+.contact-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding: 1rem;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+    transition: all 0.3s ease;
+    border-left: 4px solid transparent;
+}
+
+.contact-item:hover {
+    transform: translateX(10px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    border-left-color: #007bff;
+}
+
+.contact-icon {
+    width: 55px;
+    height: 55px;
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 1.5rem;
+    flex-shrink: 0;
+    box-shadow: 0 5px 15px rgba(0, 123, 255, 0.3);
+    transition: all 0.3s ease;
+}
+
+.contact-item:hover .contact-icon {
+    transform: scale(1.1) rotate(5deg);
+    box-shadow: 0 8px 25px rgba(0, 123, 255, 0.4);
+}
+
+.contact-icon i {
+    color: white;
+    font-size: 1.3rem;
+}
+
+.contact-text {
+    font-size: 1.1rem;
+    color: #495057;
+    font-weight: 500;
+    line-height: 1.5;
+}
+
+.contact-social {
+    display: flex;
+    margin-top: 2.5rem;
+    padding-top: 2rem;
+    border-top: 2px solid #e9ecef;
+}
+
+.social-link {
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(135deg, #6c757d, #495057);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 1rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    text-decoration: none;
+}
+
+.social-link:hover {
+    transform: translateY(-8px) scale(1.1);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    text-decoration: none;
+}
+
+.social-link:nth-child(1):hover {
+    background: linear-gradient(135deg, #3b5998, #2d4373);
+}
+
+.social-link:nth-child(2):hover {
+    background: linear-gradient(135deg, #0077b5, #005885);
+}
+
+.social-link:nth-child(3):hover {
+    background: linear-gradient(135deg, #ff0000, #cc0000);
+}
+
+.social-link:nth-child(4):hover {
+    background: linear-gradient(135deg, #1da1f2, #0d8bd9);
+}
+
+.social-link i {
+    color: white;
+    font-size: 1.2rem;
+}
+
+/* Animation for contact items */
+@keyframes slideInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-50px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.contact-item {
+    animation: slideInLeft 0.6s ease forwards;
+}
+
+.contact-item:nth-child(3) { animation-delay: 0.1s; }
+.contact-item:nth-child(4) { animation-delay: 0.2s; }
+.contact-item:nth-child(5) { animation-delay: 0.3s; }
+.contact-item:nth-child(6) { animation-delay: 0.4s; }
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .contact-info-section {
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+    
+    .contact-title {
+        font-size: 1.8rem;
+    }
+    
+    .contact-item {
+        padding: 0.8rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .contact-icon {
+        width: 45px;
+        height: 45px;
+        margin-right: 1rem;
+    }
+    
+    .contact-icon i {
+        font-size: 1.1rem;
+    }
+    
+    .contact-text {
+        font-size: 1rem;
+    }
+    
+    .social-link {
+        width: 45px;
+        height: 45px;
+        margin-right: 0.8rem;
+    }
+}
 </style>
 {% endblock %}
 
@@ -475,7 +684,7 @@ document.addEventListener('DOMContentLoaded', function() {
         <div class="container">
             <div class="row">
                 <div class="col-lg-6 mb-5 mb-lg-0">
-                    <div class="contact-info">
+                    <div class="contact-info-section">
                         <h2 class="contact-title">Liên hệ với chúng tôi</h2>
                         <p class="mb-4">Hãy liên hệ với chúng tôi để được tư vấn và báo giá dịch vụ phù hợp với nhu cầu của bạn.</p>
                         
@@ -535,28 +744,32 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="col-lg-6">
                     <div class="contact-form">
                         <h3 class="mb-4">Gửi yêu cầu tư vấn</h3>
-                        <form>
+                        <form method="post" action="{% url 'contact' %}" id="consultationForm">
+                            {% csrf_token %}
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="form-group">
-                                        <input type="text" class="form-control" placeholder="Họ và tên *" required>
+                                        <input type="text" class="form-control" name="full_name" placeholder="Họ và tên *" required>
+                                        <div class="invalid-feedback">Vui lòng nhập họ và tên</div>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="form-group">
-                                        <input type="email" class="form-control" placeholder="Email *" required>
+                                        <input type="email" class="form-control" name="email" placeholder="Email *" required>
+                                        <div class="invalid-feedback">Vui lòng nhập email hợp lệ</div>
                                     </div>
                                 </div>
                             </div>
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="form-group">
-                                        <input type="tel" class="form-control" placeholder="Số điện thoại *" required>
+                                        <input type="tel" class="form-control" name="phone" placeholder="Số điện thoại *" required pattern="[0-9]{10,11}">
+                                        <div class="invalid-feedback">Vui lòng nhập số điện thoại hợp lệ</div>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="form-group">
-                                        <select class="form-control" required>
+                                        <select class="form-control" name="service" required>
                                             <option value="" selected disabled>Dịch vụ quan tâm *</option>
                                             <option value="ut">Kiểm tra siêu âm (UT)</option>
                                             <option value="rt">Chụp X-quang (RT)</option>
@@ -566,17 +779,65 @@ document.addEventListener('DOMContentLoaded', function() {
                                             <option value="et">Kiểm tra dòng điện xoáy (ET)</option>
                                             <option value="other">Dịch vụ khác</option>
                                         </select>
+                                        <div class="invalid-feedback">Vui lòng chọn dịch vụ</div>
                                     </div>
                                 </div>
                             </div>
                             <div class="form-group">
-                                <textarea class="form-control" rows="5" placeholder="Nội dung yêu cầu *" required></textarea>
+                                <textarea class="form-control" name="message" rows="5" placeholder="Nội dung yêu cầu *" required minlength="10"></textarea>
+                                <div class="invalid-feedback">Vui lòng nhập nội dung yêu cầu (tối thiểu 10 ký tự)</div>
                             </div>
-                            <button type="submit" class="btn-submit">Gửi yêu cầu</button>
+                            <button type="submit" class="btn-submit" id="submitBtn">
+                                <span class="btn-text">Gửi yêu cầu</span>
+                                <span class="btn-loading d-none">
+                                    <i class="fas fa-spinner fa-spin"></i> Đang gửi...
+                                </span>
+                            </button>
                         </form>
                     </div>
                 </div>
             </div>
         </div>
     </section>
+<script>
+// Form validation và submit
+document.getElementById('consultationForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const form = this;
+    const submitBtn = document.getElementById('submitBtn');
+    const btnText = submitBtn.querySelector('.btn-text');
+    const btnLoading = submitBtn.querySelector('.btn-loading');
+    
+    // Validate form
+    if (!form.checkValidity()) {
+        form.classList.add('was-validated');
+        return;
+    }
+    
+    // Show loading state
+    btnText.classList.add('d-none');
+    btnLoading.classList.remove('d-none');
+    submitBtn.disabled = true;
+    
+    // Simulate form submission (replace with actual AJAX call)
+    setTimeout(() => {
+        alert('Yêu cầu tư vấn đã được gửi thành công! Chúng tôi sẽ liên hệ với bạn sớm nhất.');
+        form.reset();
+        form.classList.remove('was-validated');
+        
+        // Reset button state
+        btnText.classList.remove('d-none');
+        btnLoading.classList.add('d-none');
+        submitBtn.disabled = false;
+    }, 2000);
+});
+
+// Phone number formatting
+document.querySelector('input[name="phone"]').addEventListener('input', function(e) {
+    let value = e.target.value.replace(/\D/g, '');
+    if (value.length > 11) value = value.slice(0, 11);
+    e.target.value = value;
+});
+</script>
 {% endblock %}

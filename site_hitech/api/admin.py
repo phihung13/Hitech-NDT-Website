@@ -1,6 +1,6 @@
 from django.contrib import admin
 from .models import Category, Post, Course, Lesson, Comment, CourseCategory, ContactSettings, SiteSettings
-from .models import Profile
+from .models import UserProfile  # Thay đổi từ Profile thành UserProfile
 from .models import ChatSettings, ChatMessage
 from .models import AboutPage
 
@@ -122,11 +122,25 @@ class CommentAdmin(admin.ModelAdmin):
         queryset.update(is_active=True)
     approve_comments.short_description = "Approve selected comments"
 
-@admin.register(Profile)
-class ProfileAdmin(admin.ModelAdmin):
-    list_display = ['user', 'bio']
-    search_fields = ['user__username', 'bio']
-
+@admin.register(UserProfile)
+class UserProfileAdmin(admin.ModelAdmin):
+    list_display = ['user', 'role', 'department', 'phone']
+    list_filter = ['role', 'department']
+    search_fields = ['user__username', 'user__email', 'department']
+    fieldsets = [
+        ('Thông tin cơ bản', {
+            'fields': ['user', 'role', 'department', 'phone', 'avatar', 'bio']
+        }),
+        ('Quyền hạn bài viết', {
+            'fields': ['can_create_posts', 'can_edit_all_posts', 'can_delete_posts', 'can_publish_posts']
+        }),
+        ('Quyền hạn khóa học', {
+            'fields': ['can_create_courses', 'can_edit_all_courses', 'can_delete_courses']
+        }),
+        ('Quyền hạn hệ thống', {
+            'fields': ['can_manage_users', 'can_view_analytics', 'can_manage_settings']
+        }),
+    ]
 
 @admin.register(ChatSettings)
 class ChatSettingsAdmin(admin.ModelAdmin):

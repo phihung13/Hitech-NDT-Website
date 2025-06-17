@@ -633,6 +633,8 @@ a {
     z-index: -1;
 }
 
+
+
 .contact-title {
     font-size: 2rem;
     font-weight: 700;
@@ -763,6 +765,10 @@ textarea.form-control {
     
     .about-title, .contact-title {
         font-size: 1.8rem;
+    }
+    
+    .contact-form, .contact-info-section {
+        padding: 2rem;
     }
 }
 
@@ -2385,5 +2391,34 @@ textarea.form-control {
     font-weight: bold;
     text-transform: uppercase;
     margin: 0 auto;
+}
+
+/* Form validation styles */
+.was-validated .form-control:invalid {
+    border-color: #dc3545;
+    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+}
+
+.was-validated .form-control:valid {
+    border-color: #28a745;
+    box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+}
+
+.invalid-feedback {
+    display: none;
+    width: 100%;
+    margin-top: 0.25rem;
+    font-size: 0.875rem;
+    color: #dc3545;
+}
+
+.was-validated .form-control:invalid ~ .invalid-feedback {
+    display: block;
+}
+
+.btn-submit:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none !important;
 }
 

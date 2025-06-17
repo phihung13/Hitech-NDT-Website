@@ -238,19 +238,6 @@ class Tag(models.Model):
         ordering = ['name']
 
 
-class Profile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    avatar = models.ImageField(upload_to='avatars/', null=True, blank=True, verbose_name='Ảnh đại diện')
-    bio = models.TextField(max_length=500, blank=True, verbose_name='Giới thiệu')
-    
-    def __str__(self):
-        return f'Profile của {self.user.username}'
-    
-    class Meta:
-        verbose_name = 'Hồ sơ người dùng'
-        verbose_name_plural = 'Hồ sơ người dùng'
-
-
 class ChatSettings(models.Model):
     auto_reply_message = models.TextField(verbose_name='Tin nhắn tự động trả lời', 
         default='Cảm ơn bạn đã liên hệ. Chúng tôi sẽ phản hồi sớm nhất có thể.')
@@ -339,3 +326,298 @@ class AboutPage(models.Model):
     class Meta:
         verbose_name = 'Trang giới thiệu'
         verbose_name_plural = 'Trang giới thiệu'
+
+
+class UserProfile(models.Model):
+    ROLE_CHOICES = [
+        ('admin', 'Quản trị viên'),
+        ('manager', 'Quản lý'),
+        ('staff', 'Nhân viên'),
+    ]
+    
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='user_profile')
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='staff', verbose_name='Vai trò')
+    department = models.CharField(max_length=100, blank=True, null=True, verbose_name='Phòng ban')
+    phone = models.CharField(max_length=20, blank=True, null=True, verbose_name='Số điện thoại')
+    avatar = models.ImageField(upload_to='avatars/', blank=True, null=True, verbose_name='Ảnh đại diện')
+    bio = models.TextField(blank=True, null=True, verbose_name='Giới thiệu')
+    
+    # Quyền hạn chi tiết
+    can_create_posts = models.BooleanField(default=True, verbose_name='Có thể tạo bài viết')
+    can_edit_all_posts = models.BooleanField(default=False, verbose_name='Có thể chỉnh sửa tất cả bài viết')
+    can_delete_posts = models.BooleanField(default=False, verbose_name='Có thể xóa bài viết')
+    can_publish_posts = models.BooleanField(default=False, verbose_name='Có thể xuất bản bài viết')
+    
+    can_create_courses = models.BooleanField(default=True, verbose_name='Có thể tạo khóa học')
+    can_edit_all_courses = models.BooleanField(default=False, verbose_name='Có thể chỉnh sửa tất cả khóa học')
+    can_delete_courses = models.BooleanField(default=False, verbose_name='Có thể xóa khóa học')
+    
+    can_manage_users = models.BooleanField(default=False, verbose_name='Có thể quản lý người dùng')
+    can_view_analytics = models.BooleanField(default=False, verbose_name='Có thể xem thống kê')
+    can_manage_settings = models.BooleanField(default=False, verbose_name='Có thể quản lý cài đặt')
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def save(self, *args, **kwargs):
+        # Tự động cấp quyền dựa trên vai trò
+        if self.role == 'admin':
+            self.can_edit_all_posts = True
+            self.can_delete_posts = True
+            self.can_publish_posts = True
+            self.can_edit_all_courses = True
+            self.can_delete_courses = True
+            self.can_manage_users = True
+            self.can_view_analytics = True
+            self.can_manage_settings = True
+            self.user.is_superuser = True
+            self.user.is_staff = True
+        elif self.role == 'manager':
+            self.can_edit_all_posts = True
+            self.can_delete_posts = True
+            self.can_publish_posts = True
+            self.can_edit_all_courses = True
+            self.can_delete_courses = True
+            self.can_manage_users = False  # Chỉ admin mới quản lý user
+            self.can_view_analytics = True
+            self.can_manage_settings = False
+            self.user.is_staff = True
+        elif self.role == 'staff':
+            self.can_edit_all_posts = False
+            self.can_delete_posts = False
+            self.can_publish_posts = False
+            self.can_edit_all_courses = False
+            self.can_delete_courses = False
+            self.can_manage_users = False
+            self.can_view_analytics = False
+            self.can_manage_settings = False
+            self.user.is_staff = True
+        
+        self.user.save()
+        super().save(*args, **kwargs)
+    
+    def __str__(self):
+        return f'{self.user.username} - {self.get_role_display()}'
+    
+    class Meta:
+        verbose_name = 'Hồ sơ người dùng'
+        verbose_name_plural = 'Hồ sơ người dùng'
+
+# Signal để tự động tạo profile khi tạo user
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+
+@receiver(post_save, sender=User)
+def create_user_profile(sender, instance, created, **kwargs):
+    if created:
+        UserProfile.objects.create(user=instance)
+
+@receiver(post_save, sender=User)
+def save_user_profile(sender, instance, **kwargs):
+    if hasattr(instance, 'profile'):
+        instance.profile.save()
+
+class Company(models.Model):
+    """Model cho công ty khách hàng"""
+    name = models.CharField(max_length=200, verbose_name='Tên công ty')
+    code = models.CharField(max_length=20, unique=True, verbose_name='Mã công ty')
+    address = models.TextField(verbose_name='Địa chỉ')
+    contact_person = models.CharField(max_length=100, verbose_name='Người liên hệ')
+    phone = models.CharField(max_length=20, verbose_name='Số điện thoại')
+    email = models.EmailField(verbose_name='Email')
+    tax_code = models.CharField(max_length=20, blank=True, verbose_name='Mã số thuế')
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return self.name
+    
+    class Meta:
+        verbose_name = 'Công ty'
+        verbose_name_plural = 'Công ty'
+
+class NDTMethod(models.Model):
+    """Model cho phương pháp NDT"""
+    name = models.CharField(max_length=100, verbose_name='Tên phương pháp')
+    code = models.CharField(max_length=10, unique=True, verbose_name='Mã phương pháp')
+    description = models.TextField(blank=True, verbose_name='Mô tả')
+    
+    def __str__(self):
+        return f'{self.code} - {self.name}'
+    
+    class Meta:
+        verbose_name = 'Phương pháp NDT'
+        verbose_name_plural = 'Phương pháp NDT'
+
+class Equipment(models.Model):
+    """Model cho thiết bị NDT"""
+    name = models.CharField(max_length=200, verbose_name='Tên thiết bị')
+    model = models.CharField(max_length=100, verbose_name='Model')
+    serial_number = models.CharField(max_length=100, unique=True, verbose_name='Số serial')
+    manufacturer = models.CharField(max_length=100, verbose_name='Nhà sản xuất')
+    calibration_date = models.DateField(verbose_name='Ngày hiệu chuẩn')
+    next_calibration = models.DateField(verbose_name='Ngày hiệu chuẩn tiếp theo')
+    status = models.CharField(max_length=20, choices=[
+        ('active', 'Đang sử dụng'),
+        ('maintenance', 'Bảo trì'),
+        ('retired', 'Ngừng sử dụng')
+    ], default='active', verbose_name='Trạng thái')
+    
+    def __str__(self):
+        return f'{self.name} - {self.model}'
+    
+    class Meta:
+        verbose_name = 'Thiết bị'
+        verbose_name_plural = 'Thiết bị'
+
+class Project(models.Model):
+    """Model cho dự án NDT"""
+    STATUS_CHOICES = [
+        ('planning', 'Lập kế hoạch'),
+        ('active', 'Đang thực hiện'),
+        ('pending', 'Tạm dừng'),
+        ('completed', 'Hoàn thành'),
+        ('cancelled', 'Đã hủy')
+    ]
+    
+    name = models.CharField(max_length=200, verbose_name='Tên dự án')
+    code = models.CharField(max_length=50, unique=True, verbose_name='Mã dự án')
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, verbose_name='Công ty')
+    description = models.TextField(verbose_name='Mô tả dự án')
+    location = models.CharField(max_length=200, verbose_name='Địa điểm')
+    start_date = models.DateField(verbose_name='Ngày bắt đầu')
+    end_date = models.DateField(verbose_name='Ngày kết thúc')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='planning', verbose_name='Trạng thái')
+    project_manager = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, verbose_name='Quản lý dự án')
+    methods = models.ManyToManyField(NDTMethod, verbose_name='Phương pháp NDT')
+    equipment = models.ManyToManyField(Equipment, verbose_name='Thiết bị sử dụng')
+    staff = models.ManyToManyField(User, related_name='assigned_projects', verbose_name='Nhân viên')
+    contract_value = models.DecimalField(max_digits=15, decimal_places=2, null=True, blank=True, verbose_name='Giá trị hợp đồng')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return f'{self.code} - {self.name}'
+    
+    class Meta:
+        verbose_name = 'Dự án'
+        verbose_name_plural = 'Dự án'
+        ordering = ['-created_at']
+
+class TestReport(models.Model):
+    """Model cho báo cáo kiểm tra"""
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, verbose_name='Dự án')
+    report_number = models.CharField(max_length=50, unique=True, verbose_name='Số báo cáo')
+    test_date = models.DateField(verbose_name='Ngày kiểm tra')
+    inspector = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='Người kiểm tra')
+    method = models.ForeignKey(NDTMethod, on_delete=models.CASCADE, verbose_name='Phương pháp')
+    equipment_used = models.ManyToManyField(Equipment, verbose_name='Thiết bị sử dụng')
+    test_location = models.CharField(max_length=200, verbose_name='Vị trí kiểm tra')
+    test_results = models.TextField(verbose_name='Kết quả kiểm tra')
+    defects_found = models.TextField(blank=True, verbose_name='Khuyết tật phát hiện')
+    recommendations = models.TextField(blank=True, verbose_name='Khuyến nghị')
+    report_file = models.FileField(upload_to='reports/%Y/%m/', blank=True, verbose_name='File báo cáo')
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f'{self.report_number} - {self.project.name}'
+    
+    class Meta:
+        verbose_name = 'Báo cáo kiểm tra'
+        verbose_name_plural = 'Báo cáo kiểm tra'
+        ordering = ['-created_at']
+
+class ThicknessData(models.Model):
+    """Model cho dữ liệu đo độ dày"""
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, verbose_name='Dự án')
+    measurement_point = models.CharField(max_length=100, verbose_name='Điểm đo')
+    thickness_value = models.DecimalField(max_digits=8, decimal_places=3, verbose_name='Giá trị độ dày (mm)')
+    minimum_thickness = models.DecimalField(max_digits=8, decimal_places=3, verbose_name='Độ dày tối thiểu (mm)')
+    measurement_date = models.DateTimeField(verbose_name='Thời gian đo')
+    inspector = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='Người đo')
+    equipment = models.ForeignKey(Equipment, on_delete=models.CASCADE, verbose_name='Thiết bị đo')
+    temperature = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, verbose_name='Nhiệt độ (°C)')
+    notes = models.TextField(blank=True, verbose_name='Ghi chú')
+    
+    @property
+    def is_acceptable(self):
+        return self.thickness_value >= self.minimum_thickness
+    
+    def __str__(self):
+        return f'{self.project.code} - {self.measurement_point}'
+    
+    class Meta:
+        verbose_name = 'Dữ liệu độ dày'
+        verbose_name_plural = 'Dữ liệu độ dày'
+        ordering = ['-measurement_date']
+
+class WeldData(models.Model):
+    """Model cho dữ liệu mối hàn"""
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, verbose_name='Dự án')
+    weld_id = models.CharField(max_length=100, verbose_name='Mã mối hàn')
+    weld_type = models.CharField(max_length=50, verbose_name='Loại mối hàn')
+    material = models.CharField(max_length=100, verbose_name='Vật liệu')
+    thickness = models.DecimalField(max_digits=8, decimal_places=3, verbose_name='Độ dày (mm)')
+    welding_process = models.CharField(max_length=50, verbose_name='Quy trình hàn')
+    test_method = models.ForeignKey(NDTMethod, on_delete=models.CASCADE, verbose_name='Phương pháp kiểm tra')
+    test_date = models.DateField(verbose_name='Ngày kiểm tra')
+    inspector = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='Người kiểm tra')
+    result = models.CharField(max_length=20, choices=[
+        ('accept', 'Đạt'),
+        ('reject', 'Không đạt'),
+        ('repair', 'Cần sửa chữa')
+    ], verbose_name='Kết quả')
+    defect_description = models.TextField(blank=True, verbose_name='Mô tả khuyết tật')
+    repair_required = models.BooleanField(default=False, verbose_name='Cần sửa chữa')
+    
+    def __str__(self):
+        return f'{self.project.code} - {self.weld_id}'
+    
+    class Meta:
+        verbose_name = 'Dữ liệu mối hàn'
+        verbose_name_plural = 'Dữ liệu mối hàn'
+        ordering = ['-test_date']
+# Thêm vào cuối file models.py
+
+class ProjectFile(models.Model):
+    """Model cho file dự án"""
+    FILE_TYPES = [
+        ('excel', 'Excel'),
+        ('pdf', 'PDF'),
+        ('word', 'Word'),
+        ('image', 'Hình ảnh'),
+        ('other', 'Khác')
+    ]
+    
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='files', verbose_name='Dự án')
+    name = models.CharField(max_length=255, verbose_name='Tên file')
+    file = models.FileField(upload_to='project_files/%Y/%m/%d/', verbose_name='File')
+    file_type = models.CharField(max_length=20, choices=FILE_TYPES, verbose_name='Loại file')
+    description = models.TextField(blank=True, verbose_name='Mô tả')
+    uploaded_by = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='Người upload')
+    uploaded_at = models.DateTimeField(auto_now_add=True, verbose_name='Thời gian upload')
+    version = models.PositiveIntegerField(default=1, verbose_name='Phiên bản')
+    is_active = models.BooleanField(default=True, verbose_name='Đang sử dụng')
+    
+    class Meta:
+        verbose_name = 'File dự án'
+        verbose_name_plural = 'File dự án'
+        ordering = ['-uploaded_at']
+    
+    def __str__(self):
+        return f'{self.name} - {self.project.name}'
+
+class ProjectProgress(models.Model):
+    """Model theo dõi tiến độ dự án"""
+    project = models.OneToOneField(Project, on_delete=models.CASCADE, related_name='progress')
+    completion_percentage = models.PositiveIntegerField(default=0, verbose_name='Phần trăm hoàn thành')
+    milestones_completed = models.PositiveIntegerField(default=0, verbose_name='Cột mốc hoàn thành')
+    total_milestones = models.PositiveIntegerField(default=0, verbose_name='Tổng cột mốc')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Ngày tạo')  # Thêm trường này
+    last_updated = models.DateTimeField(auto_now=True, verbose_name='Cập nhật cuối')
+    updated_by = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='Người cập nhật')
+    notes = models.TextField(blank=True, verbose_name='Ghi chú')
+    
+    class Meta:
+        verbose_name = 'Tiến độ dự án'
+        verbose_name_plural = 'Tiến độ dự án'
+        ordering = ['-created_at']

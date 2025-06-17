@@ -9,26 +9,187 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
     <style>
-        /* Search icon styles */
-        .nav-item .fa-search {
-            font-size: 1.0rem;
+        /* Optimized Modern Navbar - Compact Version */
+        .modern-navbar {
+            background: linear-gradient(135deg, 
+                rgba(15, 32, 39, 0.9) 0%, 
+                rgba(32, 58, 67, 0.85) 50%, 
+                rgba(44, 83, 100, 0.9) 100%);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border-bottom: 1px solid rgba(255,255,255,0.15);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            padding: 8px 0; /* Reduced padding */
         }
         
-        /* Search dropdown styles */
-        .search-dropdown {
-            display: none;
+        .modern-navbar.scrolled {
+            background: linear-gradient(135deg, 
+                rgba(10, 25, 30, 0.95) 0%, 
+                rgba(25, 45, 55, 0.95) 50%, 
+                rgba(35, 65, 80, 0.95) 100%);
+            backdrop-filter: blur(25px) saturate(200%);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+            padding: 6px 0; /* Even more compact when scrolled */
+        }
+        
+        /* Compact Brand Logo */
+        .modern-navbar .navbar-brand {
+            font-size: 20px; /* Reduced from 26px */
+            font-weight: 700;
+            background: linear-gradient(135deg, #00d4ff, #0099cc, #0066ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            transition: all 0.3s ease;
+            padding: 8px 0; /* Compact padding */
+            margin-right: 20px; /* Controlled spacing */
+        }
+        
+        .modern-navbar .navbar-brand img {
+            height: 32px; /* Reduced from 40px */
+            margin-right: 8px; /* Reduced spacing */
+            filter: drop-shadow(0 2px 8px rgba(0,0,0,0.2));
+            transition: all 0.3s ease;
+        }
+        
+        .modern-navbar .navbar-brand:hover {
+            transform: scale(1.05); /* Reduced scale */
+        }
+        
+        .modern-navbar .navbar-brand:hover img {
+            transform: rotate(3deg) scale(1.1); /* Reduced rotation */
+        }
+        
+        /* Compact Nav Links */
+        .modern-navbar .nav-link {
+            position: relative;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px; /* Reduced letter spacing */
+            padding: 8px 12px !important; /* Much more compact */
+            border-radius: 20px; /* Smaller radius */
+            transition: all 0.3s ease;
+            overflow: hidden;
+            color: rgba(255,255,255,0.9) !important;
+            font-size: 13px; /* Slightly smaller font */
+            margin: 0 2px; /* Minimal margin */
+        }
+        
+        .modern-navbar .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #00d4ff, #0066ff);
+            transition: all 0.3s ease;
+            transform: translateX(-50%);
+            border-radius: 1px;
+        }
+        
+        .modern-navbar .nav-link:hover::after {
+            width: 70%; /* Reduced width */
+        }
+        
+        .modern-navbar .nav-link:hover {
+            background: linear-gradient(135deg, 
+                rgba(0, 212, 255, 0.1), 
+                rgba(0, 102, 255, 0.1));
+            transform: translateY(-2px); /* Reduced movement */
+            box-shadow: 0 6px 15px rgba(0, 212, 255, 0.2); /* Smaller shadow */
+            color: #fff !important;
+        }
+        
+        /* Compact Dropdown */
+        .modern-navbar .dropdown-menu {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            border-radius: 12px; /* Smaller radius */
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1); /* Smaller shadow */
+            padding: 8px 0; /* Reduced padding */
+            margin-top: 8px; /* Reduced margin */
+            min-width: 160px; /* Controlled width */
+        }
+        
+        @keyframes dropdownFadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .modern-navbar .dropdown-item {
+            padding: 8px 16px; /* Compact padding */
+            font-weight: 500;
+            transition: all 0.2s ease;
+            border-radius: 8px; /* Smaller radius */
+            margin: 2px 8px; /* Minimal margin */
+            font-size: 13px; /* Smaller font */
+        }
+        
+        .modern-navbar .dropdown-item:hover {
+            background: linear-gradient(135deg, #00d4ff, #0066ff);
+            color: white;
+            transform: translateX(4px); /* Reduced movement */
+        }
+        
+        /* Compact Search */
+        .modern-search {
+            position: relative;
+        }
+        
+        .modern-search .nav-link {
+            background: linear-gradient(135deg, 
+                rgba(0, 212, 255, 0.1), 
+                rgba(0, 102, 255, 0.1));
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            border-radius: 50%;
+            width: 36px; /* Reduced size */
+            height: 36px; /* Reduced size */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            padding: 0 !important; /* Remove padding */
+            margin: 0 4px; /* Minimal margin */
+        }
+        
+        .modern-search .nav-link i {
+            font-size: 14px; /* Smaller icon */
+        }
+        
+        .modern-search .nav-link:hover {
+            background: linear-gradient(135deg, #00d4ff, #0066ff);
+            transform: scale(1.1); /* Reduced scale */
+            box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);
+        }
+        
+        .modern-search .search-dropdown {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            padding: 15px; /* Reduced padding */
+            width: 280px; /* Reduced width */
             position: absolute;
             top: 100%;
             right: 0;
-            width: 300px;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
             z-index: 1000;
+            display: none;
         }
-
-        .search-dropdown.show {
+        
+        .modern-search .search-dropdown.show {
             display: block;
+        }
+        
+        @keyframes searchDropdownFadeIn {
+            from { opacity: 0; transform: translateY(-20px) scale(0.9); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
         }
         
         .search-dropdown .input-group .form-control {
@@ -40,6 +201,11 @@
         .search-dropdown .input-group .btn {
             border-radius: 0 4px 4px 0;
             padding: 0.5rem 1rem;
+        }
+        
+        /* Search icon styles */
+        .nav-item .fa-search {
+            font-size: 1.0rem;
         }
         
         /* Tùy chỉnh navbar */
@@ -58,24 +224,193 @@
         .navbar-nav .nav-link:hover {
             color:rgb(223, 223, 223) !important;
         }
-        /* Language selector styles */
-        .language-selector {
-            margin-left: 10px;
+        /* Compact Staff Button */
+        .staff-button {
+            margin-left: 8px;
+            margin-right: 6px;
         }
-        .language-selector .nav-link {
-            background-color: rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            padding: 6px 12px;
+        
+        .staff-button .nav-link,
+        .staff-dropdown .nav-link {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 20px; /* Smaller radius */
+            padding: 6px 16px !important; /* Much more compact */
+            color: white !important;
+            font-weight: 600;
+            font-size: 12px; /* Smaller font */
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102,126,234,0.2); /* Smaller shadow */
             display: flex;
             align-items: center;
+            text-decoration: none;
+            margin: 0 4px; /* Minimal margin */
+            white-space: nowrap; /* Prevent text wrapping */
+        }
+        
+        .staff-button .nav-link i,
+        .staff-dropdown .nav-link i {
+            font-size: 12px; /* Smaller icon */
+            margin-right: 4px; /* Reduced spacing */
+        }
+        
+        .staff-button .nav-link:hover,
+        .staff-dropdown .nav-link:hover {
+            transform: translateY(-2px) scale(1.05); /* Reduced movement */
+            box-shadow: 0 8px 20px rgba(102,126,234,0.3);
+            background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+        }
+        
+        /* Dropdown for authenticated staff */
+        .staff-dropdown {
+            margin-left: 8px;
+            margin-right: 6px;
+        }
+        
+        .staff-dropdown .dropdown-menu {
+            min-width: 180px;
+            padding: 0.5rem 0;
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            margin-top: 8px;
+            background: white;
+        }
+        
+        .staff-dropdown .dropdown-item {
+            padding: 10px 16px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+        }
+        
+        .staff-dropdown .dropdown-item:hover {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            color: #495057;
+            padding-left: 20px;
+        }
+        
+        .staff-dropdown .dropdown-item i {
+            width: 14px;
+            text-align: center;
+        }
+        
+        /* Navbar Container Optimization */
+        .modern-navbar .container {
+            padding: 0 15px; /* Controlled container padding */
+        }
+        
+        .modern-navbar .navbar-nav {
+            align-items: center;
+            gap: 4px; /* Minimal gap between items */
+        }
+        
+        .modern-navbar .nav-item {
+            margin: 0; /* Remove default margins */
+        }
+        
+        /* Mobile Responsive - Extra Compact */
+        @media (max-width: 991px) {
+            .modern-navbar {
+                padding: 8px 0;
+            }
+            
+            .modern-navbar .navbar-brand {
+                font-size: 18px;
+                margin-right: 10px;
+            }
+            
+            .modern-navbar .navbar-brand img {
+                height: 28px;
+            }
+            
+            .modern-navbar .nav-link {
+                padding: 8px 16px !important;
+                margin: 2px 0;
+                text-align: center;
+                border-radius: 15px;
+            }
+            
+            .staff-button .nav-link,
+            .staff-dropdown .nav-link {
+                justify-content: center;
+                margin: 8px 0;
+                padding: 8px 20px !important;
+            }
+            
+            .modern-search .search-dropdown {
+                width: 250px;
+                right: -30px;
+            }
+            
+            .language-selector .nav-link {
+                justify-content: center;
+                padding: 8px 16px !important;
+            }
+        }
+        
+        @media (max-width: 576px) {
+            .modern-navbar .navbar-brand {
+                font-size: 16px;
+            }
+            
+            .modern-navbar .navbar-brand img {
+                height: 24px;
+            }
+            
+            .modern-navbar .nav-link {
+                font-size: 12px;
+                padding: 6px 12px !important;
+            }
+            
+            .staff-button .nav-link,
+            .staff-dropdown .nav-link {
+                font-size: 11px;
+                padding: 6px 16px !important;
+            }
+        }
+        
+        /* Compact Language Selector */
+        .language-selector {
+            margin-left: 6px;
+        }
+        .language-selector .nav-link {
+            background: linear-gradient(135deg, 
+                rgba(255,255,255,0.15), 
+                rgba(255,255,255,0.1));
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 18px; /* Smaller radius */
+            padding: 6px 12px !important; /* Compact padding */
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            font-size: 12px; /* Smaller font */
+            margin: 0 4px; /* Minimal margin */
+            white-space: nowrap;
+        }
+        .language-selector .nav-link:hover {
+            background: linear-gradient(135deg, 
+                rgba(255,255,255,0.25), 
+                rgba(255,255,255,0.15));
+            transform: translateY(-2px); /* Reduced movement */
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
         .language-selector .flag-icon {
-            width: 24px;
-            height: 16px;
-            margin-right: 8px;
+            width: 20px; /* Reduced size */
+            height: 14px; /* Reduced size */
+            margin-right: 6px; /* Reduced spacing */
+            border-radius: 2px;
+        }
+        .language-selector:hover .flag-icon {
+            transform: scale(1.1) rotate(3deg);
         }
         .language-selector .dropdown-menu {
-            min-width: 150px;
+            min-width: 140px;
             padding: 0.5rem 0;
             display: none;
         }
@@ -85,8 +420,9 @@
         .language-selector .dropdown-item {
             display: flex;
             align-items: center;
-            gap: 8px;
-            padding: 8px 16px;
+            gap: 6px;
+            padding: 6px 12px;
+            font-size: 12px;
         }
         .language-selector .dropdown-item:hover {
             background-color: #f8f9fa;
@@ -114,18 +450,123 @@
             from { opacity: 0; transform: translateY(-10px); }
             to { opacity: 1; transform: translateY(0); }
         }
+        
+        /* Breadcrumb Styles */
+        .breadcrumb-section {
+            background: white;
+            padding: 1rem 0;
+            border-bottom: 1px solid #e2e8f0;
+            margin-bottom: 2rem;
+        }
+        
+        .breadcrumb {
+            background: none;
+            padding: 0;
+            margin: 0;
+            font-size: 0.9rem;
+        }
+        
+        .breadcrumb-item a {
+            color: #2563eb;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+        
+        .breadcrumb-item a:hover {
+            text-decoration: underline;
+            color: #1d4ed8;
+        }
+        
+        .breadcrumb-item.active {
+            color: #64748b;
+            font-weight: 500;
+        }
+        
+        .breadcrumb-item + .breadcrumb-item::before {
+            content: '›';
+            color: #94a3b8;
+            font-weight: 600;
+        }
+        
+        /* Thông báo lỗi */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+        }
+        
+        .toast {
+            max-width: 350px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            overflow: hidden;
+            margin-bottom: 10px;
+            display: none;
+        }
+        
+        .toast.show {
+            display: block;
+            animation: fadeInRight 0.5s;
+        }
+        
+        .toast-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 15px;
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .toast-body {
+            padding: 12px 15px;
+        }
+        
+        .toast-error {
+            border-left: 4px solid #dc3545;
+        }
+        
+        .toast-warning {
+            border-left: 4px solid #ffc107;
+        }
+        
+        .toast-success {
+            border-left: 4px solid #28a745;
+        }
+        
+        .toast-info {
+            border-left: 4px solid #17a2b8;
+        }
+        
+        @keyframes fadeInRight {
+            from {
+                opacity: 0;
+                transform: translateX(100px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
     </style>
     {% block extra_head %}{% endblock %}
 </head>
 <body>
- <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark" style="background-color: {% if site_settings %}{{ site_settings.navbar_bg_color }}{% else %}#212529{% endif %}; color: {% if site_settings %}{{ site_settings.navbar_text_color }}{% else %}#ffffff{% endif %};">
+    <!-- Toast Notifications Container -->
+    <div class="toast-container" id="toastContainer">
+        <!-- Toasts will be added here dynamically -->
+    </div>
+    
+ <!-- Modern Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark modern-navbar" id="mainNavbar">
         <div class="container">
             <a class="navbar-brand" href="{% url "home" %}">
                 {% if site_settings and site_settings.logo %}
-                    <img src="{{ site_settings.logo.url }}" alt="{{ site_settings.company_name }} Logo" height="40" class="d-inline-block align-text-center me-2">
+                    <img src="{{ site_settings.logo.url }}" alt="{{ site_settings.company_name }} Logo" class="d-inline-block align-text-center me-2">
                 {% else %}
-                    <img src="https://i.imgur.com/QMfyRXg.png" alt="Hitech NDT Logo" height="40" class="d-inline-block align-text-center me-2">
+                    <img src="https://i.imgur.com/QMfyRXg.png" alt="Hitech NDT Logo" class="d-inline-block align-text-center me-2">
                 {% endif %}
                 {% if site_settings %}{{ site_settings.company_name }}{% else %}Hitech NDT{% endif %}
             </a>
@@ -156,12 +597,13 @@
                         </ul>
                     </li>
                     <li class="nav-item"><a class="nav-link" href="{% url "contact" %}" data-vi="Liên hệ" data-en="Contact">Liên hệ</a></li>
-                    <li class="nav-item position-relative">
+                    
+                    <li class="nav-item modern-search position-relative">
                         <a class="nav-link" href="#" id="searchToggle">
                             <i class="fas fa-search"></i>
                         </a>
                         <div id="searchDropdown" class="search-dropdown">
-                            <form action="{% url "search_results" %}" method="get" class="p-3">
+                            <form action="{% url "search_results" %}" method="get">
                                 <div class="input-group">
                                     <input type="text" class="form-control" name="q" placeholder="Nhập từ khóa tìm kiếm..." required>
                                     <button class="btn btn-primary" type="submit">
@@ -171,6 +613,30 @@
                             </form>
                         </div>
                     </li>
+                    
+                    <!-- Enhanced Staff Button -->
+                    {% if user.is_authenticated and user.is_staff %}
+                        <li class="nav-item dropdown staff-dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="staffDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-user-shield me-2"></i>{{ user.username|truncatechars:10 }}
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="staffDropdown">
+                                <li><a class="dropdown-item" href="{% url 'staff_dashboard' %}"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                                {% if user.is_superuser %}
+                                    <li><a class="dropdown-item" href="/admin/"><i class="fas fa-cog"></i> Quản trị</a></li>
+                                {% endif %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="{% url 'staff_logout' %}"><i class="fas fa-sign-out-alt text-danger"></i> Đăng xuất</a></li>
+                            </ul>
+                        </li>
+                    {% else %}
+                        <li class="nav-item staff-button">
+                            <a class="nav-link" href="{% url 'staff_login' %}">
+                                <i class="fas fa-user-shield me-2"></i>Đăng nhập
+                            </a>
+                        </li>
+                    {% endif %}
+                    
                     <li class="nav-item dropdown language-selector">
                         <a class="nav-link" href="#" id="languageDropdown" role="button" data-bs-hover="dropdown" aria-expanded="false">
                             <img src="{% static 'images/flags/vietnam.svg' %}" alt="VI" class="flag-icon"> VI
@@ -224,6 +690,17 @@
     
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Navbar scroll effect
+            const navbar = document.getElementById('mainNavbar');
+            window.addEventListener('scroll', function() {
+                if (window.scrollY > 50) {
+                    navbar.classList.add('scrolled');
+                } else {
+                    navbar.classList.remove('scrolled');
+                }
+            });
+            
+            // Enhanced search functionality
             const searchToggle = document.getElementById('searchToggle');
             const searchDropdown = document.getElementById('searchDropdown');
             
@@ -238,8 +715,42 @@
                     searchDropdown.classList.remove('show');
                 }
             });
-
-            // Language switching functionality
+            
+            // Smooth scrolling for anchor links
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const target = document.querySelector(this.getAttribute('href'));
+                    if (target) {
+                        target.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                    }
+                });
+            });
+            
+            // Intersection Observer for animations
+            const observerOptions = {
+                threshold: 0.1,
+                rootMargin: '0px 0px -50px 0px'
+            };
+            
+            const observer = new IntersectionObserver(function(entries) {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.animationDelay = '0.2s';
+                        entry.target.style.animationFillMode = 'both';
+                    }
+                });
+            }, observerOptions);
+            
+            // Observe footer elements
+            document.querySelectorAll('.footer-section').forEach(el => {
+                observer.observe(el);
+            });
+            
+            // Language switching with enhanced effects
             const languageLinks = document.querySelectorAll('[data-lang]');
             languageLinks.forEach(link => {
                 link.addEventListener('click', function(e) {
@@ -247,110 +758,88 @@
                     const lang = this.getAttribute('data-lang');
                     localStorage.setItem('preferredLanguage', lang);
                     
-                    // Update all text elements with data attributes
-                    document.querySelectorAll('[data-vi]').forEach(el => {
-                        if (el.dataset[lang]) {
-                            el.textContent = el.dataset[lang];
-                        }
-                    });
+                    // Add transition effect
+                    document.body.style.transition = 'opacity 0.3s ease';
+                    document.body.style.opacity = '0.8';
                     
-                    // Update page language attribute
-                    document.documentElement.lang = lang;
-                    
-                    // Update navbar items and flag
-                    if (lang === 'en') {
-                        document.querySelector('a[href="{% url "home" %}"]').textContent = 'Home';
-                        document.querySelector('a[href="{% url "about" %}"]').textContent = 'About';
-                        document.querySelector('a[href="{% url "blog_list" %}"]').textContent = 'Blog';
-                        document.querySelector('a[href="{% url "course_list" %}"]').textContent = 'Certificates';
-                        document.querySelector('a[href="{% url "contact" %}"]').textContent = 'Contact';
-                        document.querySelector('input[name="q"]').placeholder = 'Enter search keyword...';
-                        document.querySelector('#languageDropdown img').src = "{% static 'images/flags/usa.svg' %}";
-                        document.querySelector('#languageDropdown').innerHTML = '<img src="{% static 'images/flags/usa.svg' %}" alt="EN" class="flag-icon"> EN';
-                    } else {
-                        document.querySelector('a[href="{% url "home" %}"]').textContent = 'Trang chủ';
-                        document.querySelector('a[href="{% url "about" %}"]').textContent = 'Giới thiệu';
-                        document.querySelector('a[href="{% url "blog_list" %}"]').textContent = 'Bài viết';
-                        document.querySelector('a[href="{% url "course_list" %}"]').textContent = 'Chứng chỉ';
-                        document.querySelector('a[href="{% url "contact" %}"]').textContent = 'Liên hệ';
-                        document.querySelector('input[name="q"]').placeholder = 'Nhập từ khóa tìm kiếm...';
-                        document.querySelector('#languageDropdown img').src = "{% static 'images/flags/vietnam.svg' %}";
-                        document.querySelector('#languageDropdown').innerHTML = '<img src="{% static 'images/flags/vietnam.svg' %}" alt="VI" class="flag-icon"> VI';
-                    }
+                    setTimeout(() => {
+                        // Update all text elements
+                        document.querySelectorAll('[data-vi]').forEach(el => {
+                            if (el.dataset[lang]) {
+                                el.textContent = el.dataset[lang];
+                            }
+                        });
+                        
+                        // Update page language
+                        document.documentElement.lang = lang;
+                        
+                        // Restore opacity
+                        document.body.style.opacity = '1';
+                    }, 150);
                 });
             });
-
-            // Set initial language from localStorage
+            
+            // Set initial language
             const preferredLanguage = localStorage.getItem('preferredLanguage') || 'vi';
             if (preferredLanguage === 'en') {
                 document.documentElement.lang = 'en';
-                // Update text content to English
                 document.querySelectorAll('[data-vi]').forEach(el => {
                     if (el.dataset.en) {
                         el.textContent = el.dataset.en;
                     }
                 });
-                // Update navbar items
-                document.querySelector('a[href="{% url "home" %}"]').textContent = 'Home';
-                document.querySelector('a[href="{% url "about" %}"]').textContent = 'About';
-                document.querySelector('a[href="{% url "blog_list" %}"]').textContent = 'Blog';
-                document.querySelector('a[href="{% url "course_list" %}"]').textContent = 'Certificates';
-                document.querySelector('a[href="{% url "contact" %}"]').textContent = 'Contact';
-                document.querySelector('input[name="q"]').placeholder = 'Enter search keyword...';
             }
         });
     </script>
 
-    <!-- Footer -->
-    <footer class="py-5 mt-5" style="background-color: {% if site_settings %}{{ site_settings.footer_bg_color }}{% else %}#212529{% endif %}; color: {% if site_settings %}{{ site_settings.footer_text_color }}{% else %}#ffffff{% endif %};">
+    <!-- Modern Footer -->
+    <footer class="modern-footer">
         <div class="container">
-            <div class="row g-4">
+            <div class="row g-4 footer-section">
                 <!-- Company Info -->
                 <div class="col-lg-4 col-md-6">
                     <div class="mb-4">
                         {% if site_settings and site_settings.logo %}
-                            <img src="{{ site_settings.logo.url }}" alt="{{ site_settings.company_name }} Logo" height="40" class="mb-3">
+                            <img src="{{ site_settings.logo.url }}" alt="{{ site_settings.company_name }} Logo" height="50" class="mb-3 footer-logo floating">
                         {% else %}
-                            <img src="https://i.imgur.com/QMfyRXg.png" alt="Hitech NDT Logo" height="40" class="mb-3">
+                            <img src="https://i.imgur.com/QMfyRXg.png" alt="Hitech NDT Logo" height="50" class="mb-3 footer-logo floating">
                         {% endif %}
-                        <p class="mb-3" data-vi="{% if site_settings %}{{ site_settings.company_description }}{% else %}Hitech NDT tự hào là đơn vị hàng đầu trong lĩnh vực kiểm tra không phá hủy và đào tạo chứng chỉ NDT tại Việt Nam{% endif %}" data-en="{% if site_settings %}{{ site_settings.company_description }}{% else %}Hitech NDT is proud to be the leading unit in non-destructive testing and NDT certification training in Vietnam{% endif %}">{% if site_settings %}{{ site_settings.company_description }}{% else %}Hitech NDT tự hào là đơn vị hàng đầu trong lĩnh vực kiểm tra không phá hủy và đào tạo chứng chỉ NDT tại Việt Nam{% endif %}</p>
+                        <p class="mb-3" style="color: rgba(255,255,255,0.9); line-height: 1.6;" data-vi="{% if site_settings %}{{ site_settings.company_description }}{% else %}Hitech NDT tự hào là đơn vị hàng đầu trong lĩnh vực kiểm tra không phá hủy và đào tạo chứng chỉ NDT tại Việt Nam{% endif %}" data-en="{% if site_settings %}{{ site_settings.company_description }}{% else %}Hitech NDT is proud to be the leading unit in non-destructive testing and NDT certification training in Vietnam{% endif %}">{% if site_settings %}{{ site_settings.company_description }}{% else %}Hitech NDT tự hào là đơn vị hàng đầu trong lĩnh vực kiểm tra không phá hủy và đào tạo chứng chỉ NDT tại Việt Nam{% endif %}</p>
                     </div>
                 </div>
                 
                 <!-- Quick Links -->
                 <div class="col-lg-2 col-md-6">
-                    <h5 class="mb-3" data-vi="Liên kết nhanh" data-en="Quick Links">Liên kết nhanh</h5>
-                    <ul class="list-unstyled footer-links">
-                        <li><a href="{% url 'home' %}" class="text-decoration-none" style="color: {% if site_settings %}{{ site_settings.footer_link_color }}{% else %}#6c757d{% endif %};" data-vi="Trang chủ" data-en="Home">Trang chủ</a></li>
-                        <li><a href="{% url 'about' %}" class="text-decoration-none" style="color: {% if site_settings %}{{ site_settings.footer_link_color }}{% else %}#6c757d{% endif %};" data-vi="Giới thiệu" data-en="About">Giới thiệu</a></li>
-                        <li><a href="{% url 'blog_list' %}" class="text-decoration-none" style="color: {% if site_settings %}{{ site_settings.footer_link_color }}{% else %}#6c757d{% endif %};" data-vi="Bài viết" data-en="Blog">Bài viết</a></li>
-                        <li><a href="{% url 'course_list' %}" class="text-decoration-none" style="color: {% if site_settings %}{{ site_settings.footer_link_color }}{% else %}#6c757d{% endif %};" data-vi="Chứng chỉ" data-en="Certificates">Chứng chỉ</a></li>
-                        <li><a href="{% url 'contact' %}" class="text-decoration-none" style="color: {% if site_settings %}{{ site_settings.footer_link_color }}{% else %}#6c757d{% endif %};" data-vi="Liên hệ" data-en="Contact">Liên hệ</a></li>
+                    <h5 data-vi="Liên kết nhanh" data-en="Quick Links">Liên kết nhanh</h5>
+                    <ul class="footer-links">
+                        <li><a href="{% url 'home' %}" data-vi="Trang chủ" data-en="Home">Trang chủ</a></li>
+                        <li><a href="{% url 'about' %}" data-vi="Giới thiệu" data-en="About">Giới thiệu</a></li>
+                        <li><a href="{% url 'blog_list' %}" data-vi="Bài viết" data-en="Blog">Bài viết</a></li>
+                        <li><a href="{% url 'course_list' %}" data-vi="Chứng chỉ" data-en="Certificates">Chứng chỉ</a></li>
+                        <li><a href="{% url 'contact' %}" data-vi="Liên hệ" data-en="Contact">Liên hệ</a></li>
                     </ul>
                 </div>
                 
                 <!-- Contact Info -->
                 <div class="col-lg-3 col-md-6">
-                    <h5 class="mb-3" data-vi="Thông tin liên hệ" data-en="Contact Info">Thông tin liên hệ</h5>
-                    <ul class="list-unstyled footer-links">
-                        <li class="d-flex align-items-center mb-2">
-                            <i class="fas fa-map-marker-alt me-2"></i>
-                            <span data-vi="{% if site_settings %}{{ site_settings.footer_address }}{% else %}123 Đường ABC, Quận XYZ, TP.HCM{% endif %}" data-en="{% if site_settings %}{{ site_settings.footer_address }}{% else %}123 ABC Street, XYZ District, HCMC{% endif %}">{% if site_settings %}{{ site_settings.footer_address }}{% else %}123 Đường ABC, Quận XYZ, TP.HCM{% endif %}</span>
-                        </li>
-                        <li class="d-flex align-items-center mb-2">
-                            <i class="fas fa-phone me-2"></i>
-                            <a href="tel:{% if site_settings %}{{ site_settings.footer_phone }}{% else %}+84123456789{% endif %}" class="text-decoration-none" style="color: {% if site_settings %}{{ site_settings.footer_link_color }}{% else %}#6c757d{% endif %};">{% if site_settings %}{{ site_settings.footer_phone }}{% else %}+84 123 456 789{% endif %}</a>
-                        </li>
-                        <li class="d-flex align-items-center mb-2">
-                            <i class="fas fa-envelope me-2"></i>
-                            <a href="mailto:{% if site_settings %}{{ site_settings.footer_email }}{% else %}info@hitechndt.com{% endif %}" class="text-decoration-none" style="color: {% if site_settings %}{{ site_settings.footer_link_color }}{% else %}#6c757d{% endif %};">{% if site_settings %}{{ site_settings.footer_email }}{% else %}info@hitechndt.com{% endif %}</a>
-                        </li>
-                    </ul>
+                    <h5 data-vi="Thông tin liên hệ" data-en="Contact Info">Thông tin liên hệ</h5>
+                    <div class="footer-contact-item">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <span>123 Đường ABC, Quận XYZ, TP.HCM</span>
+                </div>
+                <div class="footer-contact-item">
+                    <i class="fas fa-phone"></i>
+                    <a href="tel:{% if site_settings %}{{ site_settings.footer_phone }}{% else %}+84123456789{% endif %}" style="color: rgba(255,255,255,0.9);">{% if site_settings %}{{ site_settings.footer_phone }}{% else %}+84 123 456 789{% endif %}</a>
+                </div>
+                <div class="footer-contact-item">
+                    <i class="fas fa-envelope"></i>
+                    <a href="mailto:{% if site_settings %}{{ site_settings.footer_email }}{% else %}info@hitechndt.com{% endif %}" style="color: rgba(255,255,255,0.9);">{% if site_settings %}{{ site_settings.footer_email }}{% else %}info@hitechndt.com{% endif %}</a>
+                </div>
                 </div>
                 
                 <!-- Social Media -->
                 <div class="col-lg-3 col-md-6">
-                    <h5 class="mb-3" data-vi="Kết nối với chúng tôi" data-en="Connect With Us">Kết nối với chúng tôi</h5>
+                    <h5 data-vi="Kết nối với chúng tôi" data-en="Connect With Us">Kết nối với chúng tôi</h5>
                     <div class="social-links">
                         {% if site_settings and site_settings.facebook_url %}
                             <a href="{{ site_settings.facebook_url }}" class="social-icon"><i class="fab fa-facebook"></i></a>
@@ -377,44 +866,435 @@
             </div>
             
             <!-- Copyright -->
-            <div class="border-top border-secondary pt-4 mt-4 text-center">
-                <p class="mb-0" data-vi="&copy; 2025 {% if site_settings %}{{ site_settings.company_name }} - {{ site_settings.company_slogan }}{% else %}Hitech NDT - Giải pháp công nghệ hàng đầu{% endif %}" data-en="&copy; 2025 {% if site_settings %}{{ site_settings.company_name }} - {{ site_settings.company_slogan }}{% else %}Hitech NDT - Leading technology solutions{% endif %}">&copy; 2025 {% if site_settings %}{{ site_settings.company_name }} - {{ site_settings.company_slogan }}{% else %}Hitech NDT - Giải pháp công nghệ hàng đầu{% endif %}</p>
+            <div class="copyright-section">
+                <p data-vi="&copy; 2025 {% if site_settings %}{{ site_settings.company_name }} - {{ site_settings.company_slogan }}{% else %}Hitech NDT - Giải pháp công nghệ hàng đầu{% endif %}" data-en="&copy; 2025 {% if site_settings %}{{ site_settings.company_name }} - {{ site_settings.company_slogan }}{% else %}Hitech NDT - Leading technology solutions{% endif %}">&copy; 2025 {% if site_settings %}{{ site_settings.company_name }} - {{ site_settings.company_slogan }}{% else %}Hitech NDT - Giải pháp công nghệ hàng đầu{% endif %}</p>
             </div>
         </div>
     </footer>
 
     <style>
-    /* Footer Styles */
+    /* Ultra Modern Footer Styles */
+    .modern-footer {
+        background: linear-gradient(135deg, 
+            #0f2027 0%, 
+            #203a43 25%, 
+            #2c5364 50%, 
+            #203a43 75%, 
+            #0f2027 100%);
+        position: relative;
+        overflow: hidden;
+        padding: 60px 0 20px;
+    }
+    
+    .modern-footer::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: 
+            radial-gradient(circle at 20% 50%, rgba(0, 212, 255, 0.1) 0%, transparent 50%),
+            radial-gradient(circle at 80% 20%, rgba(102, 126, 234, 0.1) 0%, transparent 50%),
+            radial-gradient(circle at 40% 80%, rgba(118, 75, 162, 0.1) 0%, transparent 50%);
+        animation: footerGlow 8s ease-in-out infinite alternate;
+    }
+    
+    @keyframes footerGlow {
+        0% { opacity: 0.5; }
+        100% { opacity: 1; }
+    }
+    
+    .modern-footer::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: linear-gradient(90deg, 
+            transparent, 
+            rgba(0, 212, 255, 0.5), 
+            rgba(102, 126, 234, 0.5), 
+            rgba(0, 212, 255, 0.5), 
+            transparent);
+        animation: topBorderGlow 3s ease-in-out infinite;
+    }
+    
+    @keyframes topBorderGlow {
+        0%, 100% { opacity: 0.5; }
+        50% { opacity: 1; }
+    }
+    
+    .modern-footer .container {
+        position: relative;
+        z-index: 2;
+    }
+    
+    .footer-section {
+        padding: 40px 0;
+    }
+    
+    .modern-footer h5 {
+        color: #fff;
+        font-weight: 600;
+        margin-bottom: 12px;
+        position: relative;
+        font-size: 15px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        line-height: 1.2;
+    }
+    
+    .modern-footer h5::after {
+        content: '';
+        position: absolute;
+        bottom: -8px;
+        left: 0;
+        width: 50px;
+        height: 3px;
+        background: linear-gradient(90deg, #00d4ff, #0066ff);
+        border-radius: 2px;
+        animation: underlineGlow 2s ease-in-out infinite alternate;
+    }
+    
+    @keyframes underlineGlow {
+        0% { box-shadow: 0 0 5px rgba(0, 212, 255, 0.5); }
+        100% { box-shadow: 0 0 15px rgba(0, 212, 255, 0.8); }
+    }
+    
+    /* Enhanced Footer Logo */
+    .footer-logo {
+        filter: drop-shadow(0 4px 15px rgba(0, 212, 255, 0.3)) brightness(1.1);
+        transition: all 0.4s ease;
+    }
+    
+    .footer-logo.floating {
+        animation: logoFloat 3s ease-in-out infinite;
+    }
+    
+    @keyframes logoFloat {
+        0%, 100% { transform: translateY(0) rotate(0deg); }
+        50% { transform: translateY(-8px) rotate(2deg); }
+    }
+    
+    .footer-logo:hover {
+        transform: scale(1.1) rotate(5deg);
+        filter: drop-shadow(0 8px 25px rgba(0, 212, 255, 0.5)) brightness(1.3);
+    }
+    
+    /* Premium Footer Links */
+    .footer-links {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    
     .footer-links li {
-        margin-bottom: 10px;
+        margin-bottom: 12px;
+        position: relative;
     }
+    
     .footer-links a {
-        transition: color 0.3s ease;
+        color: rgba(255,255,255,0.8);
+        text-decoration: none;
+        transition: all 0.4s ease;
+        position: relative;
+        padding: 8px 0;
+        display: inline-block;
+        font-weight: 500;
     }
+    
+    .footer-links a::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: -15px;
+        width: 0;
+        height: 2px;
+        background: linear-gradient(90deg, #00d4ff, #0066ff);
+        transition: width 0.4s ease;
+        transform: translateY(-50%);
+        border-radius: 1px;
+    }
+    
+    .footer-links a:hover::before {
+        width: 10px;
+    }
+    
     .footer-links a:hover {
-        color: #fff !important;
+        color: #00d4ff;
+        transform: translateX(15px);
+        text-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
     }
+    
+    /* Contact Info */
+    .footer-contact-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 8px;
+        padding: 4px 0;
+        transition: all 0.3s ease;
+        border-radius: 8px;
+    }
+    
+    .footer-contact-item:hover {
+        background: rgba(0, 212, 255, 0.1);
+        transform: translateX(5px);
+        padding-left: 12px;
+    }
+    
+    .footer-contact-item i {
+        width: 16px;
+        margin-right: 8px;
+        color: #00d4ff;
+        font-size: 14px;
+        transition: all 0.3s ease;
+        flex-shrink: 0;
+    }
+    
+    .footer-contact-item:hover i {
+        color: #fff;
+        transform: scale(1.2);
+        text-shadow: 0 0 8px rgba(0, 212, 255, 0.6);
+    }
+    
+    .footer-contact-item span,
+    .footer-contact-item a {
+        color: rgba(255,255,255,0.9);
+        transition: all 0.3s ease;
+        font-weight: 500;
+        font-size: 13px;
+        line-height: 1.2;
+    }
+    
+    .footer-contact-item:hover span,
+    .footer-contact-item:hover a {
+        color: #fff;
+        text-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
+    }
+    
+    /* Footer Section Spacing */
+    .col-lg-3.col-md-6 {
+        padding-left: 15px;
+        padding-right: 15px;
+    }
+    
+    /* Ultra Premium Social Links */
     .social-links {
         display: flex;
         gap: 15px;
+        flex-wrap: wrap;
+        margin-top: 20px;
     }
+    
     .social-icon {
-        width: 40px;
-        height: 40px;
-        background-color: rgba(255, 255, 255, 0.1);
-        border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
-        color: white;
-        font-size: 18px;
+        width: 50px;
+        height: 50px;
+        background: linear-gradient(135deg, 
+            rgba(0, 212, 255, 0.2), 
+            rgba(102, 126, 234, 0.2));
+        border: 2px solid rgba(255,255,255,0.2);
+        border-radius: 50%;
+        color: rgba(255,255,255,0.9);
+        text-decoration: none;
+        transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+        backdrop-filter: blur(10px);
+    }
+    
+    .social-icon::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, #00d4ff, #0066ff);
+        border-radius: 50%;
+        transform: scale(0);
+        transition: transform 0.5s ease;
+    }
+    
+    .social-icon i {
+        position: relative;
+        z-index: 2;
+        font-size: 20px;
         transition: all 0.3s ease;
     }
-    .social-icon:hover {
-        background-color: var(--primary, #0d6efd);
-        transform: translateY(-3px);
-        color: white;
+    
+    .social-icon:hover::before {
+        transform: scale(1);
     }
+    
+    .social-icon:hover {
+        transform: translateY(-8px) scale(1.1) rotate(360deg);
+        box-shadow: 
+            0 15px 30px rgba(0, 212, 255, 0.4),
+            0 0 0 3px rgba(255,255,255,0.3) inset;
+        border-color: rgba(255,255,255,0.5);
+    }
+    
+    .social-icon:hover i {
+        color: #fff;
+        transform: scale(1.2);
+        text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+    }
+    
+    /* Specific social media colors on hover */
+    .social-icon:nth-child(1):hover::before { /* Facebook */
+        background: linear-gradient(135deg, #1877f2, #42a5f5);
+    }
+    
+    .social-icon:nth-child(2):hover::before { /* LinkedIn */
+        background: linear-gradient(135deg, #0077b5, #00a0dc);
+    }
+    
+    .social-icon:nth-child(3):hover::before { /* YouTube */
+        background: linear-gradient(135deg, #ff0000, #ff4444);
+    }
+    
+    .social-icon:nth-child(4):hover::before { /* Twitter */
+        background: linear-gradient(135deg, #1da1f2, #1e88e5);
+    }
+    
+    /* Enhanced Copyright Section */
+    .copyright-section {
+        margin-top: 40px;
+        padding-top: 30px;
+        border-top: 1px solid rgba(255,255,255,0.1);
+        text-align: center;
+        position: relative;
+    }
+    
+    .copyright-section::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 50%;
+        width: 100px;
+        height: 1px;
+        background: linear-gradient(90deg, 
+            transparent, 
+            rgba(0, 212, 255, 0.8), 
+            transparent);
+        transform: translateX(-50%);
+        animation: copyrightGlow 2s ease-in-out infinite alternate;
+    }
+    
+    @keyframes copyrightGlow {
+        0% { width: 100px; opacity: 0.5; }
+        100% { width: 200px; opacity: 1; }
+    }
+    
+    .copyright-section p {
+        color: rgba(255,255,255,0.7);
+        margin: 0;
+        font-size: 14px;
+        font-weight: 500;
+        letter-spacing: 0.5px;
+        transition: all 0.3s ease;
+    }
+    
+    .copyright-section p:hover {
+        color: rgba(255,255,255,0.9);
+        text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+    }
+    
+    /* Responsive Footer */
+    @media (max-width: 768px) {
+            .modern-footer {
+                padding: 40px 0 20px;
+            }
+            
+            .footer-section {
+                padding: 20px 0;
+            }
+            
+            .modern-footer h5 {
+                font-size: 15px;
+                margin-bottom: 18px;
+                text-align: center;
+            }
+            
+            .modern-footer h5::after {
+                left: 50%;
+                transform: translateX(-50%);
+            }
+            
+            .social-links {
+                justify-content: center;
+            }
+            
+            .social-icon {
+                width: 45px;
+                height: 45px;
+            }
+            
+            .social-icon i {
+                font-size: 18px;
+            }
+            
+            .copyright-section {
+                text-align: center;
+                margin-top: 30px;
+            }
+            
+            .copyright-section::before {
+                left: 50%;
+                transform: translateX(-50%);
+            }
+            
+            .footer-links {
+                text-align: center;
+            }
+            
+            .footer-links {
+                margin-bottom: 8px;
+            }
+            
+            .footer-contact-item {
+                margin-bottom: 1px !important;
+                padding: 0 !important;
+                min-height: unset !important;
+                max-height: unset !important;
+                height: fit-content !important;
+                display: flex !important;
+                align-items: center !important;
+                border-radius: 0 !important;
+            }
+            
+            .footer-contact-item:hover {
+                background: rgba(0, 212, 255, 0.1);
+                transform: translateX(5px);
+                padding-left: 12px;
+            }
+            
+            .footer-contact-item i {
+                width: 12px !important;
+                margin-right: 6px !important;
+                font-size: 12px !important;
+                flex-shrink: 0 !important;
+            }
+            
+            .footer-contact-item span,
+            .footer-contact-item a {
+                font-size: 12px !important;
+                line-height: 1 !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                display: inline-block !important;
+            }
+            
+            .modern-footer h5 {
+                font-size: 14px;
+                margin-bottom: 12px;
+            }
+        }
     </style>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -476,6 +1356,7 @@
             });
         });
     </script>
+</body>
 </body>
 </html>
 <!-- Zalo Logo và Menu Chat -->
@@ -580,4 +1461,921 @@ function sendQuickMessage() {
     }
 }
 </script>
+
+<script>
+// Function để hiển thị toast notification
+function showToast(message, type = 'error') {
+    const toastContainer = document.getElementById('toastContainer');
+    
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    
+    const toastHeader = document.createElement('div');
+    toastHeader.className = 'toast-header';
+    
+    const icon = type === 'error' ? '❌' : '✅';
+    const title = type === 'error' ? 'Lỗi' : 'Thành công';
+    
+    toastHeader.innerHTML = `
+        <span style="margin-right: 10px;">${icon}</span>
+        <strong>${title}</strong>
+        <button type="button" class="btn-close" onclick="closeToast(this)" style="background: none; border: none; font-size: 18px; margin-left: auto; cursor: pointer;">×</button>
+    `;
+    
+    const toastBody = document.createElement('div');
+    toastBody.className = 'toast-body';
+    toastBody.textContent = message;
+    
+    toast.appendChild(toastHeader);
+    toast.appendChild(toastBody);
+    toastContainer.appendChild(toast);
+    
+    // Hiển thị toast
+    setTimeout(() => {
+        toast.classList.add('show');
+    }, 100);
+    
+    // Tự động ẩn sau 5 giây
+    setTimeout(() => {
+        closeToast(toast.querySelector('.btn-close'));
+    }, 5000);
+}
+
+function closeToast(button) {
+    const toast = button.closest('.toast');
+    toast.style.animation = 'fadeOutRight 0.5s';
+    setTimeout(() => {
+        toast.remove();
+    }, 500);
+}
+
+// Kiểm tra khi click vào Dashboard link
+document.addEventListener('DOMContentLoaded', function() {
+    const dashboardLink = document.querySelector('a[href*="staff_dashboard"]');
+    if (dashboardLink) {
+        dashboardLink.addEventListener('click', function(e) {
+            // Kiểm tra nếu user chưa có quyền truy cập
+            {% if not user.is_authenticated or not user.is_staff %}
+                e.preventDefault();
+                showToast('Tài khoản chưa được cấu hình đầy đủ hoặc không có quyền truy cập Dashboard!', 'error');
+            {% elif user.is_authenticated and not user.userprofile %}
+                e.preventDefault();
+                showToast('Tài khoản chưa có profile. Vui lòng liên hệ admin để được cấu hình!', 'error');
+            {% endif %}
+        });
+    }
+    
+    // Hiển thị thông báo từ Django messages framework
+    {% if messages %}
+        {% for message in messages %}
+            showToast('{{ message }}', '{% if message.tags == "error" %}error{% else %}success{% endif %}');
+        {% endfor %}
+    {% endif %}
+});
+
+// CSS animation cho fadeOutRight
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes fadeOutRight {
+        from { opacity: 1; transform: translateX(0); }
+        to { opacity: 0; transform: translateX(100%); }
+    }
+    @keyframes fadeInRight {
+        from { opacity: 0; transform: translateX(100%); }
+        to { opacity: 1; transform: translateX(0); }
+    }
+`;
+document.head.appendChild(style);
+</script>
+</body>
 </html>
+<!-- Zalo Logo và Menu Chat -->
+<div id="zalo-chat-widget" style="display: none; position: fixed; bottom: 10%; right: 120px; width: 300px; background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 1000;">
+    <div style="padding: 15px; background: #0068ff; color: white; border-radius: 10px 10px 0 0; display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-weight: bold;">Chat với chúng tôi</span>
+        <span onclick="closeZaloChat()" style="cursor: pointer;">✕</span>
+    </div>
+    <div style="padding: 20px;">
+        <div style="text-align: center; margin-bottom: 20px;">
+            <img src="/static/image/Icon_of_Zalo.png" alt="Zalo Logo" style="width: 50px; height: 50px; margin-bottom: 10px;">
+            <p style="margin: 0;">Chào bạn!</p>
+            <p style="margin: 5px 0;">Chọn phương thức chat:</p>
+        </div>
+        
+        <!-- Hai nút chat -->
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+            <a href="https://zalo.me/0369617913" target="_blank" style="display: block; background: #0068ff; color: white; text-decoration: none; padding: 12px; border-radius: 5px; text-align: center;">
+                <i class="fab fa-facebook-messenger" style="margin-right: 8px;"></i>
+                Chat qua Zalo
+            </a>
+            
+            <button onclick="openQuickChat()" style="background: #28a745; color: white; border: none; padding: 12px; border-radius: 5px; cursor: pointer;">
+                <i class="fas fa-comments" style="margin-right: 8px;"></i>
+                Chat với Admin
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Cửa sổ Quick Chat -->
+<div id="quick-chat-window" style="display: none; position: fixed; bottom: 10%; right: 120px; width: 300px; background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 1000;">
+    <div style="padding: 15px; background: #28a745; color: white; border-radius: 10px 10px 0 0; display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-weight: bold;">Chat với Admin</span>
+        <span onclick="closeQuickChat()" style="cursor: pointer;">✕</span>
+    </div>
+    <div style="padding: 20px; height: 300px; display: flex; flex-direction: column;">
+        <div id="chat-messages" style="flex-grow: 1; overflow-y: auto; margin-bottom: 10px;">
+            <!-- Tin nhắn sẽ được thêm vào đây -->
+            <div style="text-align: center; color: #666; margin: 10px 0;">Bắt đầu cuộc trò chuyện</div>
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <input type="text" id="quick-chat-input" placeholder="Nhập tin nhắn..." style="flex-grow: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+            <button onclick="sendQuickMessage()" style="background: #28a745; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer;">
+                Gửi
+            </button>
+        </div>
+    </div>
+</div>
+
+<div id="zalo-logo" onclick="toggleZaloChat()" style="cursor: pointer;">
+    <img src="/static/image/Icon_of_Zalo.png" alt="Zalo Logo" style="width: 50px; height: 50px; position: fixed; bottom: 10%; right: 50px;">
+</div>
+
+<script>
+function toggleZaloChat() {
+    var widget = document.getElementById('zalo-chat-widget');
+    var quickChat = document.getElementById('quick-chat-window');
+    if (widget.style.display === 'none') {
+        widget.style.display = 'block';
+        quickChat.style.display = 'none';
+    } else {
+        widget.style.display = 'none';
+    }
+}
+
+function closeZaloChat() {
+    document.getElementById('zalo-chat-widget').style.display = 'none';
+}
+
+function openQuickChat() {
+    document.getElementById('zalo-chat-widget').style.display = 'none';
+    document.getElementById('quick-chat-window').style.display = 'block';
+}
+
+function closeQuickChat() {
+    document.getElementById('quick-chat-window').style.display = 'none';
+}
+
+function sendQuickMessage() {
+    var input = document.getElementById('quick-chat-input');
+    var message = input.value.trim();
+    
+    if (message) {
+        var messagesDiv = document.getElementById('chat-messages');
+        var messageElement = document.createElement('div');
+        messageElement.style.cssText = 'background: #e9ecef; padding: 8px; border-radius: 4px; margin: 5px 0; align-self: flex-end;';
+        messageElement.textContent = message;
+        
+        messagesDiv.appendChild(messageElement);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        input.value = '';
+        
+        // Thêm phản hồi tự động từ admin (có thể thay thế bằng logic backend thực tế)
+        setTimeout(() => {
+            var adminResponse = document.createElement('div');
+            adminResponse.style.cssText = 'background: #28a745; color: white; padding: 8px; border-radius: 4px; margin: 5px 0; align-self: flex-start;';
+            adminResponse.textContent = 'Cảm ơn bạn đã liên hệ. Chúng tôi sẽ phản hồi sớm nhất có thể!';
+            messagesDiv.appendChild(adminResponse);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }, 1000);
+    }
+}
+</script>
+
+<script>
+// Function để hiển thị toast notification
+function showToast(message, type = 'error') {
+    const toastContainer = document.getElementById('toastContainer');
+    
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    
+    const toastHeader = document.createElement('div');
+    toastHeader.className = 'toast-header';
+    
+    const icon = type === 'error' ? '❌' : '✅';
+    const title = type === 'error' ? 'Lỗi' : 'Thành công';
+    
+    toastHeader.innerHTML = `
+        <span style="margin-right: 10px;">${icon}</span>
+        <strong>${title}</strong>
+        <button type="button" class="btn-close" onclick="closeToast(this)" style="background: none; border: none; font-size: 18px; margin-left: auto; cursor: pointer;">×</button>
+    `;
+    
+    const toastBody = document.createElement('div');
+    toastBody.className = 'toast-body';
+    toastBody.textContent = message;
+    
+    toast.appendChild(toastHeader);
+    toast.appendChild(toastBody);
+    toastContainer.appendChild(toast);
+    
+    // Hiển thị toast
+    setTimeout(() => {
+        toast.classList.add('show');
+    }, 100);
+    
+    // Tự động ẩn sau 5 giây
+    setTimeout(() => {
+        closeToast(toast.querySelector('.btn-close'));
+    }, 5000);
+}
+
+function closeToast(button) {
+    const toast = button.closest('.toast');
+    toast.style.animation = 'fadeOutRight 0.5s';
+    setTimeout(() => {
+        toast.remove();
+    }, 500);
+}
+
+// Kiểm tra khi click vào Dashboard link
+document.addEventListener('DOMContentLoaded', function() {
+    const dashboardLink = document.querySelector('a[href*="staff_dashboard"]');
+    if (dashboardLink) {
+        dashboardLink.addEventListener('click', function(e) {
+            // Kiểm tra nếu user chưa có quyền truy cập
+            {% if not user.is_authenticated or not user.is_staff %}
+                e.preventDefault();
+                showToast('Tài khoản chưa được cấu hình đầy đủ hoặc không có quyền truy cập Dashboard!', 'error');
+            {% elif user.is_authenticated and not user.userprofile %}
+                e.preventDefault();
+                showToast('Tài khoản chưa có profile. Vui lòng liên hệ admin để được cấu hình!', 'error');
+            {% endif %}
+        });
+    }
+    
+    // Hiển thị thông báo từ Django messages framework
+    {% if messages %}
+        {% for message in messages %}
+            showToast('{{ message }}', '{% if message.tags == "error" %}error{% else %}success{% endif %}');
+        {% endfor %}
+    {% endif %}
+});
+
+// CSS animation cho fadeOutRight
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes fadeOutRight {
+        from { opacity: 1; transform: translateX(0); }
+        to { opacity: 0; transform: translateX(100%); }
+    }
+    @keyframes fadeInRight {
+        from { opacity: 0; transform: translateX(100%); }
+        to { opacity: 1; transform: translateX(0); }
+    }
+`;
+document.head.appendChild(style);
+</script>
+</body>
+</html>
+<!-- Zalo Logo và Menu Chat -->
+<div id="zalo-chat-widget" style="display: none; position: fixed; bottom: 10%; right: 120px; width: 300px; background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 1000;">
+    <div style="padding: 15px; background: #0068ff; color: white; border-radius: 10px 10px 0 0; display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-weight: bold;">Chat với chúng tôi</span>
+        <span onclick="closeZaloChat()" style="cursor: pointer;">✕</span>
+    </div>
+    <div style="padding: 20px;">
+        <div style="text-align: center; margin-bottom: 20px;">
+            <img src="/static/image/Icon_of_Zalo.png" alt="Zalo Logo" style="width: 50px; height: 50px; margin-bottom: 10px;">
+            <p style="margin: 0;">Chào bạn!</p>
+            <p style="margin: 5px 0;">Chọn phương thức chat:</p>
+        </div>
+        
+        <!-- Hai nút chat -->
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+            <a href="https://zalo.me/0369617913" target="_blank" style="display: block; background: #0068ff; color: white; text-decoration: none; padding: 12px; border-radius: 5px; text-align: center;">
+                <i class="fab fa-facebook-messenger" style="margin-right: 8px;"></i>
+                Chat qua Zalo
+            </a>
+            
+            <button onclick="openQuickChat()" style="background: #28a745; color: white; border: none; padding: 12px; border-radius: 5px; cursor: pointer;">
+                <i class="fas fa-comments" style="margin-right: 8px;"></i>
+                Chat với Admin
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Cửa sổ Quick Chat -->
+<div id="quick-chat-window" style="display: none; position: fixed; bottom: 10%; right: 120px; width: 300px; background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 1000;">
+    <div style="padding: 15px; background: #28a745; color: white; border-radius: 10px 10px 0 0; display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-weight: bold;">Chat với Admin</span>
+        <span onclick="closeQuickChat()" style="cursor: pointer;">✕</span>
+    </div>
+    <div style="padding: 20px; height: 300px; display: flex; flex-direction: column;">
+        <div id="chat-messages" style="flex-grow: 1; overflow-y: auto; margin-bottom: 10px;">
+            <!-- Tin nhắn sẽ được thêm vào đây -->
+            <div style="text-align: center; color: #666; margin: 10px 0;">Bắt đầu cuộc trò chuyện</div>
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <input type="text" id="quick-chat-input" placeholder="Nhập tin nhắn..." style="flex-grow: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+            <button onclick="sendQuickMessage()" style="background: #28a745; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer;">
+                Gửi
+            </button>
+        </div>
+    </div>
+</div>
+
+<div id="zalo-logo" onclick="toggleZaloChat()" style="cursor: pointer;">
+    <img src="/static/image/Icon_of_Zalo.png" alt="Zalo Logo" style="width: 50px; height: 50px; position: fixed; bottom: 10%; right: 50px;">
+</div>
+
+<script>
+function toggleZaloChat() {
+    var widget = document.getElementById('zalo-chat-widget');
+    var quickChat = document.getElementById('quick-chat-window');
+    if (widget.style.display === 'none') {
+        widget.style.display = 'block';
+        quickChat.style.display = 'none';
+    } else {
+        widget.style.display = 'none';
+    }
+}
+
+function closeZaloChat() {
+    document.getElementById('zalo-chat-widget').style.display = 'none';
+}
+
+function openQuickChat() {
+    document.getElementById('zalo-chat-widget').style.display = 'none';
+    document.getElementById('quick-chat-window').style.display = 'block';
+}
+
+function closeQuickChat() {
+    document.getElementById('quick-chat-window').style.display = 'none';
+}
+
+function sendQuickMessage() {
+    var input = document.getElementById('quick-chat-input');
+    var message = input.value.trim();
+    
+    if (message) {
+        var messagesDiv = document.getElementById('chat-messages');
+        var messageElement = document.createElement('div');
+        messageElement.style.cssText = 'background: #e9ecef; padding: 8px; border-radius: 4px; margin: 5px 0; align-self: flex-end;';
+        messageElement.textContent = message;
+        
+        messagesDiv.appendChild(messageElement);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        input.value = '';
+        
+        // Thêm phản hồi tự động từ admin (có thể thay thế bằng logic backend thực tế)
+        setTimeout(() => {
+            var adminResponse = document.createElement('div');
+            adminResponse.style.cssText = 'background: #28a745; color: white; padding: 8px; border-radius: 4px; margin: 5px 0; align-self: flex-start;';
+            adminResponse.textContent = 'Cảm ơn bạn đã liên hệ. Chúng tôi sẽ phản hồi sớm nhất có thể!';
+            messagesDiv.appendChild(adminResponse);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }, 1000);
+    }
+}
+</script>
+
+<script>
+// Function để hiển thị toast notification
+function showToast(message, type = 'error') {
+    const toastContainer = document.getElementById('toastContainer');
+    
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    
+    const toastHeader = document.createElement('div');
+    toastHeader.className = 'toast-header';
+    
+    const icon = type === 'error' ? '❌' : '✅';
+    const title = type === 'error' ? 'Lỗi' : 'Thành công';
+    
+    toastHeader.innerHTML = `
+        <span style="margin-right: 10px;">${icon}</span>
+        <strong>${title}</strong>
+        <button type="button" class="btn-close" onclick="closeToast(this)" style="background: none; border: none; font-size: 18px; margin-left: auto; cursor: pointer;">×</button>
+    `;
+    
+    const toastBody = document.createElement('div');
+    toastBody.className = 'toast-body';
+    toastBody.textContent = message;
+    
+    toast.appendChild(toastHeader);
+    toast.appendChild(toastBody);
+    toastContainer.appendChild(toast);
+    
+    // Hiển thị toast
+    setTimeout(() => {
+        toast.classList.add('show');
+    }, 100);
+    
+    // Tự động ẩn sau 5 giây
+    setTimeout(() => {
+        closeToast(toast.querySelector('.btn-close'));
+    }, 5000);
+}
+
+function closeToast(button) {
+    const toast = button.closest('.toast');
+    toast.style.animation = 'fadeOutRight 0.5s';
+    setTimeout(() => {
+        toast.remove();
+    }, 500);
+}
+
+// Kiểm tra khi click vào Dashboard link
+document.addEventListener('DOMContentLoaded', function() {
+    const dashboardLink = document.querySelector('a[href*="staff_dashboard"]');
+    if (dashboardLink) {
+        dashboardLink.addEventListener('click', function(e) {
+            // Kiểm tra nếu user chưa có quyền truy cập
+            {% if not user.is_authenticated or not user.is_staff %}
+                e.preventDefault();
+                showToast('Tài khoản chưa được cấu hình đầy đủ hoặc không có quyền truy cập Dashboard!', 'error');
+            {% elif user.is_authenticated and not user.userprofile %}
+                e.preventDefault();
+                showToast('Tài khoản chưa có profile. Vui lòng liên hệ admin để được cấu hình!', 'error');
+            {% endif %}
+        });
+    }
+    
+    // Hiển thị thông báo từ Django messages framework
+    {% if messages %}
+        {% for message in messages %}
+            showToast('{{ message }}', '{% if message.tags == "error" %}error{% else %}success{% endif %}');
+        {% endfor %}
+    {% endif %}
+});
+
+// CSS animation cho fadeOutRight
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes fadeOutRight {
+        from { opacity: 1; transform: translateX(0); }
+        to { opacity: 0; transform: translateX(100%); }
+    }
+    @keyframes fadeInRight {
+        from { opacity: 0; transform: translateX(100%); }
+        to { opacity: 1; transform: translateX(0); }
+    }
+`;
+document.head.appendChild(style);
+</script>
+</body>
+</html>
+<!-- Zalo Logo và Menu Chat -->
+<div id="zalo-chat-widget" style="display: none; position: fixed; bottom: 10%; right: 120px; width: 300px; background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 1000;">
+    <div style="padding: 15px; background: #0068ff; color: white; border-radius: 10px 10px 0 0; display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-weight: bold;">Chat với chúng tôi</span>
+        <span onclick="closeZaloChat()" style="cursor: pointer;">✕</span>
+    </div>
+    <div style="padding: 20px;">
+        <div style="text-align: center; margin-bottom: 20px;">
+            <img src="/static/image/Icon_of_Zalo.png" alt="Zalo Logo" style="width: 50px; height: 50px; margin-bottom: 10px;">
+            <p style="margin: 0;">Chào bạn!</p>
+            <p style="margin: 5px 0;">Chọn phương thức chat:</p>
+        </div>
+        
+        <!-- Hai nút chat -->
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+            <a href="https://zalo.me/0369617913" target="_blank" style="display: block; background: #0068ff; color: white; text-decoration: none; padding: 12px; border-radius: 5px; text-align: center;">
+                <i class="fab fa-facebook-messenger" style="margin-right: 8px;"></i>
+                Chat qua Zalo
+            </a>
+            
+            <button onclick="openQuickChat()" style="background: #28a745; color: white; border: none; padding: 12px; border-radius: 5px; cursor: pointer;">
+                <i class="fas fa-comments" style="margin-right: 8px;"></i>
+                Chat với Admin
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Cửa sổ Quick Chat -->
+<div id="quick-chat-window" style="display: none; position: fixed; bottom: 10%; right: 120px; width: 300px; background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 1000;">
+    <div style="padding: 15px; background: #28a745; color: white; border-radius: 10px 10px 0 0; display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-weight: bold;">Chat với Admin</span>
+        <span onclick="closeQuickChat()" style="cursor: pointer;">✕</span>
+    </div>
+    <div style="padding: 20px; height: 300px; display: flex; flex-direction: column;">
+        <div id="chat-messages" style="flex-grow: 1; overflow-y: auto; margin-bottom: 10px;">
+            <!-- Tin nhắn sẽ được thêm vào đây -->
+            <div style="text-align: center; color: #666; margin: 10px 0;">Bắt đầu cuộc trò chuyện</div>
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <input type="text" id="quick-chat-input" placeholder="Nhập tin nhắn..." style="flex-grow: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+            <button onclick="sendQuickMessage()" style="background: #28a745; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer;">
+                Gửi
+            </button>
+        </div>
+    </div>
+</div>
+
+<div id="zalo-logo" onclick="toggleZaloChat()" style="cursor: pointer;">
+    <img src="/static/image/Icon_of_Zalo.png" alt="Zalo Logo" style="width: 50px; height: 50px; position: fixed; bottom: 10%; right: 50px;">
+</div>
+
+<script>
+function toggleZaloChat() {
+    var widget = document.getElementById('zalo-chat-widget');
+    var quickChat = document.getElementById('quick-chat-window');
+    if (widget.style.display === 'none') {
+        widget.style.display = 'block';
+        quickChat.style.display = 'none';
+    } else {
+        widget.style.display = 'none';
+    }
+}
+
+function closeZaloChat() {
+    document.getElementById('zalo-chat-widget').style.display = 'none';
+}
+
+function openQuickChat() {
+    document.getElementById('zalo-chat-widget').style.display = 'none';
+    document.getElementById('quick-chat-window').style.display = 'block';
+}
+
+function closeQuickChat() {
+    document.getElementById('quick-chat-window').style.display = 'none';
+}
+
+function sendQuickMessage() {
+    var input = document.getElementById('quick-chat-input');
+    var message = input.value.trim();
+    
+    if (message) {
+        var messagesDiv = document.getElementById('chat-messages');
+        var messageElement = document.createElement('div');
+        messageElement.style.cssText = 'background: #e9ecef; padding: 8px; border-radius: 4px; margin: 5px 0; align-self: flex-end;';
+        messageElement.textContent = message;
+        
+        messagesDiv.appendChild(messageElement);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        input.value = '';
+        
+        // Thêm phản hồi tự động từ admin (có thể thay thế bằng logic backend thực tế)
+        setTimeout(() => {
+            var adminResponse = document.createElement('div');
+            adminResponse.style.cssText = 'background: #28a745; color: white; padding: 8px; border-radius: 4px; margin: 5px 0; align-self: flex-start;';
+            adminResponse.textContent = 'Cảm ơn bạn đã liên hệ. Chúng tôi sẽ phản hồi sớm nhất có thể!';
+            messagesDiv.appendChild(adminResponse);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }, 1000);
+    }
+}
+</script>
+
+<script>
+// Function để hiển thị toast notification
+function showToast(message, type = 'error') {
+    const toastContainer = document.getElementById('toastContainer');
+    
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    
+    const toastHeader = document.createElement('div');
+    toastHeader.className = 'toast-header';
+    
+    const icon = type === 'error' ? '❌' : '✅';
+    const title = type === 'error' ? 'Lỗi' : 'Thành công';
+    
+    toastHeader.innerHTML = `
+        <span style="margin-right: 10px;">${icon}</span>
+        <strong>${title}</strong>
+        <button type="button" class="btn-close" onclick="closeToast(this)" style="background: none; border: none; font-size: 18px; margin-left: auto; cursor: pointer;">×</button>
+    `;
+    
+    const toastBody = document.createElement('div');
+    toastBody.className = 'toast-body';
+    toastBody.textContent = message;
+    
+    toast.appendChild(toastHeader);
+    toast.appendChild(toastBody);
+    toastContainer.appendChild(toast);
+    
+    // Hiển thị toast
+    setTimeout(() => {
+        toast.classList.add('show');
+    }, 100);
+    
+    // Tự động ẩn sau 5 giây
+    setTimeout(() => {
+        closeToast(toast.querySelector('.btn-close'));
+    }, 5000);
+}
+
+function closeToast(button) {
+    const toast = button.closest('.toast');
+    toast.style.animation = 'fadeOutRight 0.5s';
+    setTimeout(() => {
+        toast.remove();
+    }, 500);
+}
+
+// Kiểm tra khi click vào Dashboard link
+document.addEventListener('DOMContentLoaded', function() {
+    const dashboardLink = document.querySelector('a[href*="staff_dashboard"]');
+    if (dashboardLink) {
+        dashboardLink.addEventListener('click', function(e) {
+            // Kiểm tra nếu user chưa có quyền truy cập
+            {% if not user.is_authenticated or not user.is_staff %}
+                e.preventDefault();
+                showToast('Tài khoản chưa được cấu hình đầy đủ hoặc không có quyền truy cập Dashboard!', 'error');
+            {% elif user.is_authenticated and not user.userprofile %}
+                e.preventDefault();
+                showToast('Tài khoản chưa có profile. Vui lòng liên hệ admin để được cấu hình!', 'error');
+            {% endif %}
+        });
+    }
+    
+    // Hiển thị thông báo từ Django messages framework
+    {% if messages %}
+        {% for message in messages %}
+            showToast('{{ message }}', '{% if message.tags == "error" %}error{% else %}success{% endif %}');
+        {% endfor %}
+    {% endif %}
+});
+
+// CSS animation cho fadeOutRight
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes fadeOutRight {
+        from { opacity: 1; transform: translateX(0); }
+        to { opacity: 0; transform: translateX(100%); }
+    }
+    @keyframes fadeInRight {
+        from { opacity: 0; transform: translateX(100%); }
+        to { opacity: 1; transform: translateX(0); }
+    }
+`;
+document.head.appendChild(style);
+</script>
+</body>
+</html>
+<!-- Zalo Logo và Menu Chat -->
+<div id="zalo-chat-widget" style="display: none; position: fixed; bottom: 10%; right: 120px; width: 300px; background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 1000;">
+    <div style="padding: 15px; background: #0068ff; color: white; border-radius: 10px 10px 0 0; display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-weight: bold;">Chat với chúng tôi</span>
+        <span onclick="closeZaloChat()" style="cursor: pointer;">✕</span>
+    </div>
+    <div style="padding: 20px;">
+        <div style="text-align: center; margin-bottom: 20px;">
+            <img src="/static/image/Icon_of_Zalo.png" alt="Zalo Logo" style="width: 50px; height: 50px; margin-bottom: 10px;">
+            <p style="margin: 0;">Chào bạn!</p>
+            <p style="margin: 5px 0;">Chọn phương thức chat:</p>
+        </div>
+        
+        <!-- Hai nút chat -->
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+            <a href="https://zalo.me/0369617913" target="_blank" style="display: block; background: #0068ff; color: white; text-decoration: none; padding: 12px; border-radius: 5px; text-align: center;">
+                <i class="fab fa-facebook-messenger" style="margin-right: 8px;"></i>
+                Chat qua Zalo
+            </a>
+            
+            <button onclick="openQuickChat()" style="background: #28a745; color: white; border: none; padding: 12px; border-radius: 5px; cursor: pointer;">
+                <i class="fas fa-comments" style="margin-right: 8px;"></i>
+                Chat với Admin
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Cửa sổ Quick Chat -->
+<div id="quick-chat-window" style="display: none; position: fixed; bottom: 10%; right: 120px; width: 300px; background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 1000;">
+    <div style="padding: 15px; background: #28a745; color: white; border-radius: 10px 10px 0 0; display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-weight: bold;">Chat với Admin</span>
+        <span onclick="closeQuickChat()" style="cursor: pointer;">✕</span>
+    </div>
+    <div style="padding: 20px; height: 300px; display: flex; flex-direction: column;">
+        <div id="chat-messages" style="flex-grow: 1; overflow-y: auto; margin-bottom: 10px;">
+            <!-- Tin nhắn sẽ được thêm vào đây -->
+            <div style="text-align: center; color: #666; margin: 10px 0;">Bắt đầu cuộc trò chuyện</div>
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <input type="text" id="quick-chat-input" placeholder="Nhập tin nhắn..." style="flex-grow: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+            <button onclick="sendQuickMessage()" style="background: #28a745; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer;">
+                Gửi
+            </button>
+        </div>
+    </div>
+</div>
+
+<div id="zalo-logo" onclick="toggleZaloChat()" style="cursor: pointer;">
+    <img src="/static/image/Icon_of_Zalo.png" alt="Zalo Logo" style="width: 50px; height: 50px; position: fixed; bottom: 10%; right: 50px;">
+</div>
+
+<script>
+function toggleZaloChat() {
+    var widget = document.getElementById('zalo-chat-widget');
+    var quickChat = document.getElementById('quick-chat-window');
+    if (widget.style.display === 'none') {
+        widget.style.display = 'block';
+        quickChat.style.display = 'none';
+    } else {
+        widget.style.display = 'none';
+    }
+}
+
+function closeZaloChat() {
+    document.getElementById('zalo-chat-widget').style.display = 'none';
+}
+
+function openQuickChat() {
+    document.getElementById('zalo-chat-widget').style.display = 'none';
+    document.getElementById('quick-chat-window').style.display = 'block';
+}
+
+function closeQuickChat() {
+    document.getElementById('quick-chat-window').style.display = 'none';
+}
+
+function sendQuickMessage() {
+    var input = document.getElementById('quick-chat-input');
+    var message = input.value.trim();
+    
+    if (message) {
+        var messagesDiv = document.getElementById('chat-messages');
+        var messageElement = document.createElement('div');
+        messageElement.style.cssText = 'background: #e9ecef; padding: 8px; border-radius: 4px; margin: 5px 0; align-self: flex-end;';
+        messageElement.textContent = message;
+        
+        messagesDiv.appendChild(messageElement);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        input.value = '';
+        
+        // Thêm phản hồi tự động từ admin (có thể thay thế bằng logic backend thực tế)
+        setTimeout(() => {
+            var adminResponse = document.createElement('div');
+            adminResponse.style.cssText = 'background: #28a745; color: white; padding: 8px; border-radius: 4px; margin: 5px 0; align-self: flex-start;';
+            adminResponse.textContent = 'Cảm ơn bạn đã liên hệ. Chúng tôi sẽ phản hồi sớm nhất có thể!';
+            messagesDiv.appendChild(adminResponse);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }, 1000);
+    }
+}
+</script>
+
+<script>
+// Function để hiển thị toast notification
+function showToast(message, type = 'error') {
+    const toastContainer = document.getElementById('toastContainer');
+    
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    
+    const toastHeader = document.createElement('div');
+    toastHeader.className = 'toast-header';
+    
+    const icon = type === 'error' ? '❌' : '✅';
+    const title = type === 'error' ? 'Lỗi' : 'Thành công';
+    
+    toastHeader.innerHTML = `
+        <span style="margin-right: 10px;">${icon}</span>
+        <strong>${title}</strong>
+        <button type="button" class="btn-close" onclick="closeToast(this)" style="background: none; border: none; font-size: 18px; margin-left: auto; cursor: pointer;">×</button>
+    `;
+    
+    const toastBody = document.createElement('div');
+    toastBody.className = 'toast-body';
+    toastBody.textContent = message;
+    
+    toast.appendChild(toastHeader);
+    toast.appendChild(toastBody);
+    toastContainer.appendChild(toast);
+    
+    // Hiển thị toast
+    setTimeout(() => {
+        toast.classList.add('show');
+    }, 100);
+    
+    // Tự động ẩn sau 5 giây
+    setTimeout(() => {
+        closeToast(toast.querySelector('.btn-close'));
+    }, 5000);
+}
+
+function closeToast(button) {
+    const toast = button.closest('.toast');
+    toast.style.animation = 'fadeOutRight 0.5s';
+    setTimeout(() => {
+        toast.remove();
+    }, 500);
+}
+
+// Kiểm tra khi click vào Dashboard link
+document.addEventListener('DOMContentLoaded', function() {
+    const dashboardLink = document.querySelector('a[href*="staff_dashboard"]');
+    if (dashboardLink) {
+        dashboardLink.addEventListener('click', function(e) {
+            // Kiểm tra nếu user chưa có quyền truy cập
+            {% if not user.is_authenticated or not user.is_staff %}
+                e.preventDefault();
+                showToast('Tài khoản chưa được cấu hình đầy đủ hoặc không có quyền truy cập Dashboard!', 'error');
+            {% elif user.is_authenticated and not user.userprofile %}
+                e.preventDefault();
+                showToast('Tài khoản chưa có profile. Vui lòng liên hệ admin để được cấu hình!', 'error');
+            {% endif %}
+        });
+    }
+    
+    // Hiển thị thông báo từ Django messages framework
+    {% if messages %}
+        {% for message in messages %}
+            showToast('{{ message }}', '{% if message.tags == "error" %}error{% else %}success{% endif %}');
+        {% endfor %}
+    {% endif %}
+});
+
+// CSS animation cho fadeOutRight
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes fadeOutRight {
+        from { opacity: 1; transform: translateX(0); }
+        to { opacity: 0; transform: translateX(100%); }
+    }
+    @keyframes fadeInRight {
+        from { opacity: 0; transform: translateX(100%); }
+        to { opacity: 1; transform: translateX(0); }
+    }
+`;
+document.head.appendChild(style);
+</script>
+</body>
+</html>
+<!-- Zalo Logo và Menu Chat -->
+<div id="zalo-chat-widget" style="display: none; position: fixed; bottom: 10%; right: 120px; width: 300px; background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 1000;">
+    <div style="padding: 15px; background: #0068ff; color: white; border-radius: 10px 10px 0 0; display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-weight: bold;">Chat với chúng tôi</span>
+        <span onclick="closeZaloChat()" style="cursor: pointer;">✕</span>
+    </div>
+    <div style="padding: 20px;">
+        <div style="text-align: center; margin-bottom: 20px;">
+            <img src="/static/image/Icon_of_Zalo.png" alt="Zalo Logo" style="width: 50px; height: 50px; margin-bottom: 10px;">
+            <p style="margin: 0;">Chào bạn!</p>
+            <p style="margin: 5px 0;">Chọn phương thức chat:</p>
+        </div>
+        
+        <!-- Hai nút chat -->
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+            <a href="https://zalo.me/0369617913" target="_blank" style="display: block; background: #0068ff; color: white; text-decoration: none; padding: 12px; border-radius: 5px; text-align: center;">
+                <i class="fab fa-facebook-messenger" style="margin-right: 8px;"></i>
+                Chat qua Zalo
+            </a>
+            
+            <button onclick="openQuickChat()" style="background: #28a745; color: white; border: none; padding: 12px; border-radius: 5px; cursor: pointer;">
+                <i class="fas fa-comments" style="margin-right: 8px;"></i>
+                Chat với Admin
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Cửa sổ Quick Chat -->
+<div id="quick-chat-window" style="display: none; position: fixed; bottom: 10%; right: 120px; width: 300px; background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 1000;">
+    <div style="padding: 15px; background: #28a745; color: white; border-radius: 10px 10px 0 0; display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-weight: bold;">Chat với Admin</span>
+        <span onclick="closeQuickChat()" style="cursor: pointer;">✕</span>
+    </div>
+    <div style="padding: 20px; height: 300px; display: flex; flex-direction: column;">
+        <div id="chat-messages" style="flex-grow: 1; overflow-y: auto; margin-bottom: 10px;">
+            <!-- Tin nhắn sẽ được thêm vào đây -->
+            <div style="text-align: center; color: #666; margin: 10px 0;">Bắt đầu cuộc trò chuyện</div>
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <input type="text" id="quick-chat-input" placeholder="Nhập tin nhắn..." style="flex-grow: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+            <button onclick="sendQuickMessage()" style="background: #28a745; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer;">
+                Gửi
+            </button>
+        </div>
+    </div>
+</div>
+
+<div id="zalo-logo" onclick="toggleZaloChat()" style="cursor: pointer;">
+    <img src="/static/image/Icon_of_Zalo.png" alt="Zalo Logo" style="width: 50px; height: 50px; position: fixed; bottom: 10%; right: 50px;">
+</div>
+
+<script>
+function toggleZaloChat() {
+    var widget = document.getElementById('zalo-chat-widget');
+    var quickChat = document.getElementById('quick-chat-window');
+    if (widget.style.display === 'none') {
+        widget.style.display = 'block';
+        quickChat.style.display = 'none';
+    } else {
+        widget.style.display = 'none';
+    }
+}
+
+function closeZaloChat() {
+    document.getElementById('zalo-chat-widget').style.display = 'none';
+}
+
+function openQuickChat() {
+    document.getElementById('zalo-chat-

@@ -1,0 +1,324 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Đăng nhập nhân viên - Hitech NDT{% endblock %}
+
+{% block extra_head %}
+<style>
+    body {
+        background: linear-gradient(135deg, #667eea 0%,rgb(24, 22, 149) 100%);
+        min-height: 100vh;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    
+    .login-wrapper {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+    }
+    
+    .login-container {
+        max-width: 420px;
+        width: 100%;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        padding: 40px;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .login-container::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #667eea, #764ba2);
+    }
+    
+    .login-header {
+        text-align: center;
+        margin-bottom: 35px;
+    }
+    
+    .login-header .logo {
+        width: 60px;
+        height: 60px;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px;
+        color: white;
+        font-size: 24px;
+    }
+    
+    .login-header h2 {
+        color: #2c3e50;
+        font-weight: 600;
+        font-size: 24px;
+        margin-bottom: 8px;
+        letter-spacing: -0.5px;
+    }
+    
+    .login-header p {
+        color: #7f8c8d;
+        font-size: 14px;
+        margin: 0;
+        font-weight: 400;
+    }
+    
+    .form-group {
+        margin-bottom: 25px;
+        position: relative;
+    }
+    
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        color: #2c3e50;
+        font-weight: 500;
+        font-size: 14px;
+        letter-spacing: 0.3px;
+    }
+    
+    .form-group label i {
+        margin-right: 8px;
+        color: #667eea;
+        width: 16px;
+        text-align: center;
+    }
+    
+    .form-control {
+        width: 100%;
+        height: 50px;
+        padding: 0 16px;
+        border: 2px solid #e9ecef;
+        border-radius: 12px;
+        font-size: 15px;
+        transition: all 0.3s ease;
+        background: #f8f9fa;
+        color: #2c3e50;
+    }
+    
+    .form-control:focus {
+        outline: none;
+        border-color: #667eea;
+        background: white;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        transform: translateY(-1px);
+    }
+    
+    .form-control::placeholder {
+        color: #adb5bd;
+        font-size: 14px;
+    }
+    
+    .btn-login {
+        width: 100%;
+        height: 50px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        border-radius: 12px;
+        color: white;
+        font-weight: 600;
+        font-size: 15px;
+        letter-spacing: 0.5px;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .btn-login::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+        transition: left 0.5s;
+    }
+    
+    .btn-login:hover::before {
+        left: 100%;
+    }
+    
+    .btn-login:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+    }
+    
+    .btn-login:active {
+        transform: translateY(0);
+    }
+    
+    .btn-login i {
+        margin-right: 8px;
+    }
+    
+    .alert {
+        border-radius: 12px;
+        margin-bottom: 25px;
+        border: none;
+        padding: 15px 20px;
+        font-size: 14px;
+        font-weight: 500;
+    }
+    
+    .alert-danger {
+        background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+        color: white;
+    }
+    
+    .alert-success {
+        background: linear-gradient(135deg, #51cf66, #40c057);
+        color: white;
+    }
+    
+    .footer-text {
+        text-align: center;
+        margin-top: 30px;
+        padding-top: 25px;
+        border-top: 1px solid #e9ecef;
+    }
+    
+    .footer-text small {
+        color: #7f8c8d;
+        font-size: 13px;
+        font-weight: 400;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+    }
+    
+    .footer-text i {
+        color: #667eea;
+    }
+    
+    /* Responsive */
+    @media (max-width: 480px) {
+        .login-container {
+            margin: 20px;
+            padding: 30px 25px;
+        }
+        
+        .login-header h2 {
+            font-size: 22px;
+        }
+    }
+    
+    /* Animation */
+    .login-container {
+        animation: slideUp 0.6s ease-out;
+    }
+    
+    @keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="login-wrapper">
+    <div class="login-container">
+        <div class="login-header">
+            <div class="logo">
+                <i class="fas fa-user-shield"></i>
+            </div>
+            <h2>Đăng nhập nhân viên</h2>
+            <p>Truy cập hệ thống nội bộ Hitech NDT</p>
+        </div>
+        
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+        
+        <form method="post" id="loginForm">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="username">
+                    <i class="fas fa-user"></i>
+                    Tên đăng nhập
+                </label>
+                <input type="text" 
+                       class="form-control" 
+                       id="username" 
+                       name="username" 
+                       placeholder="Nhập tên đăng nhập của bạn"
+                       required 
+                       autocomplete="username">
+            </div>
+            
+            <div class="form-group">
+                <label for="password">
+                    <i class="fas fa-lock"></i>
+                    Mật khẩu
+                </label>
+                <input type="password" 
+                       class="form-control" 
+                       id="password" 
+                       name="password" 
+                       placeholder="Nhập mật khẩu của bạn"
+                       required 
+                       autocomplete="current-password">
+            </div>
+            
+            <button type="submit" class="btn btn-login">
+                <i class="fas fa-sign-in-alt"></i>
+                Đăng nhập
+            </button>
+        </form>
+        
+        <div class="footer-text">
+            <small>
+                <i class="fas fa-shield-alt"></i>
+                Chỉ dành cho nhân viên Hitech NDT
+            </small>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('loginForm').addEventListener('submit', function(e) {
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang đăng nhập...';
+    submitBtn.disabled = true;
+    
+    // Reset button sau 10 giây nếu form không submit thành công
+    setTimeout(() => {
+        if (submitBtn.disabled) {
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        }
+    }, 10000);
+});
+
+// Auto focus vào username field
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('username').focus();
+});
+</script>
+{% endblock %}

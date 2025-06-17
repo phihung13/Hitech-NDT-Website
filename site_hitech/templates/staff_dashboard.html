@@ -1,0 +1,1097 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Dashboard {{ profile.get_role_display }} - Hitech NDT{% endblock %}
+
+{% block extra_head %}
+<style>
+    body {
+        background-color: #f8f9fa;
+    }
+    
+    .dashboard-header {
+        background: linear-gradient(135deg, 
+            {% if profile.role == 'admin' %}#dc3545, #c82333{% elif profile.role == 'manager' %}#fd7e14, #e55a00{% else %}#007bff, #0056b3{% endif %});
+        color: white;
+        padding: 30px 0;
+        margin: -20px -15px 30px -15px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    
+    .role-badge {
+        background: rgba(255,255,255,0.2);
+        padding: 8px 16px;
+        border-radius: 25px;
+        font-size: 0.9rem;
+        font-weight: 500;
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+    
+    .stat-card {
+        background: white;
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+        transition: all 0.3s ease;
+        border: none;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    }
+    
+    .stat-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        color: white;
+    }
+    
+    .stat-content {
+        flex: 1;
+    }
+    
+    .stats-number {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #2c3e50;
+        margin: 10px 0;
+    }
+    
+    .dashboard-section {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+        margin-bottom: 25px;
+    }
+    
+    .section-header {
+        display: flex;
+        justify-content: between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #f1f3f4;
+    }
+    
+    .section-title {
+        font-size: 1.4rem;
+        font-weight: 600;
+        color: #2c3e50;
+        margin: 0;
+    }
+    
+    .filter-controls {
+        display: flex;
+        gap: 15px;
+        flex-wrap: wrap;
+        margin-bottom: 20px;
+    }
+    
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+        min-width: 200px;
+    }
+    
+    .filter-group label {
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: #6c757d;
+        margin-bottom: 5px;
+    }
+    
+    .form-select, .form-control {
+        border-radius: 8px;
+        border: 1px solid #e0e6ed;
+        padding: 10px 15px;
+        font-size: 0.95rem;
+        transition: all 0.3s ease;
+    }
+    
+    .form-select:focus, .form-control:focus {
+        border-color: {% if profile.role == 'admin' %}#dc3545{% elif profile.role == 'manager' %}#fd7e14{% else %}#007bff{% endif %};
+        box-shadow: 0 0 0 3px rgba({% if profile.role == 'admin' %}220, 53, 69{% elif profile.role == 'manager' %}253, 126, 20{% else %}0, 123, 255{% endif %}, 0.1);
+    }
+    
+    /* Cải thiện hiển thị danh sách dự án */
+    #projectsList {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 20px;
+        margin-top: 20px;
+    }
+    
+    .project-card {
+        background: white;
+        border: 1px solid #e9ecef;
+        border-radius: 12px;
+        padding: 20px;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+    
+    .project-card:hover {
+        border-color: {% if profile.role == 'admin' %}#dc3545{% elif profile.role == 'manager' %}#fd7e14{% else %}#007bff{% endif %};
+        box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        transform: translateY(-5px);
+    }
+    
+    .project-status {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+    
+    .status-active { background: #d4edda; color: #155724; }
+    .status-pending { background: #fff3cd; color: #856404; }
+    .status-completed { background: #cce5ff; color: #004085; }
+    .status-cancelled { background: #f8d7da; color: #721c24; }
+    
+    .project-info {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+        margin-top: 15px;
+    }
+    
+    .project-actions {
+        margin-top: auto;
+        padding-top: 15px;
+    }
+    
+    .info-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.9rem;
+    }
+    
+    .info-item i {
+        color: {% if profile.role == 'admin' %}#dc3545{% elif profile.role == 'manager' %}#fd7e14{% else %}#007bff{% endif %};
+        width: 16px;
+    }
+    
+    .method-badge {
+        display: inline-block;
+        background: linear-gradient(135deg, {% if profile.role == 'admin' %}#dc3545, #c82333{% elif profile.role == 'manager' %}#fd7e14, #e55a00{% else %}#007bff, #0056b3{% endif %});
+        color: white;
+        padding: 4px 10px;
+        border-radius: 15px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        margin: 2px;
+    }
+    
+    .data-table {
+        background: white;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+    
+    .table {
+        margin: 0;
+    }
+    
+    .table th {
+        background: #f8f9fa;
+        border: none;
+        font-weight: 600;
+        color: #495057;
+        padding: 15px;
+    }
+    
+    .table td {
+        border: none;
+        padding: 15px;
+        vertical-align: middle;
+    }
+    
+    .table tbody tr {
+        border-bottom: 1px solid #f1f3f4;
+        transition: background-color 0.2s ease;
+    }
+    
+    .table tbody tr:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .btn-action {
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        margin: 0 2px;
+        transition: all 0.2s ease;
+    }
+    
+    .quick-actions {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 15px;
+        margin-top: 20px;
+    }
+    
+    .action-card {
+        background: linear-gradient(135deg, {% if profile.role == 'admin' %}#dc3545, #c82333{% elif profile.role == 'manager' %}#fd7e14, #e55a00{% else %}#007bff, #0056b3{% endif %});
+        color: white;
+        padding: 20px;
+        border-radius: 12px;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+    
+    .action-card:hover {
+        color: white;
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+    }
+    
+    .action-icon {
+        font-size: 2rem;
+        opacity: 0.9;
+    }
+    
+    .chart-container {
+        height: 300px;
+        position: relative;
+    }
+    
+    .progress-ring {
+        width: 120px;
+        height: 120px;
+        margin: 0 auto;
+    }
+    
+    .tab-content {
+        padding: 20px 0;
+    }
+    
+    .nav-tabs .nav-link {
+        border: none;
+        border-radius: 8px 8px 0 0;
+        color: #6c757d;
+        font-weight: 500;
+        padding: 12px 20px;
+    }
+    
+    .nav-tabs .nav-link.active {
+        background: {% if profile.role == 'admin' %}#dc3545{% elif profile.role == 'manager' %}#fd7e14{% else %}#007bff{% endif %};
+        color: white;
+    }
+    
+    @media (max-width: 768px) {
+        .filter-controls {
+            flex-direction: column;
+        }
+        
+        .project-info {
+            grid-template-columns: 1fr;
+        }
+        
+        .quick-actions {
+            grid-template-columns: 1fr;
+        }
+        
+        .stats-grid {
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        }
+        
+        .stat-card {
+            flex-direction: column;
+            text-align: center;
+            gap: 10px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb -->
+<div class="breadcrumb-section">
+    <div class="container">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'home' %}">Trang chủ</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Dashboard</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<!-- Header Dashboard -->
+<div class="dashboard-header">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 style="position: relative; display: inline-block; font-weight: 700; margin-bottom: 15px; padding-bottom: 5px; text-shadow: 1px 1px 3px rgba(0,0,0,0.2);">
+                    <i class="fas fa-tachometer-alt"></i> Trang nội bộ
+                    <span style="position: absolute; width: 50%; height: 3px; background: rgba(255,255,255,0.5); bottom: 0; left: 0; border-radius: 10px;"></span>
+                </h1>
+                <div style="display: flex; align-items: center; background: rgba(255,255,255,0.15); border-radius: 15px; padding: 10px 20px; backdrop-filter: blur(5px); width: fit-content; margin-top: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                    <div style="width: 40px; height: 40px; border-radius: 50%; background: white; display: flex; align-items: center; justify-content: center; margin-right: 15px; color: {% if profile.role == 'admin' %}#dc3545{% elif profile.role == 'manager' %}#fd7e14{% else %}#007bff{% endif %}; font-size: 1.2rem;">
+                        <i class="fas fa-{% if profile.role == 'admin' %}crown{% elif profile.role == 'manager' %}users-cog{% else %}user{% endif %}"></i>
+                    </div>
+                    <span>Chào mừng <strong>{{ user.username }}</strong></span>
+                    <span class="role-badge" style="margin-left: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                        <i class="fas fa-{% if profile.role == 'admin' %}crown{% elif profile.role == 'manager' %}users-cog{% else %}user{% endif %}"></i>
+                        {{ profile.get_role_display }}
+                    </span>
+                </div>
+            </div>
+            <div class="col-md-4 text-end">
+                <div class="d-flex gap-2 justify-content-end">
+                    <button class="btn btn-light" onclick="exportData()">
+                        <i class="fas fa-download"></i> Xuất báo cáo
+                    </button>
+                    <button class="btn btn-outline-light" onclick="refreshDashboard()">
+                        <i class="fas fa-sync-alt"></i> Làm mới
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Thống kê tổng quan -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon bg-primary">
+            <i class="fas fa-project-diagram"></i>
+        </div>
+        <div class="stat-content">
+            <div class="stats-number">{{ total_projects|default:"0" }}</div>
+            <div class="text-muted">Tổng dự án</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon bg-success">
+            <i class="fas fa-play-circle"></i>
+        </div>
+        <div class="stat-content">
+            <div class="stats-number">{{ active_projects|default:"0" }}</div>
+            <div class="text-muted">Đang thực hiện</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon bg-info">
+            <i class="fas fa-check-circle"></i>
+        </div>
+        <div class="stat-content">
+            <div class="stats-number">{{ completed_projects|default:"0" }}</div>
+            <div class="text-muted">Hoàn thành</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon bg-warning">
+            <i class="fas fa-tools"></i>
+        </div>
+        <div class="stat-content">
+            <div class="stats-number">{{ total_equipment|default:"0" }}</div>
+            <div class="text-muted">Thiết bị NDT</div>
+        </div>
+    </div>
+</div>
+
+<!-- Bộ lọc và tìm kiếm -->
+<div class="dashboard-section">
+    <div class="section-header">
+        <h3 class="section-title"><i class="fas fa-filter"></i> Bộ lọc dự án</h3>
+    </div>
+    
+    <div class="filter-controls">
+        <div class="filter-group">
+            <label>Dự án</label>
+            <select class="form-select" id="projectFilter">
+                <option value="">Tất cả dự án</option>
+                <option value="project1">Dự án Petrolimex - Tank Inspection</option>
+                <option value="project2">Dự án PVN - Pipeline NDT</option>
+                <option value="project3">Dự án Formosa - Structural Welding</option>
+                <option value="project4">Dự án Samsung - Equipment Testing</option>
+            </select>
+        </div>
+        
+        <div class="filter-group">
+            <label>Công ty</label>
+            <select class="form-select" id="companyFilter">
+                <option value="">Tất cả công ty</option>
+                <option value="petrolimex">Petrolimex</option>
+                <option value="pvn">PetroVietnam</option>
+                <option value="formosa">Formosa</option>
+                <option value="samsung">Samsung</option>
+            </select>
+        </div>
+        
+        <div class="filter-group">
+            <label>Phương pháp NDT</label>
+            <select class="form-select" id="methodFilter">
+                <option value="">Tất cả phương pháp</option>
+                <option value="MT">MT - Magnetic Testing</option>
+                <option value="UT">UT - Ultrasonic Testing</option>
+                <option value="PT">PT - Penetrant Testing</option>
+                <option value="PAUT">PAUT - Phased Array UT</option>
+                <option value="TOFD">TOFD - Time of Flight Diffraction</option>
+                <option value="RT">RT - Radiographic Testing</option>
+                <option value="VT">VT - Visual Testing</option>
+            </select>
+        </div>
+        
+        <div class="filter-group">
+            <label>Trạng thái</label>
+            <select class="form-select" id="statusFilter">
+                <option value="">Tất cả trạng thái</option>
+                <option value="active">Đang thực hiện</option>
+                <option value="pending">Chờ bắt đầu</option>
+                <option value="completed">Hoàn thành</option>
+                <option value="cancelled">Đã hủy</option>
+            </select>
+        </div>
+        
+        <div class="filter-group">
+            <label>Khoảng thời gian</label>
+            <input type="date" class="form-control" id="dateFrom" placeholder="Từ ngày">
+        </div>
+        
+        <div class="filter-group">
+            <label>&nbsp;</label>
+            <input type="date" class="form-control" id="dateTo" placeholder="Đến ngày">
+        </div>
+    </div>
+    
+    <div class="d-flex gap-2">
+        <button class="btn btn-primary" onclick="applyFilters()">
+            <i class="fas fa-search"></i> Áp dụng bộ lọc
+        </button>
+        <button class="btn btn-outline-secondary" onclick="clearFilters()">
+            <i class="fas fa-times"></i> Xóa bộ lọc
+        </button>
+    </div>
+</div>
+
+<!-- Tabs nội dung chính -->
+<div class="dashboard-section">
+    <ul class="nav nav-tabs" id="dashboardTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="projects-tab" data-bs-toggle="tab" data-bs-target="#projects" type="button" role="tab">
+                <i class="fas fa-project-diagram"></i> Dự án
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="staff-tab" data-bs-toggle="tab" data-bs-target="#staff" type="button" role="tab">
+                <i class="fas fa-users"></i> Nhân viên
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="equipment-tab" data-bs-toggle="tab" data-bs-target="#equipment" type="button" role="tab">
+                <i class="fas fa-tools"></i> Thiết bị
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="analytics-tab" data-bs-toggle="tab" data-bs-target="#analytics" type="button" role="tab">
+                <i class="fas fa-chart-bar"></i> Phân tích
+            </button>
+        </li>
+    </ul>
+    
+    <div class="tab-content" id="dashboardTabContent">
+        <!-- Tab Dự án -->
+        <div class="tab-pane fade show active" id="projects" role="tabpanel">
+            <div id="projectsList">
+                {% for project in projects %}
+                <div class="project-card">
+                    <div class="project-status status-{{ project.status }}">
+                        {{ project.get_status_display }}
+                    </div>
+                    <h5>
+                        <i class="fas fa-industry"></i> {{ project.name }}
+                    </h5>
+                    <p class="text-muted">{{ project.description|truncatewords:15 }}</p>
+                    
+                    <div class="project-info">
+                        <div class="info-item">
+                            <i class="fas fa-building"></i>
+                            <span><strong>Công ty:</strong> {{ project.company.name }}</span>
+                        </div>
+                        <div class="info-item">
+                            <i class="fas fa-users"></i>
+                            <span><strong>Nhân viên:</strong> 
+                                {% for staff in project.staff.all %}
+                                    {{ staff.get_full_name }}{% if not forloop.last %}, {% endif %}
+                                {% empty %}
+                                    Chưa phân công
+                                {% endfor %}
+                            </span>
+                        </div>
+                        <div class="info-item">
+                            <i class="fas fa-calendar"></i>
+                            <span><strong>Thời gian:</strong> {{ project.start_date|date:"d/m/Y" }} - {{ project.end_date|date:"d/m/Y" }}</span>
+                        </div>
+                        <div class="info-item">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <span><strong>Địa điểm:</strong> {{ project.location }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <strong>Phương pháp NDT:</strong>
+                        {% for method in project.methods.all %}
+                            <span class="method-badge">{{ method.code }}</span>
+                        {% empty %}
+                            <span class="text-muted">Chưa xác định</span>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="mt-3">
+                        <strong>Thiết bị sử dụng:</strong> 
+                        {% for equipment in project.equipment.all %}
+                            {{ equipment.name }}{% if not forloop.last %}, {% endif %}
+                        {% empty %}
+                            Chưa xác định
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="mt-3 d-flex gap-2 flex-wrap project-actions">
+                        <a href="{% url 'project_detail' project.id %}" class="btn btn-sm btn-primary">
+                            <i class="fas fa-eye"></i> Xem chi tiết
+                        </a>
+                        {% if project.status == 'active' %}
+                        <button class="btn btn-sm btn-success" onclick="viewScanPlan('{{ project.id }}')">
+                            <i class="fas fa-map"></i> Scan Plan
+                        </button>
+                        <button class="btn btn-sm btn-info" onclick="viewThicknessData('{{ project.id }}')">
+                            <i class="fas fa-ruler"></i> Thickness Data
+                        </button>
+                        <button class="btn btn-sm btn-warning" onclick="viewWeldData('{{ project.id }}')">
+                            <i class="fas fa-fire"></i> Weld ID
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center py-5">
+                    <i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">Chưa có dự án nào</h5>
+                    <p class="text-muted">Hãy tạo dự án đầu tiên của bạn!</p>
+                    <a href="{% url 'create_project' %}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Tạo dự án mới
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Tab Nhân viên -->
+        <div class="tab-pane fade" id="staff" role="tabpanel">
+            <div class="data-table">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Nhân viên</th>
+                            <th>Chuyên môn</th>
+                            <th>Dự án hiện tại</th>
+                            <th>Trạng thái</th>
+                            <th>Chứng chỉ</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar bg-primary text-white rounded-circle me-3" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
+                                        NA
+                                    </div>
+                                    <div>
+                                        <strong>Nguyễn Văn A</strong><br>
+                                        <small class="text-muted">Level III NDT</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="method-badge">UT</span>
+                                <span class="method-badge">MT</span>
+                                <span class="method-badge">PT</span>
+                            </td>
+                            <td>Petrolimex Tank Inspection</td>
+                            <td><span class="badge bg-success">Đang làm việc</span></td>
+                            <td>ASNT Level III, ISO 9712</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary btn-action">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-success btn-action">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar bg-success text-white rounded-circle me-3" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
+                                        TB
+                                    </div>
+                                    <div>
+                                        <strong>Trần Thị B</strong><br>
+                                        <small class="text-muted">Level II NDT</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="method-badge">PAUT</span>
+                                <span class="method-badge">TOFD</span>
+                            </td>
+                            <td>Petrolimex Tank Inspection</td>
+                            <td><span class="badge bg-success">Đang làm việc</span></td>
+                            <td>ASNT Level II, PCN Level 2</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary btn-action">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-success btn-action">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar bg-warning text-white rounded-circle me-3" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
+                                        LC
+                                    </div>
+                                    <div>
+                                        <strong>Lê Văn C</strong><br>
+                                        <small class="text-muted">Level II NDT</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="method-badge">RT</span>
+                                <span class="method-badge">VT</span>
+                            </td>
+                            <td>-</td>
+                            <td><span class="badge bg-secondary">Sẵn sàng</span></td>
+                            <td>ASNT Level II, IAEA</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary btn-action">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-success btn-action">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Tab Thiết bị -->
+        <div class="tab-pane fade" id="equipment" role="tabpanel">
+            <div class="data-table">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Thiết bị</th>
+                            <th>Loại</th>
+                            <th>Trạng thái</th>
+                            <th>Dự án sử dụng</th>
+                            <th>Bảo trì cuối</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                <strong>Olympus EPOCH 650</strong><br>
+                                <small class="text-muted">S/N: EP650-001</small>
+                            </td>
+                            <td><span class="method-badge">UT</span></td>
+                            <td><span class="badge bg-success">Đang sử dụng</span></td>
+                            <td>Petrolimex Tank Inspection</td>
+                            <td>15/11/2024</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary btn-action">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-warning btn-action">
+                                    <i class="fas fa-wrench"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <strong>GE Phasor XS</strong><br>
+                                <small class="text-muted">S/N: PXS-002</small>
+                            </td>
+                            <td><span class="method-badge">PAUT</span></td>
+                            <td><span class="badge bg-secondary">Sẵn sàng</span></td>
+                            <td>-</td>
+                            <td>20/10/2024</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary btn-action">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-warning btn-action">
+                                    <i class="fas fa-wrench"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <strong>Zetec TOPAZ 64</strong><br>
+                                <small class="text-muted">S/N: TPZ-003</small>
+                            </td>
+                            <td><span class="method-badge">TOFD</span></td>
+                            <td><span class="badge bg-warning">Bảo trì</span></td>
+                            <td>-</td>
+                            <td>05/12/2024</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary btn-action">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-warning btn-action">
+                                    <i class="fas fa-wrench"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Tab Phân tích -->
+        <div class="tab-pane fade" id="analytics" role="tabpanel">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="dashboard-section">
+                        <h5><i class="fas fa-chart-pie"></i> Phân bố phương pháp NDT</h5>
+                        <div class="chart-container">
+                            <canvas id="methodChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="dashboard-section">
+                        <h5><i class="fas fa-chart-line"></i> Tiến độ dự án theo tháng</h5>
+                        <div class="chart-container">
+                            <canvas id="progressChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row mt-4">
+                <div class="col-md-4">
+                    <div class="dashboard-section text-center">
+                        <h6>Hiệu suất thiết bị</h6>
+                        <div class="progress-ring">
+                            <canvas id="equipmentEfficiency"></canvas>
+                        </div>
+                        <p class="mt-2"><strong>87%</strong> thiết bị hoạt động tốt</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="dashboard-section text-center">
+                        <h6>Tỷ lệ hoàn thành dự án</h6>
+                        <div class="progress-ring">
+                            <canvas id="projectCompletion"></canvas>
+                        </div>
+                        <p class="mt-2"><strong>92%</strong> dự án hoàn thành đúng hạn</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="dashboard-section text-center">
+                        <h6>Mức độ sử dụng nhân viên</h6>
+                        <div class="progress-ring">
+                            <canvas id="staffUtilization"></canvas>
+                        </div>
+                        <p class="mt-2"><strong>78%</strong> nhân viên đang làm việc</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Hành động nhanh -->
+<div class="dashboard-section">
+    <div class="section-header">
+        <h3 class="section-title"><i class="fas fa-bolt"></i> Hành động nhanh</h3>
+    </div>
+    
+    <div class="quick-actions">
+        <a href="/projects/create/" class="action-card">
+            <div class="action-icon">
+                <i class="fas fa-plus-circle"></i>
+            </div>
+            <div>
+                <h6>Tạo dự án mới</h6>
+                <small>Khởi tạo dự án NDT mới</small>
+            </div>
+        </a>
+        
+        <a href="#" class="action-card" onclick="assignStaff()">
+            <div class="action-icon">
+                <i class="fas fa-user-plus"></i>
+            </div>
+            <div>
+                <h6>Phân công nhân viên</h6>
+                <small>Gán nhân viên vào dự án</small>
+            </div>
+        </a>
+        
+        <a href="#" class="action-card" onclick="scheduleEquipment()">
+            <div class="action-icon">
+                <i class="fas fa-calendar-alt"></i>
+            </div>
+            <div>
+                <h6>Lập lịch thiết bị</h6>
+                <small>Quản lý lịch sử dụng thiết bị</small>
+            </div>
+        </a>
+        
+        <a href="#" class="action-card" onclick="generateReport()">
+            <div class="action-icon">
+                <i class="fas fa-file-alt"></i>
+            </div>
+            <div>
+                <h6>Tạo báo cáo</h6>
+                <small>Xuất báo cáo tiến độ dự án</small>
+            </div>
+        </a>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Khởi tạo các biểu đồ
+document.addEventListener('DOMContentLoaded', function() {
+    initializeCharts();
+    loadDashboardData();
+});
+
+function initializeCharts() {
+    // Biểu đồ phân bố phương pháp NDT
+    const methodCtx = document.getElementById('methodChart').getContext('2d');
+    new Chart(methodCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['UT', 'MT', 'PT', 'PAUT', 'TOFD', 'RT', 'VT'],
+            datasets: [{
+                data: [25, 20, 15, 15, 10, 10, 5],
+                backgroundColor: [
+                    '#007bff', '#28a745', '#ffc107', '#dc3545',
+                    '#6f42c1', '#fd7e14', '#20c997'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
+    
+    // Biểu đồ tiến độ dự án
+    const progressCtx = document.getElementById('progressChart').getContext('2d');
+    new Chart(progressCtx, {
+        type: 'line',
+        data: {
+            labels: ['T1', 'T2', 'T3', 'T4', 'T5', 'T6'],
+            datasets: [{
+                label: 'Dự án hoàn thành',
+                data: [5, 8, 12, 15, 18, 22],
+                borderColor: '#007bff',
+                backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
+}
+
+function loadDashboardData() {
+    // Tải dữ liệu dashboard từ API
+    // Cập nhật các thống kê và bảng
+}
+
+function applyFilters() {
+    const project = document.getElementById('projectFilter').value;
+    const company = document.getElementById('companyFilter').value;
+    const method = document.getElementById('methodFilter').value;
+    const status = document.getElementById('statusFilter').value;
+    const dateFrom = document.getElementById('dateFrom').value;
+    const dateTo = document.getElementById('dateTo').value;
+    
+    // Áp dụng bộ lọc và cập nhật dữ liệu
+    console.log('Applying filters:', { project, company, method, status, dateFrom, dateTo });
+    
+    // Gọi API để lọc dữ liệu
+    filterProjects({ project, company, method, status, dateFrom, dateTo });
+}
+
+function clearFilters() {
+    document.getElementById('projectFilter').value = '';
+    document.getElementById('companyFilter').value = '';
+    document.getElementById('methodFilter').value = '';
+    document.getElementById('statusFilter').value = '';
+    document.getElementById('dateFrom').value = '';
+    document.getElementById('dateTo').value = '';
+    
+    // Tải lại dữ liệu gốc
+    loadDashboardData();
+}
+
+function filterProjects(filters) {
+    // Lọc và hiển thị dự án theo bộ lọc
+    // Cập nhật DOM với dữ liệu đã lọc
+}
+
+function viewProjectDetails(projectId) {
+    // Hiển thị chi tiết dự án
+    window.open(`/projects/${projectId}/details`, '_blank');
+}
+
+function viewScanPlan(projectId) {
+    // Hiển thị scan plan
+    window.open(`/projects/${projectId}/scan-plan`, '_blank');
+}
+
+function viewThicknessData(projectId) {
+    // Hiển thị dữ liệu thickness
+    window.open(`/projects/${projectId}/thickness-data`, '_blank');
+}
+
+function viewWeldData(projectId) {
+    // Hiển thị dữ liệu weld ID
+    window.open(`/projects/${projectId}/weld-data`, '_blank');
+}
+
+function createNewProject() {
+    // Tạo dự án mới
+    window.location.href = '/projects/create';
+}
+
+function assignStaff() {
+    // Phân công nhân viên
+    window.location.href = '/staff/assign';
+}
+
+function scheduleEquipment() {
+    // Lập lịch thiết bị
+    window.location.href = '/equipment/schedule';
+}
+
+function generateReport() {
+    // Tạo báo cáo
+    window.location.href = '/reports/generate';
+}
+
+function exportData() {
+    // Xuất dữ liệu
+    window.open('/dashboard/export', '_blank');
+}
+
+function refreshDashboard() {
+    // Làm mới dashboard
+    location.reload();
+}
+
+
+    /* Cải thiện tiêu đề Trang nội bộ */
+    .dashboard-header h1 {
+        position: relative;
+        display: inline-block;
+        font-weight: 700;
+        margin-bottom: 15px;
+        padding-bottom: 5px;
+        text-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+    }
+    
+    .dashboard-header h1:after {
+        content: '';
+        position: absolute;
+        width: 50%;
+        height: 3px;
+        background: rgba(255,255,255,0.5);
+        bottom: 0;
+        left: 0;
+        border-radius: 10px;
+    }
+    
+    /* Cải thiện phần chào mừng */
+    .welcome-message {
+        display: flex;
+        align-items: center;
+        background: rgba(255,255,255,0.15);
+        border-radius: 15px;
+        padding: 10px 20px;
+        backdrop-filter: blur(5px);
+        width: fit-content;
+        margin-top: 10px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+    }
+    
+    .welcome-message:hover {
+        background: rgba(255,255,255,0.25);
+        transform: translateY(-3px);
+    }
+    
+    .welcome-message .user-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 15px;
+        color: {% if profile.role == 'admin' %}#dc3545{% elif profile.role == 'manager' %}#fd7e14{% else %}#007bff{% endif %};
+        font-size: 1.2rem;
+    }
+    
+    .role-badge {
+        background: rgba(255,255,255,0.2);
+        padding: 8px 16px;
+        border-radius: 25px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        margin-left: 15px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+    }
+    
+    .role-badge:hover {
+        background: rgba(255,255,255,0.3);
+        transform: scale(1.05);
+    }
+</script>
+{% endblock %}

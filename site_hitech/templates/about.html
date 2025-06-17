@@ -6,6 +6,18 @@
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/style.css' %}">
 <style>
+<!-- Thêm breadcrumb -->
+<div class="breadcrumb-section">
+    <div class="container">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'home' %}">Trang chủ</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Giới thiệu</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
 /* Timeline Styles */
 .timeline-section {
     padding: 60px 0;
