@@ -1,0 +1,2 @@
+web: gunicorn site_hitech.wsgi:application --log-file -
+worker: daphne site_hitech.asgi:application
