@@ -260,3 +260,159 @@ Sử dụng: `./maintenance.sh on`
 - Khi có lỗi 502, 503, 504 → Chuyển sang trang bảo trì
 - Trang bảo trì: `/var/www/maintenance/index.html`
 
+## 🚀 GIT WORKFLOW & DEPLOYMENT
+
+### 💻 Setup Local Development
+
+#### 1. Clone repository về máy local
+```bash
+git clone https://github.com/phihung13/Hitech-NDT-Website.git
+cd Hitech-NDT-Website
+```
+
+#### 2. Tạo môi trường ảo Python
+```bash
+# Windows
+python -m venv venv
+venv\Scripts\activate
+
+# Mac/Linux  
+python3 -m venv venv
+source venv/bin/activate
+```
+
+#### 3. Cài đặt dependencies
+```bash
+cd site_hitech
+pip install -r requirements.txt
+```
+
+#### 4. Cấu hình môi trường development
+```bash
+# Copy file env
+cp .env.example .env
+
+# Sửa file .env với thông tin local:
+DEBUG=True
+DATABASE_URL=sqlite:///db.sqlite3
+SECRET_KEY=your-secret-key-here
+```
+
+#### 5. Setup database local
+```bash
+python manage.py migrate
+python manage.py createsuperuser
+python manage.py collectstatic
+python manage.py runserver
+```
+
+Truy cập: http://localhost:8000
+
+### 🔄 Quy Trình Development
+
+#### 1. Sửa code trên máy local
+- Edit files trong project
+- Test trên localhost:8000
+- Kiểm tra admin tại localhost:8000/admin
+
+#### 2. Commit và push changes
+```bash
+git add .
+git commit -m "Mô tả thay đổi cụ thể"
+git push origin main
+```
+
+#### 3. Deploy lên production server
+```bash
+# Từ local SSH vào server
+ssh root@103.90.224.176 "git-deploy"
+
+# Hoặc tạo script local
+```
+
+### 🛠️ Script Tiện Ích Local
+
+#### Tạo file deploy.bat (Windows)
+```batch
+@echo off
+echo 🚀 Deploying to production...
+ssh root@103.90.224.176 "git-deploy"
+echo ✅ Deploy complete!
+pause
+```
+
+#### Tạo file deploy.sh (Mac/Linux)
+```bash
+#!/bin/bash
+echo "🚀 Deploying to production..."
+ssh root@103.90.224.176 "git-deploy"
+echo "✅ Deploy complete!"
+chmod +x deploy.sh
+```
+
+#### Tạo file maintenance.bat (Windows)
+```batch
+@echo off
+if "%1"=="on" (
+    echo 🔧 Bật chế độ bảo trì...
+    ssh root@103.90.224.176 "maintenance-mode on"
+) else if "%1"=="off" (
+    echo ✅ Tắt chế độ bảo trì...
+    ssh root@103.90.224.176 "maintenance-mode off"
+) else if "%1"=="status" (
+    ssh root@103.90.224.176 "maintenance-mode status"
+) else (
+    echo Sử dụng: maintenance.bat [on/off/status]
+)
+```
+
+### 🔧 Lệnh Quan Trọng
+
+#### Trên Server (VPS)
+```bash
+# Deploy code mới từ Git
+git-deploy
+
+# Bảo trì website
+maintenance-mode on     # Bật bảo trì
+maintenance-mode off    # Tắt bảo trì
+maintenance-mode status # Kiểm tra trạng thái
+
+# Kiểm tra logs
+sudo journalctl -u hitech-ndt -f
+
+# Restart services
+sudo systemctl restart hitech-ndt nginx
+```
+
+#### Từ Local
+```bash
+# Deploy nhanh
+ssh root@103.90.224.176 "git-deploy"
+
+# Bảo trì từ xa
+ssh root@103.90.224.176 "maintenance-mode on"
+ssh root@103.90.224.176 "maintenance-mode off"
+
+# Xem logs từ xa
+ssh root@103.90.224.176 "journalctl -u hitech-ndt -f"
+```
+
+### 🎯 Workflow Hoàn Chỉnh
+
+1. **Development:** Code trên local → Test localhost
+2. **Commit:** `git add . && git commit -m "message" && git push`
+3. **Deploy:** `ssh root@103.90.224.176 "git-deploy"` hoặc chạy script
+4. **Monitor:** Kiểm tra website hoạt động
+5. **Rollback:** Nếu lỗi, dùng `maintenance-mode on` và fix
+
+### 📝 Tính Năng Mới
+
+- ✅ **CKEditor 5** (thay thế CKEditor 4 có lỗ hổng bảo mật)
+- ✅ **Maintenance mode** tự động khi service down
+- ✅ **Git workflow** hoàn chỉnh với auto-deploy
+- ✅ **SEO optimization** và multi-language support
+- ✅ **Responsive design** và admin dashboard
+
+**🚀 Chúc bạn phát triển website thành công!**
+
