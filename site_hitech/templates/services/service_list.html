@@ -1,0 +1,208 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - Hitech NDT{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+<style>
+.service-header {
+    background: linear-gradient(120deg,rgb(23, 15, 188), #2c5364 70%, #fff0 100%);
+    color: #fff;
+    padding: 48px 0 32px 0;
+    text-align: center;
+    border-radius: 0 0 32px 32px;
+    margin-bottom: 32px;
+    position: relative;
+    overflow: hidden;
+}
+
+.service-title {
+    font-size: 3.2rem;
+    font-weight: bold;
+    margin-bottom: 8px;
+    letter-spacing: 1px;
+    color: #ffffff;
+}
+
+.service-subtitle {
+    font-size: 1.2rem;
+    opacity: 0.85;
+    color: #ffffff;
+}
+
+.services-section {
+    padding: 0 0 50px 0;
+}
+
+.service-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 32px 24px;
+    margin-top: 0;
+}
+
+.service-card {
+    background: #fff;
+    border-radius: 18px;
+    padding: 40px 30px;
+    text-align: center;
+    box-shadow: 0 4px 24px rgba(44,83,100,0.13);
+    transition: all 0.3s ease;
+    border: 1.5px solid #f2f6fa;
+    position: relative;
+    overflow: hidden;
+}
+
+.service-card:hover {
+    transform: translateY(-6px) scale(1.025);
+    box-shadow: 0 12px 36px rgba(44,83,100,0.22);
+    border-color: #2c5364;
+}
+
+.service-icon {
+    font-size: 4rem;
+    color: #ff6b35;
+    margin-bottom: 25px;
+    transition: all 0.3s ease;
+}
+
+.service-card:hover .service-icon {
+    transform: scale(1.1);
+    color: #e55a2b;
+}
+
+.service-name {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1a2a36;
+    margin-bottom: 15px;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.service-name:hover {
+    color: #2c5364;
+    text-decoration: none;
+}
+
+.service-description {
+    color: #6c757d;
+    line-height: 1.6;
+    font-size: 1rem;
+}
+
+.no-services {
+    text-align: center;
+    padding: 100px 0;
+    color: #6c757d;
+}
+
+.no-services-icon {
+    font-size: 5rem;
+    margin-bottom: 30px;
+    opacity: 0.3;
+}
+
+.breadcrumb-section {
+    background: #fff;
+    padding: 20px 0;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.breadcrumb {
+    margin: 0;
+    background: none;
+    padding: 0;
+}
+
+.breadcrumb-item a {
+    color: #2c5364;
+    text-decoration: none;
+}
+
+.breadcrumb-item a:hover {
+    color: rgb(23, 15, 188);
+}
+
+@media (max-width: 900px) {
+    .service-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .service-title {
+        font-size: 2.5rem;
+    }
+}
+
+@media (max-width: 600px) {
+    .service-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+    .service-card {
+        padding: 30px 20px;
+    }
+    .service-icon {
+        font-size: 3rem;
+    }
+    .service-title {
+        font-size: 2.2rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="breadcrumb-section">
+    <div class="container">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/">Trang chủ</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Dịch vụ</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="container">
+    <!-- Page Header -->
+    <div class="service-header">
+        <h1 class="service-title">{{ title }}</h1>
+        <p class="service-subtitle">Khám phá các dịch vụ chuyên nghiệp mà Hitech NDT cung cấp với công nghệ tiên tiến và đội ngũ chuyên gia giàu kinh nghiệm</p>
+    </div>
+
+    <div class="services-section">
+        {% if service_categories %}
+        <div class="service-grid">
+            {% for category in service_categories %}
+            <div class="service-card">
+                <div class="service-icon">
+                    {% if category.icon %}
+                        <i class="{{ category.icon }}"></i>
+                    {% else %}
+                        <i class="fas fa-tools"></i>
+                    {% endif %}
+                </div>
+                <h3 class="service-name">
+                    <a href="/dich-vu/{{ category.slug }}/" class="service-name">{{ category.name }}</a>
+                </h3>
+                {% if category.description %}
+                <p class="service-description">{{ category.description }}</p>
+                {% else %}
+                <p class="service-description">Tìm hiểu thêm về dịch vụ {{ category.name }} chuyên nghiệp của chúng tôi.</p>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="no-services">
+            <div class="no-services-icon">
+                <i class="fas fa-tools"></i>
+            </div>
+            <h3>Hiện tại chưa có dịch vụ nào</h3>
+            <p>Chúng tôi đang cập nhật các dịch vụ mới. Vui lòng quay lại sau.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %} 

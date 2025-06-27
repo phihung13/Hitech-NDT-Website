@@ -1,0 +1,261 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .delete-container {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 50px 0;
+    }
+    
+    .delete-card {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        max-width: 600px;
+        margin: 0 auto;
+        overflow: hidden;
+    }
+    
+    .delete-header {
+        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        color: white;
+        padding: 30px;
+        text-align: center;
+    }
+    
+    .delete-header i {
+        font-size: 4rem;
+        margin-bottom: 20px;
+        opacity: 0.9;
+    }
+    
+    .delete-body {
+        padding: 40px;
+    }
+    
+    .document-info {
+        background: #f8f9fa;
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 30px;
+        border-left: 5px solid #dc3545;
+    }
+    
+    .document-info h5 {
+        color: #343a40;
+        margin-bottom: 15px;
+        font-weight: 600;
+    }
+    
+    .document-meta {
+        font-size: 0.9rem;
+        color: #6c757d;
+        margin-bottom: 8px;
+    }
+    
+    .document-meta i {
+        width: 20px;
+        color: #dc3545;
+    }
+    
+    .warning-text {
+        background: #fff3cd;
+        border: 1px solid #ffeaa7;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 30px;
+        color: #856404;
+    }
+    
+    .warning-text i {
+        color: #f39c12;
+        margin-right: 10px;
+    }
+    
+    .btn-delete {
+        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        border: none;
+        color: white;
+        font-weight: 600;
+        padding: 12px 30px;
+        border-radius: 25px;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-delete:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(220, 53, 69, 0.3);
+        color: white;
+    }
+    
+    .btn-cancel {
+        background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+        border: none;
+        color: white;
+        font-weight: 600;
+        padding: 12px 30px;
+        border-radius: 25px;
+        transition: all 0.3s ease;
+        margin-right: 15px;
+    }
+    
+    .btn-cancel:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(108, 117, 125, 0.3);
+        color: white;
+    }
+    
+    .action-buttons {
+        text-align: center;
+        padding-top: 20px;
+        border-top: 1px solid #e9ecef;
+    }
+    
+    @media (max-width: 768px) {
+        .delete-container {
+            padding: 20px 15px;
+        }
+        
+        .delete-card {
+            margin: 0 15px;
+        }
+        
+        .delete-header, .delete-body {
+            padding: 25px 20px;
+        }
+        
+        .btn-cancel, .btn-delete {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        
+        .btn-cancel {
+            margin-right: 0;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="delete-container">
+    <div class="container">
+        <div class="delete-card">
+            <!-- Header -->
+            <div class="delete-header">
+                <i class="fas fa-exclamation-triangle"></i>
+                <h2>Xác nhận xóa tài liệu</h2>
+                <p class="mb-0">Hành động này không thể hoàn tác</p>
+            </div>
+            
+            <!-- Body -->
+            <div class="delete-body">
+                <!-- Document Info -->
+                <div class="document-info">
+                    <h5>{{ document.title }}</h5>
+                    <div class="document-meta">
+                        <i class="fas fa-folder"></i>
+                        <strong>Danh mục:</strong> {{ document.category.name }}
+                    </div>
+                    <div class="document-meta">
+                        <i class="fas fa-user"></i>
+                        <strong>Người tạo:</strong> {{ document.created_by.get_full_name|default:document.created_by.username }}
+                    </div>
+                    <div class="document-meta">
+                        <i class="fas fa-calendar"></i>
+                        <strong>Ngày tạo:</strong> {{ document.created_at|date:"d/m/Y H:i" }}
+                    </div>
+                    {% if document.file %}
+                    <div class="document-meta">
+                        <i class="fas fa-file"></i>
+                        <strong>File:</strong> {{ document.file.name|default:"Không có file" }}
+                    </div>
+                    {% endif %}
+                    {% if document.document_code %}
+                    <div class="document-meta">
+                        <i class="fas fa-barcode"></i>
+                        <strong>Mã tài liệu:</strong> {{ document.document_code }}
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Warning -->
+                <div class="warning-text">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <strong>Cảnh báo:</strong> Việc xóa tài liệu này sẽ:
+                    <ul class="mt-2 mb-0">
+                        <li>Xóa vĩnh viễn tài liệu khỏi hệ thống</li>
+                        <li>Xóa file đính kèm (nếu có)</li>
+                        <li>Xóa tất cả lịch sử truy cập và download</li>
+                        <li>Không thể khôi phục lại được</li>
+                    </ul>
+                </div>
+                
+                <!-- Form xác nhận -->
+                <form method="post" id="deleteForm">
+                    {% csrf_token %}
+                    <div class="action-buttons">
+                        <a href="{% url 'document_detail' document.slug %}" class="btn btn-cancel">
+                            <i class="fas fa-arrow-left"></i> Hủy bỏ
+                        </a>
+                        <button type="submit" class="btn btn-delete" id="confirmDelete">
+                            <i class="fas fa-trash"></i> Xác nhận xóa
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const deleteForm = document.getElementById('deleteForm');
+    const confirmBtn = document.getElementById('confirmDelete');
+    
+    // Xác nhận trước khi xóa
+    deleteForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Double confirm với SweetAlert nếu có, hoặc confirm thông thường
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                title: 'Bạn có chắc chắn?',
+                text: 'Tài liệu "{{ document.title }}" sẽ bị xóa vĩnh viễn!',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Có, xóa ngay!',
+                cancelButtonText: 'Hủy bỏ',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Disable button để tránh double submit
+                    confirmBtn.disabled = true;
+                    confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xóa...';
+                    deleteForm.submit();
+                }
+            });
+        } else {
+            // Fallback confirm dialog
+            const confirmed = confirm(
+                'Bạn có chắc chắn muốn xóa tài liệu "{{ document.title }}"?\n\n' +
+                'Hành động này không thể hoàn tác!'
+            );
+            
+            if (confirmed) {
+                confirmBtn.disabled = true;
+                confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xóa...';
+                deleteForm.submit();
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

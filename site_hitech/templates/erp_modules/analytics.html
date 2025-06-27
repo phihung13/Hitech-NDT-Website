@@ -1,0 +1,45 @@
+{% extends "dashboard/dashboard_base.html" %}
+
+{% block title %}Báo cáo & Phân tích - Dashboard{% endblock %}
+
+{% block page_title %}
+<i class="fas fa-chart-bar text-primary me-2"></i>Báo cáo & Phân tích
+{% endblock %}
+
+{% block header_controls %}
+<div class="btn-group" role="group">
+    <a href="{% url 'report_generate' %}" class="btn btn-success">
+        <i class="fas fa-file-export me-1"></i>Tạo báo cáo
+    </a>
+    <a href="#" class="btn btn-outline-info">
+        <i class="fas fa-download me-1"></i>Export Data
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-body">
+                    <h5 class="text-center text-muted">
+                        <i class="fas fa-chart-bar fa-3x mb-3 d-block"></i>
+                        Trang Báo cáo & Phân tích đang được phát triển
+                    </h5>
+                    <p class="text-center text-muted">
+                        Chức năng này sẽ bao gồm:
+                    </p>
+                    <ul class="list-unstyled text-center">
+                        <li><i class="fas fa-check text-success me-2"></i>Báo cáo dự án chi tiết</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Thống kê hiệu suất</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Phân tích doanh thu</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Xu hướng thị trường</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Dashboard tương tác</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

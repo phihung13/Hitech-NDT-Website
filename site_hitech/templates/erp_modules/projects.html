@@ -1,0 +1,40 @@
+{% extends "dashboard/dashboard_base.html" %}
+
+{% block title %}Quản lý Dự án - Dashboard{% endblock %}
+
+{% block page_title %}
+<i class="fas fa-project-diagram text-primary me-2"></i>Quản lý Dự án
+{% endblock %}
+
+{% block header_controls %}
+<a href="{% url 'create_project' %}" class="btn btn-success">
+    <i class="fas fa-plus me-1"></i>Tạo dự án mới
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-body">
+                    <h5 class="text-center text-muted">
+                        <i class="fas fa-project-diagram fa-3x mb-3 d-block"></i>
+                        Trang Quản lý Dự án đang được phát triển
+                    </h5>
+                    <p class="text-center text-muted">
+                        Chức năng này sẽ bao gồm:
+                    </p>
+                    <ul class="list-unstyled text-center">
+                        <li><i class="fas fa-check text-success me-2"></i>Danh sách tất cả dự án</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Tạo và chỉnh sửa dự án</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Theo dõi tiến độ</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Quản lý nhân viên</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Báo cáo dự án</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

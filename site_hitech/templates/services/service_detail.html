@@ -1,0 +1,421 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - Hitech NDT{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+<style>
+.service-header {
+    background: linear-gradient(120deg,rgb(23, 15, 188), #2c5364 70%, #fff0 100%);
+    color: #fff;
+    padding: 48px 0 32px 0;
+    text-align: center;
+    border-radius: 0 0 32px 32px;
+    margin-bottom: 32px;
+    position: relative;
+    overflow: hidden;
+}
+
+.service-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, rgba(255,255,255,0.1) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.1) 75%, transparent 75%);
+    background-size: 40px 40px;
+    animation: move 2s linear infinite;
+}
+
+@keyframes move {
+    0% { background-position: 0 0; }
+    100% { background-position: 40px 40px; }
+}
+
+.service-title {
+    font-size: 3.2rem;
+    font-weight: bold;
+    margin-bottom: 8px;
+    letter-spacing: 1px;
+    color: #ffffff;
+}
+
+.service-subtitle {
+    font-size: 1.2rem;
+    opacity: 0.85;
+    color: #ffffff;
+}
+
+.service-icon-large {
+    font-size: 5rem;
+    margin-bottom: 20px;
+    color: #ffffff;
+}
+
+.breadcrumb-section {
+    background: #fff;
+    padding: 20px 0;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.breadcrumb {
+    margin: 0;
+    background: none;
+    padding: 0;
+}
+
+.breadcrumb-item a {
+    color: #2c5364;
+    text-decoration: none;
+}
+
+.breadcrumb-item a:hover {
+    color: rgb(23, 15, 188);
+}
+
+.courses-section {
+    padding: 50px 0;
+    background: #f8f9fa;
+}
+
+.section-title {
+    text-align: center;
+    margin-bottom: 50px;
+}
+
+.section-title h2 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #1a2a36;
+    margin-bottom: 15px;
+}
+
+.section-title p {
+    font-size: 1.1rem;
+    color: #6c757d;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.course-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 32px 24px;
+}
+
+.course-card {
+    background: #fff;
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(44,83,100,0.13);
+    transition: all 0.3s ease;
+    border: 1.5px solid #f2f6fa;
+}
+
+.course-card:hover {
+    transform: translateY(-6px) scale(1.025);
+    box-shadow: 0 12px 36px rgba(44,83,100,0.22);
+    border-color: #2c5364;
+}
+
+.course-thumbnail {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+}
+
+.course-placeholder {
+    width: 100%;
+    height: 200px;
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #6c757d;
+    font-size: 3rem;
+}
+
+.course-content {
+    padding: 30px;
+}
+
+.course-name {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #1a2a36;
+    margin-bottom: 15px;
+    line-height: 1.3;
+}
+
+.course-name a {
+    color: inherit;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.course-name a:hover {
+    color: #2c5364;
+}
+
+.course-summary {
+    color: #6c757d;
+    line-height: 1.6;
+    margin-bottom: 20px;
+    font-size: 1rem;
+}
+
+.course-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 20px;
+    border-top: 1px solid #e9ecef;
+}
+
+.course-price {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #28a745;
+}
+
+.course-price .original-price {
+    text-decoration: line-through;
+    color: #6c757d;
+    font-size: 1rem;
+    margin-right: 10px;
+}
+
+.course-instructor {
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
+.no-courses {
+    text-align: center;
+    padding: 100px 0;
+    color: #6c757d;
+}
+
+.no-courses-icon {
+    font-size: 5rem;
+    margin-bottom: 30px;
+    opacity: 0.3;
+}
+
+.contact-section {
+    padding: 60px 0;
+    background: #fff;
+    text-align: center;
+}
+
+.contact-card {
+    background: linear-gradient(120deg,rgb(23, 15, 188), #2c5364 70%);
+    color: #fff;
+    padding: 40px;
+    border-radius: 18px;
+    margin: 0 auto;
+    max-width: 600px;
+}
+
+.contact-card h3 {
+    font-size: 1.8rem;
+    margin-bottom: 15px;
+}
+
+.contact-card p {
+    margin-bottom: 25px;
+    opacity: 0.9;
+}
+
+.contact-btn {
+    background: #fff;
+    color: #2c5364;
+    padding: 12px 30px;
+    border: none;
+    border-radius: 25px;
+    font-weight: 700;
+    text-decoration: none;
+    display: inline-block;
+    transition: all 0.3s ease;
+}
+
+.contact-btn:hover {
+    background: #f8f9fa;
+    color: #2c5364;
+    transform: translateY(-2px);
+}
+
+@media (max-width: 768px) {
+    .service-title {
+        font-size: 2.2rem;
+    }
+    
+    .service-icon-large {
+        font-size: 3.5rem;
+    }
+    
+    .course-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+    
+    .course-content {
+        padding: 20px;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="breadcrumb-section">
+    <div class="container">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/">Trang chủ</a></li>
+                <li class="breadcrumb-item"><a href="/dich-vu/">Dịch vụ</a></li>
+                <li class="breadcrumb-item active" aria-current="page">{{ category.name }}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="container">
+    <!-- Page Header -->
+    <div class="service-header">
+        {% if category.icon %}
+        <div class="service-icon-large">
+            <i class="{{ category.icon }}"></i>
+        </div>
+        {% endif %}
+        <h1 class="service-title">{{ category.name }}</h1>
+        {% if category.description %}
+        <p class="service-subtitle">{{ category.description }}</p>
+        {% else %}
+        <p class="service-subtitle">Khám phá các khóa học và dịch vụ chuyên nghiệp về {{ category.name }} tại Hitech NDT</p>
+        {% endif %}
+    </div>
+</div>
+
+{% if courses %}
+<div class="courses-section">
+    <div class="container">
+        <div class="section-title">
+            {% if category.name|lower == 'dự án' or 'project' in category.name|lower %}
+                <h2>Các dự án {{ category.name }}</h2>
+                <p>Khám phá các dự án tiêu biểu mà chúng tôi đã thực hiện với chất lượng và hiệu quả cao</p>
+            {% elif category.name|lower == 'thiết bị' or 'equipment' in category.name|lower %}
+                <h2>Thiết bị {{ category.name }}</h2>
+                <p>Tìm hiểu về các thiết bị hiện đại và công nghệ tiên tiến mà chúng tôi sử dụng</p>
+            {% elif category.name|lower == 'tư vấn' or 'consulting' in category.name|lower %}
+                <h2>Dịch vụ tư vấn {{ category.name }}</h2>
+                <p>Nhận được lời khuyên chuyên nghiệp từ đội ngũ chuyên gia giàu kinh nghiệm</p>
+            {% else %}
+                <h2>Các khóa học {{ category.name }}</h2>
+                <p>Chúng tôi cung cấp các khóa học chất lượng cao với đội ngũ giảng viên giàu kinh nghiệm</p>
+            {% endif %}
+        </div>
+        
+        <div class="course-grid">
+            {% for course in courses %}
+            <div class="course-card">
+                {% if course.thumbnail %}
+                <img src="{{ course.thumbnail.url }}" alt="{{ course.title }}" class="course-thumbnail">
+                {% else %}
+                <div class="course-placeholder">
+                    <i class="fas fa-graduation-cap"></i>
+                </div>
+                {% endif %}
+                
+                <div class="course-content">
+                    <h3 class="course-name">
+                        <a href="/khoa-hoc/{{ course.slug }}/">{{ course.title }}</a>
+                    </h3>
+                    
+                    {% if course.summary %}
+                    <p class="course-summary">{{ course.summary }}</p>
+                    {% endif %}
+                    
+                    <div class="course-meta">
+                        <div class="course-price">
+                            {% if course.discount_price %}
+                                <span class="original-price">{{ course.price|floatformat:0 }}₫</span>
+                                {{ course.discount_price|floatformat:0 }}₫
+                            {% else %}
+                                {% if course.price > 0 %}
+                                    {{ course.price|floatformat:0 }}₫
+                                {% else %}
+                                    Miễn phí
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                        {% if course.instructor %}
+                        <div class="course-instructor">
+                            <i class="fas fa-user"></i> {{ course.instructor.get_full_name|default:course.instructor.username }}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="courses-section">
+    <div class="container">
+        <div class="no-courses">
+            <div class="no-courses-icon">
+                {% if category.name|lower == 'dự án' or 'project' in category.name|lower %}
+                    <i class="fas fa-project-diagram"></i>
+                {% elif category.name|lower == 'thiết bị' or 'equipment' in category.name|lower %}
+                    <i class="fas fa-tools"></i>
+                {% elif category.name|lower == 'tư vấn' or 'consulting' in category.name|lower %}
+                    <i class="fas fa-handshake"></i>
+                {% else %}
+                    <i class="fas fa-graduation-cap"></i>
+                {% endif %}
+            </div>
+            {% if category.name|lower == 'dự án' or 'project' in category.name|lower %}
+                <h3>Hiện tại chưa có dự án mẫu nào</h3>
+                <p>Chúng tôi đang cập nhật các dự án tiêu biểu trong lĩnh vực {{ category.name }}. Vui lòng liên hệ để biết thêm chi tiết về các dự án đã thực hiện.</p>
+            {% elif category.name|lower == 'thiết bị' or 'equipment' in category.name|lower %}
+                <h3>Hiện tại chưa có thông tin thiết bị</h3>
+                <p>Chúng tôi đang cập nhật thông tin chi tiết về các thiết bị {{ category.name }}. Vui lòng liên hệ để được tư vấn về thiết bị phù hợp.</p>
+            {% elif category.name|lower == 'tư vấn' or 'consulting' in category.name|lower %}
+                <h3>Hiện tại chưa có thông tin tư vấn</h3>
+                <p>Chúng tôi đang cập nhật các gói tư vấn {{ category.name }}. Vui lòng liên hệ để được tư vấn trực tiếp từ chuyên gia.</p>
+            {% else %}
+                <h3>Hiện tại chưa có khóa học nào</h3>
+                <p>Chúng tôi đang cập nhật các khóa học mới trong danh mục {{ category.name }}. Vui lòng quay lại sau hoặc liên hệ để biết thêm thông tin.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="contact-section">
+    <div class="container">
+        <div class="contact-card">
+            {% if category.name|lower == 'dự án' or 'project' in category.name|lower %}
+                <h3>Cần hỗ trợ cho dự án {{ category.name }}?</h3>
+                <p>Liên hệ với chúng tôi để được tư vấn chi tiết về quy trình thực hiện và báo giá dự án</p>
+            {% elif category.name|lower == 'thiết bị' or 'equipment' in category.name|lower %}
+                <h3>Cần tư vấn về thiết bị {{ category.name }}?</h3>
+                <p>Liên hệ với chúng tôi để được tư vấn lựa chọn thiết bị phù hợp và hiệu quả nhất</p>
+            {% elif category.name|lower == 'tư vấn' or 'consulting' in category.name|lower %}
+                <h3>Cần tư vấn chuyên sâu về {{ category.name }}?</h3>
+                <p>Liên hệ với chúng tôi để được tư vấn trực tiếp từ đội ngũ chuyên gia hàng đầu</p>
+            {% else %}
+                <h3>Cần tư vấn thêm về {{ category.name }}?</h3>
+                <p>Liên hệ với chúng tôi để được tư vấn chi tiết về các dịch vụ và khóa học phù hợp</p>
+            {% endif %}
+            <a href="/lien-he/" class="contact-btn">
+                <i class="fas fa-phone me-2"></i>Liên hệ ngay
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %} 

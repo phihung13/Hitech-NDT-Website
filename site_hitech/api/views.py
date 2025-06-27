@@ -1,37 +1,65 @@
 from django.http import JsonResponse
-from .models import Course, Post
+from .models import Course, Post, Category, Comment, ContactSettings, Tag, SiteSettings, AboutPage, HomePageSettings, UserProfile, Project, ProjectFile, ProjectProgress, CourseCategory, Equipment, PublicProject
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
-from .models import Post, Category, Comment, ContactSettings, Tag, SiteSettings
-from .forms import PostForm, CourseForm, CommentForm
+from .forms import PostForm, CourseForm, CommentForm, ProjectFileForm, ProjectUpdateForm, ProjectCreateForm
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
 from django.shortcuts import render
 from django.conf import settings
 import os
-# Thêm import này vào đầu file
-from .models import AboutPage
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
-from django.contrib.auth.decorators import login_required
-from django.contrib import messages
-from django.shortcuts import render, redirect
 from .permissions import admin_required, manager_required, staff_required, permission_required
 from django.contrib.auth.models import User
-from .models import UserProfile
+from django.http import FileResponse, HttpResponse
+from django.core.paginator import Paginator
+from django.db.models import Q
+import mimetypes
+from django.views.decorators.http import require_http_methods
+from django.utils import timezone
+from django.core.files.storage import default_storage
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
+from django.utils import translation
+import json
 
 def home(request):
-    latest_posts = Post.objects.filter(published=True).order_by('-created_at')[:3]
-    featured_projects = Post.objects.filter(
-        category__slug='du-an',
-        published=True
-    ).order_by('-created_at')[:3]
+    # Lấy cấu hình trang chủ
+    try:
+        homepage_settings = HomePageSettings.objects.first()
+    except HomePageSettings.DoesNotExist:
+        homepage_settings = None
+    
+    # Lấy 5 bài viết mới nhất cho blog highlights (1 bài chính + 4 bài phụ)
+    latest_posts = Post.objects.filter(published=True).order_by('-created_at')[:5]
+    
+    # Lấy 4 dự án nổi bật hoặc gần nhất có nhiều view nhất
+    featured_projects = PublicProject.objects.filter(published=True)
+    
+    # Ưu tiên dự án được đánh dấu featured
+    priority_projects = featured_projects.filter(is_featured=True).order_by('-view_count', '-created_at')[:4]
+    
+    # Nếu không đủ 4 dự án featured, bổ sung thêm từ dự án gần nhất
+    if priority_projects.count() < 4:
+        remaining_count = 4 - priority_projects.count()
+        additional_projects = featured_projects.exclude(
+            id__in=priority_projects.values_list('id', flat=True)
+        ).order_by('-view_count', '-created_at')[:remaining_count]
+        featured_projects = list(priority_projects) + list(additional_projects)
+    else:
+        featured_projects = priority_projects
+    
+    # Đảm bảo có đúng 4 dự án để hiển thị (cho responsive grid)
+    featured_projects = featured_projects[:4]
     
     context = {
+        'homepage_settings': homepage_settings,
         'latest_posts': latest_posts,
         'featured_projects': featured_projects,
+        'popular_posts': latest_posts,  # Alias cho template compatibility
     }
-    return render(request, 'home.html', context)
+    return render(request, 'general/home.html', context)
 
 @login_required
 def admin_home_customization(request):
@@ -52,9 +80,11 @@ def admin_home_customization(request):
 
 def blog_list(request):
     category_slug = request.GET.get('category')
+    current_category = None
+    
     if category_slug:
-        category = get_object_or_404(Category, slug=category_slug)
-        posts = Post.objects.filter(published=True, category=category).order_by('-created_at')
+        current_category = get_object_or_404(Category, slug=category_slug)
+        posts = Post.objects.filter(published=True, category=current_category).order_by('-created_at')
     else:
         posts = Post.objects.filter(published=True).order_by('-created_at')
     
@@ -62,13 +92,22 @@ def blog_list(request):
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
+    # Lấy dữ liệu cho sidebar
+    categories = Category.objects.all()
+    tags = Tag.objects.all()[:10]  # Lấy 10 tags đầu tiên
+    recent_posts = Post.objects.filter(published=True).order_by('-created_at')[:5]
+    
     context = {
-        'page_obj': page_obj,
-        'categories': Category.objects.all(),
+        'posts': page_obj,  # Đổi từ page_obj thành posts để template dễ sử dụng
+        'page_obj': page_obj,  # Giữ lại cho pagination
+        'is_paginated': page_obj.has_other_pages(),
+        'categories': categories,
+        'current_category': current_category,
+        'tags': tags,
+        'recent_posts': recent_posts,
     }
     
-    # Giả sử template hiện đặt trong thư mục gốc templates/
-    return render(request, 'blog_list.html', context)
+    return render(request, 'blog/blog_list.html', context)
 
 def blog_detail(request, slug):
     post = get_object_or_404(Post, slug=slug, published=True)
@@ -93,7 +132,7 @@ def blog_detail(request, slug):
         'comments': post.comments.filter(approved=True),
         'comment_form': comment_form,
     }
-    return render(request, 'blog_detail.html', context)
+    return render(request, 'blog/blog_detail.html', context)
 
 def course_list(request):
     courses = Course.objects.filter(published=True)
@@ -141,7 +180,7 @@ def create_post(request):
     else:
         form = PostForm()
     
-    return render(request, 'create_post.html', {'form': form})
+    return render(request, 'blog/create_post.html', {'form': form})
 
 @login_required
 def create_course(request):
@@ -167,7 +206,7 @@ def about(request):
     context = {
         'about_page': about_page
     }
-    return render(request, 'about.html', context)
+    return render(request, 'general/about.html', context)
 
 def contact(request):
     """Trang liên hệ với form gửi tin nhắn"""
@@ -215,7 +254,7 @@ Nội dung:
     context = {
         'contact_settings': contact_settings
     }
-    return render(request, 'contact.html', context)
+    return render(request, 'general/contact.html', context)
 
 def post_comment(request, post_id):
     post = get_object_or_404(Post, id=post_id)
@@ -237,13 +276,10 @@ def post_comment(request, post_id):
             messages.error(request, 'Vui lòng điền đầy đủ thông tin!')
             
     return redirect('blog_detail', post_id=post_id)
-from django.contrib.admin.views.decorators import staff_member_required
-from django.shortcuts import render
 
 @staff_member_required
 def admin_chat_view(request):
     return render(request, 'admin/chat.html')
-
 
 def staff_login(request):
     """View đăng nhập cho nhân viên qua web interface"""
@@ -265,7 +301,7 @@ def staff_login(request):
         else:
             messages.error(request, 'Tên đăng nhập hoặc mật khẩu không đúng.')
     
-    return render(request, 'login.html')
+    return render(request, 'auth/login.html')
 
 @staff_required
 def staff_dashboard(request):
@@ -284,6 +320,11 @@ def staff_dashboard(request):
     active_projects = Project.objects.filter(status='active').count()
     completed_projects = Project.objects.filter(status='completed').count()
     
+    # Thống kê thiết bị
+    total_equipment = Equipment.objects.count()
+    active_equipment = Equipment.objects.filter(status='active').count()
+    maintenance_equipment = Equipment.objects.filter(status='maintenance').count()
+    
     # Thống kê cá nhân
     if profile.role == 'staff':
         user_posts = Post.objects.filter(author=request.user)
@@ -294,6 +335,9 @@ def staff_dashboard(request):
         user_posts = Post.objects.all()[:5]
         user_courses = Course.objects.all()[:5]
         user_projects = projects
+    
+    # Thêm danh sách nhân viên
+    staff_list = UserProfile.objects.select_related('user').all()
     
     context = {
         'profile': profile,
@@ -310,8 +354,13 @@ def staff_dashboard(request):
         'total_projects': total_projects,
         'active_projects': active_projects,
         'completed_projects': completed_projects,
+        'staff_list': staff_list,
+        # Thống kê thiết bị
+        'total_equipment': total_equipment,
+        'active_equipment': active_equipment,
+        'maintenance_equipment': maintenance_equipment,
     }
-    return render(request, 'staff_dashboard.html', context)
+    return render(request, 'dashboard/staff_dashboard.html', context)
 
 @manager_required
 def admin_dashboard(request):
@@ -397,21 +446,8 @@ def staff_logout(request):
     messages.success(request, 'Đã đăng xuất thành công.')
     return redirect('home')
 
-# Thêm vào cuối file views.py
-
-from django.shortcuts import render, get_object_or_404, redirect
-from django.contrib.auth.decorators import login_required
-from django.contrib import messages
-from django.http import JsonResponse, HttpResponse
-from django.core.paginator import Paginator
-from django.db.models import Q
-from .models import Project, ProjectFile, ProjectProgress
-from .forms import ProjectFileForm, ProjectUpdateForm, ProjectCreateForm
-import os
-import mimetypes
-
 @login_required
-def project_detail(request, project_id):
+def project_management_detail(request, project_id):
     project = get_object_or_404(Project, id=project_id)
     project_files = ProjectFile.objects.filter(project=project).order_by('-uploaded_at')
     progress_records = ProjectProgress.objects.filter(project=project).order_by('-last_updated')
@@ -423,7 +459,7 @@ def project_detail(request, project_id):
         'file_form': ProjectFileForm(),
         'update_form': ProjectUpdateForm(instance=project),
     }
-    return render(request, 'project_detail.html', context)
+    return render(request, 'projects/project_detail.html', context)
 
 @login_required
 def upload_file(request, project_id):
@@ -508,4 +544,734 @@ def create_project(request):
         'form': form,
         'title': 'Tạo dự án mới'
     }
-    return render(request, 'create_project.html', context)
+    return render(request, 'projects/create_project.html', context)
+
+def service_list(request):
+    from .models import CourseCategory
+    
+    # Lấy tất cả các danh mục khóa học để hiển thị như dịch vụ
+    service_categories = CourseCategory.objects.all()
+    
+    context = {
+        'title': 'Các dịch vụ của chúng tôi',
+        'service_categories': service_categories,
+    }
+    return render(request, 'services/service_list.html', context)
+
+def service_detail(request, slug):
+    from .models import CourseCategory, Course
+    from django.shortcuts import get_object_or_404
+    
+    # Lấy danh mục dịch vụ
+    category = get_object_or_404(CourseCategory, slug=slug)
+    
+    # Lấy các khóa học trong danh mục này
+    courses = Course.objects.filter(category=category, published=True)
+    
+    context = {
+        'title': f'Dịch vụ {category.name}',
+        'category': category,
+        'courses': courses,
+    }
+    return render(request, 'services/service_detail.html', context)
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def phan_cong_nhan_vien(request):
+    if request.method == "GET":
+        projects = Project.objects.all().values('id', 'name')
+        users = User.objects.filter(is_active=True).values('id', 'username', 'first_name', 'last_name')
+        return JsonResponse({
+            'projects': list(projects),
+            'users': list(users)
+        })
+    elif request.method == "POST":
+        project_id = request.POST.get('project_id')
+        user_ids = request.POST.getlist('user_ids[]')
+        try:
+            project = Project.objects.get(id=project_id)
+            users = User.objects.filter(id__in=user_ids)
+            project.staff.set(users)
+            project.save()
+            return JsonResponse({'success': True, 'message': 'Phân công nhân viên thành công!'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': str(e)})
+
+def staff_assign(request):
+    return render(request, 'management/staff_assign.html')
+
+def equipment_schedule(request):
+    return render(request, 'management/equipment_schedule.html')
+
+def report_generate(request):
+    return render(request, 'reports/report_generate.html')
+
+# ============ ERP MODULE VIEWS ============
+
+@login_required
+def dashboard_overview(request):
+    """Trang tổng quan dashboard chính"""
+    # Sử dụng logic giống staff_dashboard
+    profile = getattr(request.user, 'user_profile', None)
+    if not profile:
+        messages.error(request, 'Bạn cần có hồ sơ người dùng để truy cập dashboard.')
+        return redirect('home')
+    
+    # Thống kê cơ bản
+    total_posts = Post.objects.count()
+    published_posts = Post.objects.filter(published=True).count()
+    draft_posts = total_posts - published_posts
+    total_courses = Course.objects.count()
+    
+    # Thống kê dự án
+    projects = Project.objects.all()
+    total_projects = projects.count()
+    active_projects = projects.filter(status='active').count()
+    completed_projects = projects.filter(status='completed').count()
+    
+    # Phân quyền xem dữ liệu
+    if profile.role == 'staff':
+        user_posts = Post.objects.filter(author=request.user)
+        user_courses = Course.objects.filter(instructor=request.user)
+        user_projects = Project.objects.filter(staff=request.user)
+    else:
+        user_posts = Post.objects.all()[:5]
+        user_courses = Course.objects.all()[:5]
+        user_projects = projects
+    
+    # Danh sách nhân viên
+    staff_list = UserProfile.objects.select_related('user').all()
+    
+    context = {
+        'profile': profile,
+        'total_posts': total_posts,
+        'published_posts': published_posts,
+        'draft_posts': draft_posts,
+        'total_courses': total_courses,
+        'user_posts': user_posts,
+        'user_courses': user_courses,
+        'recent_posts': Post.objects.order_by('-created_at')[:5],
+        'projects': projects,
+        'user_projects': user_projects,
+        'total_projects': total_projects,
+        'active_projects': active_projects,
+        'completed_projects': completed_projects,
+        'staff_list': staff_list,
+        'today': timezone.now().date(),
+    }
+    return render(request, 'dashboard/staff_dashboard.html', context)
+
+@login_required
+def projects_management(request):
+    """Trang quản lý dự án"""
+    context = {
+        'title': 'Quản lý dự án',
+        'module_name': 'Quản lý dự án',
+        'description': 'Quản lý tất cả dự án NDT, theo dõi tiến độ, phân công nhân viên và quản lý tài liệu dự án.',
+        'features': [
+            'Tạo và chỉnh sửa dự án',
+            'Theo dõi tiến độ thời gian thực',
+            'Phân công nhân viên vào dự án',
+            'Quản lý tài liệu và báo cáo',
+            'Thống kê hiệu suất dự án'
+        ],
+        'coming_soon': True
+    }
+    return render(request, 'erp_modules/projects.html', context)
+
+@login_required  
+def staff_management(request):
+    """Trang quản lý nhân viên"""
+    context = {
+        'title': 'Quản lý nhân viên',
+        'module_name': 'Quản lý nhân viên',
+        'description': 'Quản lý thông tin nhân viên, chuyên môn, chứng chỉ NDT và phân quyền hệ thống.',
+        'features': [
+            'Quản lý hồ sơ nhân viên',
+            'Theo dõi chứng chỉ NDT Level',
+            'Quản lý chuyên môn và kỹ năng',
+            'Phân quyền hệ thống',
+            'Đánh giá hiệu suất làm việc'
+        ],
+        'coming_soon': True
+    }
+    return render(request, 'erp_modules/staff.html', context)
+
+@login_required
+def attendance_management(request):
+    """Trang quản lý chấm công"""
+    context = {
+        'title': 'Quản lý chấm công',
+        'module_name': 'Quản lý chấm công',
+        'description': 'Hệ thống chấm công tự động, theo dõi giờ làm việc và tính lương nhân viên.',
+        'features': [
+            'Chấm công bằng QR Code/NFC',
+            'Theo dõi giờ vào/ra',
+            'Tính toán giờ làm thêm',
+            'Báo cáo chấm công theo tháng',
+            'Quản lý nghỉ phép và nghỉ việc'
+        ],
+        'coming_soon': True
+    }
+    return render(request, 'erp_modules/attendance.html', context)
+
+@login_required
+def equipment_management(request):
+    """Trang quản lý thiết bị"""
+    context = {
+        'title': 'Quản lý thiết bị',
+        'module_name': 'Quản lý thiết bị',
+        'description': 'Quản lý thiết bị NDT, lịch bảo trì, hiệu chuẩn và theo dõi tình trạng hoạt động.',
+        'features': [
+            'Danh mục thiết bị NDT chi tiết',
+            'Lịch bảo trì và hiệu chuẩn',
+            'Theo dõi tình trạng thiết bị',
+            'Quản lý phụ tùng thay thế',
+            'Báo cáo hiệu suất thiết bị'
+        ],
+        'coming_soon': True
+    }
+    return render(request, 'erp_modules/equipment.html', context)
+
+@login_required
+def documents_management(request):
+    """Quản lý tài liệu nội bộ"""
+    from .models import Document, DocumentCategory, DocumentTag
+    from django.db.models import Q
+    
+    # Get filter parameters
+    category_filter = request.GET.get('category')
+    tag_filter = request.GET.get('tag') 
+    search_query = request.GET.get('search')
+    
+    # Base queryset - only documents user can access
+    documents = Document.objects.filter(status='published')
+    accessible_docs = []
+    
+    for doc in documents:
+        if doc.can_access(request.user):
+            accessible_docs.append(doc.id)
+    
+    documents = Document.objects.filter(id__in=accessible_docs).select_related('category', 'created_by')
+    
+    # Apply filters
+    if category_filter:
+        documents = documents.filter(category__slug=category_filter)
+    
+    if tag_filter:
+        documents = documents.filter(tags__slug=tag_filter)
+        
+    if search_query:
+        documents = documents.filter(
+            Q(title__icontains=search_query) | 
+            Q(description__icontains=search_query) |
+            Q(document_code__icontains=search_query)
+        )
+    
+    # Get categories and tags for filters
+    categories = DocumentCategory.objects.filter(is_active=True).order_by('order', 'name')
+    tags = DocumentTag.objects.all().order_by('name')
+    
+    # Stats for dashboard
+    total_documents = documents.count()
+    user_downloads = 0
+    if hasattr(request.user, 'documentaccess_set'):
+        user_downloads = request.user.documentaccess_set.filter(action='download').count()
+    
+    # Recent documents
+    recent_docs = documents.order_by('-created_at')[:10]
+    
+    context = {
+        'title': 'Tài liệu nội bộ',
+        'documents': documents.order_by('-created_at'),
+        'categories': categories,
+        'tags': tags,
+        'recent_docs': recent_docs,
+        'total_documents': total_documents,
+        'user_downloads': user_downloads,
+        'current_category': category_filter,
+        'current_tag': tag_filter,
+        'search_query': search_query,
+        'user_role': getattr(request.user.user_profile, 'role', 'staff') if hasattr(request.user, 'user_profile') else 'staff'
+    }
+    return render(request, 'erp_modules/documents.html', context)
+
+@login_required
+def document_detail(request, slug):
+    """Chi tiết tài liệu"""
+    from .models import Document, DocumentAccess
+    
+    document = get_object_or_404(Document, slug=slug, status='published')
+    
+    # Check access permission
+    if not document.can_access(request.user):
+        messages.error(request, 'Bạn không có quyền truy cập tài liệu này.')
+        return redirect('documents_management')
+    
+    # Log view access
+    DocumentAccess.objects.create(
+        document=document,
+        user=request.user,
+        action='view',
+        ip_address=get_client_ip(request),
+        user_agent=request.META.get('HTTP_USER_AGENT', '')
+    )
+    
+    # Increment view count
+    document.view_count += 1
+    document.save(update_fields=['view_count'])
+    
+    # Get related documents
+    related_docs = Document.objects.filter(
+        category=document.category, 
+        status='published'
+    ).exclude(id=document.id)[:5]
+    
+    accessible_related = []
+    for doc in related_docs:
+        if doc.can_access(request.user):
+            accessible_related.append(doc)
+    
+    context = {
+        'document': document,
+        'related_docs': accessible_related,
+    }
+    return render(request, 'documents/document_detail.html', context)
+
+@login_required
+def document_download(request, slug):
+    """Tải xuống tài liệu"""
+    from .models import Document, DocumentAccess
+    from django.http import FileResponse, Http404
+    import os
+    
+    document = get_object_or_404(Document, slug=slug, status='published')
+    
+    # Check access permission
+    if not document.can_access(request.user):
+        raise Http404("Tài liệu không tồn tại hoặc bạn không có quyền truy cập")
+    
+    # Check if file exists
+    if not document.file or not default_storage.exists(document.file.name):
+        messages.error(request, 'File tài liệu không tồn tại.')
+        return redirect('document_detail', slug=slug)
+    
+    # Log download access
+    DocumentAccess.objects.create(
+        document=document,
+        user=request.user,
+        action='download',
+        ip_address=get_client_ip(request),
+        user_agent=request.META.get('HTTP_USER_AGENT', '')
+    )
+    
+    # Increment download count
+    document.download_count += 1
+    document.save(update_fields=['download_count'])
+    
+    # Return file response
+    try:
+        response = FileResponse(
+            document.file.open('rb'),
+            as_attachment=True,
+            filename=os.path.basename(document.file.name)
+        )
+        return response
+    except Exception as e:
+        messages.error(request, f'Lỗi khi tải file: {str(e)}')
+        return redirect('document_detail', slug=slug)
+
+def get_client_ip(request):
+    """Lấy IP của client"""
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(',')[0]
+    else:
+        ip = request.META.get('REMOTE_ADDR')
+    return ip
+
+@login_required
+def document_upload(request):
+    """Upload tài liệu mới"""
+    from .models import Document, DocumentCategory, DocumentTag
+    from .forms import DocumentForm
+    
+    # Kiểm tra quyền upload (chỉ manager và admin)
+    if not hasattr(request.user, 'user_profile') or request.user.user_profile.role not in ['admin', 'manager']:
+        messages.error(request, 'Bạn không có quyền upload tài liệu.')
+        return redirect('documents_management')
+    
+    if request.method == 'POST':
+        form = DocumentForm(request.POST, request.FILES)
+        if form.is_valid():
+            document = form.save(commit=False)
+            document.created_by = request.user
+            document.updated_by = request.user  # Set người cập nhật cuối
+            document.status = 'published'  # Auto approve for admin/manager
+            document.approved_by = request.user
+            document.approved_at = timezone.now()
+            document.save()
+            form.save_m2m()  # Save tags
+            
+            messages.success(request, f'Tài liệu "{document.title}" đã được upload thành công!')
+            return redirect('document_detail', slug=document.slug)
+        else:
+            messages.error(request, 'Có lỗi xảy ra. Vui lòng kiểm tra lại thông tin.')
+    else:
+        form = DocumentForm()
+    
+    # Get categories and tags for context
+    categories = DocumentCategory.objects.filter(is_active=True).order_by('order', 'name')
+    tags = DocumentTag.objects.all().order_by('name')
+    
+    context = {
+        'form': form,
+        'categories': categories,
+        'tags': tags,
+        'title': 'Upload tài liệu mới'
+    }
+    return render(request, 'documents/document_upload.html', context)
+
+@login_required
+def document_edit(request, slug):
+    """Chỉnh sửa tài liệu"""
+    from .models import Document
+    from .forms import DocumentForm
+    
+    document = get_object_or_404(Document, slug=slug)
+    
+    # Kiểm tra quyền edit
+    user_profile = getattr(request.user, 'user_profile', None)
+    if not user_profile:
+        messages.error(request, 'Bạn không có quyền chỉnh sửa tài liệu.')
+        return redirect('documents_management')
+    
+    # Chỉ admin, manager hoặc người tạo mới được edit
+    if user_profile.role not in ['admin', 'manager'] and document.created_by != request.user:
+        messages.error(request, 'Bạn chỉ có thể chỉnh sửa tài liệu của mình.')
+        return redirect('document_detail', slug=slug)
+    
+    if request.method == 'POST':
+        form = DocumentForm(request.POST, request.FILES, instance=document)
+        if form.is_valid():
+            document = form.save(commit=False)
+            document.updated_by = request.user
+            document.save()
+            messages.success(request, f'Tài liệu "{document.title}" đã được cập nhật!')
+            return redirect('document_detail', slug=document.slug)
+    else:
+        form = DocumentForm(instance=document)
+    
+    context = {
+        'form': form,
+        'document': document,
+        'title': f'Chỉnh sửa: {document.title}'
+    }
+    return render(request, 'documents/document_upload.html', context)
+
+@login_required
+def document_delete(request, slug):
+    """Xóa tài liệu"""
+    from .models import Document
+    
+    document = get_object_or_404(Document, slug=slug)
+    
+    # Kiểm tra quyền xóa (chỉ admin hoặc người tạo)
+    user_profile = getattr(request.user, 'user_profile', None)
+    if not user_profile or (user_profile.role != 'admin' and document.created_by != request.user):
+        messages.error(request, 'Bạn không có quyền xóa tài liệu này.')
+        return redirect('document_detail', slug=slug)
+    
+    if request.method == 'POST':
+        title = document.title
+        document.delete()
+        messages.success(request, f'Tài liệu "{title}" đã được xóa.')
+        return redirect('documents_management')
+    
+    context = {
+        'document': document,
+        'title': f'Xóa tài liệu: {document.title}'
+    }
+    return render(request, 'documents/document_delete.html', context)
+
+@login_required
+def manage_categories(request):
+    """Quản lý danh mục tài liệu"""
+    from .models import DocumentCategory
+    from .forms import DocumentCategoryForm
+    
+    # Kiểm tra quyền (chỉ admin)
+    if not hasattr(request.user, 'user_profile') or request.user.user_profile.role != 'admin':
+        messages.error(request, 'Bạn không có quyền quản lý danh mục.')
+        return redirect('documents_management')
+    
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        
+        if action == 'create':
+            form = DocumentCategoryForm(request.POST)
+            if form.is_valid():
+                form.save()
+                messages.success(request, f'Danh mục "{form.cleaned_data["name"]}" đã được tạo!')
+                return redirect('manage_categories')
+        
+        elif action == 'edit':
+            category_id = request.POST.get('category_id')
+            try:
+                category = DocumentCategory.objects.get(id=category_id)
+                form = DocumentCategoryForm(request.POST, instance=category)
+                if form.is_valid():
+                    form.save()
+                    messages.success(request, f'Danh mục "{form.cleaned_data["name"]}" đã được cập nhật!')
+                    return redirect('manage_categories')
+            except DocumentCategory.DoesNotExist:
+                messages.error(request, 'Danh mục không tồn tại!')
+            return redirect('manage_categories')
+        
+        elif action == 'delete':
+            category_id = request.POST.get('category_id')
+            delete_documents = request.POST.get('delete_documents') == 'yes'
+            
+            try:
+                category = DocumentCategory.objects.get(id=category_id)
+                
+                # Kiểm tra danh mục con
+                children_count = category.children.count()
+                if children_count > 0:
+                    messages.error(request, f'Không thể xóa danh mục "{category.name}" vì đang có {children_count} danh mục con!')
+                    return redirect('manage_categories')
+                
+                # Kiểm tra tài liệu
+                doc_count = category.documents.count()
+                if doc_count > 0:
+                    if delete_documents:
+                        # Xóa tất cả tài liệu trong danh mục
+                        deleted_docs = []
+                        for doc in category.documents.all():
+                            deleted_docs.append(doc.title)
+                            doc.delete()
+                        
+                        category_name = category.name
+                        category.delete()
+                        messages.success(request, f'Đã xóa danh mục "{category_name}" và {len(deleted_docs)} tài liệu!')
+                    else:
+                        # Chuyển tài liệu về danh mục mặc định hoặc danh mục khác
+                        default_category = DocumentCategory.objects.filter(
+                            slug='tai-lieu-tong-hop'
+                        ).first()
+                        
+                        if not default_category:
+                            # Tạo danh mục mặc định nếu chưa có
+                            default_category = DocumentCategory.objects.create(
+                                name='Tài liệu tổng hợp',
+                                slug='tai-lieu-tong-hop',
+                                description='Danh mục mặc định cho các tài liệu không phân loại',
+                                icon='fas fa-folder',
+                                order=999
+                            )
+                        
+                        # Chuyển tất cả tài liệu sang danh mục mặc định
+                        moved_docs = []
+                        for doc in category.documents.all():
+                            doc.category = default_category
+                            doc.save()
+                            moved_docs.append(doc.title)
+                        
+                        category_name = category.name
+                        category.delete()
+                        messages.success(
+                            request, 
+                            f'Đã xóa danh mục "{category_name}" và chuyển {len(moved_docs)} tài liệu về danh mục "{default_category.name}"!'
+                        )
+                else:
+                    # Xóa danh mục trống
+                    category_name = category.name
+                    category.delete()
+                    messages.success(request, f'Danh mục "{category_name}" đã được xóa!')
+                    
+            except DocumentCategory.DoesNotExist:
+                messages.error(request, 'Danh mục không tồn tại!')
+            return redirect('manage_categories')
+    
+    # GET request - hiển thị trang quản lý
+    form = DocumentCategoryForm()
+    categories = DocumentCategory.objects.all().order_by('order', 'name')
+    
+    # Thống kê cho mỗi danh mục
+    categories_stats = []
+    for category in categories:
+        doc_count = category.documents.count()
+        children_count = category.children.count()
+        categories_stats.append({
+            'category': category,
+            'doc_count': doc_count,
+            'children_count': children_count,
+            'can_delete': children_count == 0  # Chỉ cần kiểm tra danh mục con
+        })
+    
+    context = {
+        'form': form,
+        'categories_stats': categories_stats,
+        'title': 'Quản lý danh mục tài liệu'
+    }
+    return render(request, 'management/manage_categories.html', context)
+
+@login_required
+def manage_tags(request):
+    """Quản lý tags tài liệu"""
+    from .models import DocumentTag
+    from .forms import DocumentTagForm
+    
+    # Kiểm tra quyền (admin và manager)
+    if not hasattr(request.user, 'user_profile') or request.user.user_profile.role not in ['admin', 'manager']:
+        messages.error(request, 'Bạn không có quyền quản lý tags.')
+        return redirect('documents_management')
+    
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        
+        if action == 'create':
+            form = DocumentTagForm(request.POST)
+            if form.is_valid():
+                form.save()
+                messages.success(request, f'Tag "{form.cleaned_data["name"]}" đã được tạo!')
+                return redirect('manage_tags')
+        
+        elif action == 'delete':
+            tag_id = request.POST.get('tag_id')
+            try:
+                tag = DocumentTag.objects.get(id=tag_id)
+                tag_name = tag.name
+                tag.delete()
+                messages.success(request, f'Tag "{tag_name}" đã được xóa!')
+            except DocumentTag.DoesNotExist:
+                messages.error(request, 'Tag không tồn tại!')
+            return redirect('manage_tags')
+    
+    form = DocumentTagForm()
+    tags = DocumentTag.objects.all().order_by('name')
+    
+    # Thống kê sử dụng tags
+    tags_stats = []
+    for tag in tags:
+        doc_count = tag.document_set.count()
+        tags_stats.append({
+            'tag': tag,
+            'doc_count': doc_count
+        })
+    
+    context = {
+        'form': form,
+        'tags_stats': tags_stats,
+        'title': 'Quản lý Tags tài liệu'
+    }
+    return render(request, 'management/manage_tags.html', context)
+
+@login_required
+def quality_management(request):
+    """Trang quản lý chất lượng"""
+    context = {
+        'title': 'Quản lý chất lượng',
+        'module_name': 'Quản lý chất lượng',
+        'description': 'Hệ thống quản lý chất lượng ISO 9001, kiểm soát quy trình và đảm bảo tiêu chuẩn NDT.',
+        'features': [
+            'Checklist chất lượng theo tiêu chuẩn',
+            'Audit nội bộ và đánh giá',
+            'Quản lý đơn hàng và khiếu nại',
+            'Báo cáo chất lượng định kỳ',
+            'Cải tiến liên tục (Kaizen)'
+        ],
+        'coming_soon': True
+    }
+    return render(request, 'erp_modules/quality.html', context)
+
+@login_required
+def analytics_management(request):
+    """Trang phân tích phát triển"""
+    context = {
+        'title': 'Phân tích phát triển',
+        'module_name': 'Phân tích & Business Intelligence',
+        'description': 'Dashboard phân tích doanh thu, hiệu suất và xu hướng phát triển công ty.',
+        'features': [
+            'Dashboard doanh thu và lợi nhuận',
+            'Phân tích hiệu suất nhân viên',
+            'Báo cáo xu hướng thị trường NDT',
+            'Dự đoán và lập kế hoạch',
+            'KPIs và metrics quan trọng'
+        ],
+        'coming_soon': True
+    }
+    return render(request, 'erp_modules/analytics.html', context)
+
+def project_list(request):
+    """Trang danh sách dự án công khai"""
+    projects = PublicProject.objects.filter(published=True).order_by('-created_at')
+    
+    # Search functionality
+    search = request.GET.get('search')
+    if search:
+        projects = projects.filter(
+            Q(title__icontains=search) | 
+            Q(summary__icontains=search) |
+            Q(content__icontains=search) |
+            Q(client_name__icontains=search) |
+            Q(tags__icontains=search)
+        )
+    
+    # Filter by project type
+    project_type = request.GET.get('type')
+    if project_type:
+        projects = projects.filter(project_type__icontains=project_type)
+    
+    # Pagination
+    paginator = Paginator(projects, 9)  # 9 projects per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    # Get project types for filter
+    project_types = PublicProject.objects.filter(published=True).values_list('project_type', flat=True).distinct()
+    
+    context = {
+        'projects': page_obj,
+        'search': search,
+        'project_type': project_type,
+        'project_types': project_types,
+        'total_projects': projects.count(),
+    }
+    return render(request, 'projects/project_list.html', context)
+
+def project_detail(request, slug):
+    """Trang chi tiết dự án công khai"""
+    project = get_object_or_404(PublicProject, slug=slug, published=True)
+    
+    # Increment view count
+    project.view_count += 1
+    project.save(update_fields=['view_count'])
+    
+    # Get related projects (same type or random)
+    related_projects = PublicProject.objects.filter(
+        published=True
+    ).exclude(id=project.id)
+    
+    # Try to get same project type first
+    same_type_projects = related_projects.filter(project_type=project.project_type)
+    if same_type_projects.exists():
+        related_projects = same_type_projects
+    
+    related_projects = related_projects.order_by('-created_at')[:3]
+    
+    context = {
+        'project': project,
+        'related_projects': related_projects,
+    }
+    return render(request, 'projects/project_detail_public.html', context)
+
+@csrf_exempt
+@require_POST
+def change_language(request):
+    """API để thay đổi ngôn ngữ"""
+    language = request.POST.get('language')
+    if language:
+        translation.activate(language)
+        request.session[translation.LANGUAGE_SESSION_KEY] = language
+    return JsonResponse({'success': True})

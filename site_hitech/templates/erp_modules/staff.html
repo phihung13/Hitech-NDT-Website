@@ -1,0 +1,45 @@
+{% extends "dashboard/dashboard_base.html" %}
+
+{% block title %}Quản lý Nhân viên - Dashboard{% endblock %}
+
+{% block page_title %}
+<i class="fas fa-users text-primary me-2"></i>Quản lý Nhân viên
+{% endblock %}
+
+{% block header_controls %}
+<div class="btn-group" role="group">
+    <a href="#" class="btn btn-success">
+        <i class="fas fa-user-plus me-1"></i>Thêm nhân viên
+    </a>
+    <a href="#" class="btn btn-outline-primary">
+        <i class="fas fa-download me-1"></i>Export Excel
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-body">
+                    <h5 class="text-center text-muted">
+                        <i class="fas fa-users fa-3x mb-3 d-block"></i>
+                        Trang Quản lý Nhân viên đang được phát triển
+                    </h5>
+                    <p class="text-center text-muted">
+                        Chức năng này sẽ bao gồm:
+                    </p>
+                    <ul class="list-unstyled text-center">
+                        <li><i class="fas fa-check text-success me-2"></i>Danh sách nhân viên</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Thông tin cá nhân</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Phân quyền truy cập</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Lịch sử công việc</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Đánh giá hiệu suất</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

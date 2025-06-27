@@ -1,0 +1,735 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ project.meta_title|default:project.title }} - {{ block.super }}{% endblock %}
+{% block meta_description %}{{ project.meta_description|default:project.summary|truncatewords:20 }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.project-detail-hero {
+    background: linear-gradient(135deg, #0066cc 0%, #003d99 100%);
+    color: #fff;
+    padding: 80px 0 40px 0;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 40px;
+}
+
+.project-detail-hero::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.3);
+    z-index: 1;
+}
+
+.project-detail-hero .container {
+    position: relative;
+    z-index: 2;
+}
+
+.project-detail-banner {
+    width: 100%;
+    max-width: 800px;
+    height: 400px;
+    object-fit: cover;
+    border-radius: 20px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+    margin: 0 auto 30px auto;
+    display: block;
+}
+
+.project-detail-title {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin-bottom: 20px;
+    color: #ffffff;
+    text-shadow: 
+        0 2px 4px rgba(0,0,0,0.5),
+        0 4px 8px rgba(0,0,0,0.3),
+        0 8px 16px rgba(0,0,0,0.2);
+    line-height: 1.2;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    letter-spacing: -0.5px;
+}
+
+.project-detail-meta {
+    color: rgba(255,255,255,0.95);
+    font-size: 1.2rem;
+    margin-bottom: 0;
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    flex-wrap: wrap;
+}
+
+.project-detail-meta .meta-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255,255,255,0.15);
+    padding: 12px 20px;
+    border-radius: 30px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.2);
+    font-weight: 600;
+    color: #ffffff;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+.project-detail-meta .meta-item i {
+    color: #43cea2;
+    font-size: 1.1rem;
+    text-shadow: none;
+}
+
+.project-status-badge {
+    background: #28a745;
+    color: white;
+    padding: 6px 15px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.project-detail-content {
+    background: #fff;
+    border-radius: 20px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+    padding: 50px 40px;
+    max-width: 900px;
+    margin: -60px auto 40px auto;
+    position: relative;
+    z-index: 3;
+    font-size: 1.1rem;
+    color: #333;
+    line-height: 1.8;
+}
+
+.project-info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 30px;
+    margin: 30px 0;
+    padding: 30px;
+    background: #f8f9fa;
+    border-radius: 15px;
+}
+
+.project-info-item h4 {
+    color: #0066cc;
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.project-info-item p {
+    margin: 0;
+    color: #495057;
+}
+
+.project-methods {
+    margin: 30px 0;
+}
+
+.project-methods h4 {
+    color: #0066cc;
+    font-size: 1.2rem;
+    margin-bottom: 15px;
+}
+
+.methods-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.method-tag {
+    background: #0066cc;
+    color: white;
+    padding: 5px 12px;
+    border-radius: 15px;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.project-detail-content img {
+    max-width: 100%;
+    border-radius: 12px;
+    margin: 25px 0;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+}
+
+.project-detail-content h1,
+.project-detail-content h2,
+.project-detail-content h3,
+.project-detail-content h4,
+.project-detail-content h5,
+.project-detail-content h6 {
+    color: #0066cc;
+    margin-top: 30px;
+    margin-bottom: 15px;
+    font-weight: 700;
+}
+
+.project-detail-content h1 { font-size: 2rem; }
+.project-detail-content h2 { font-size: 1.75rem; }
+.project-detail-content h3 { font-size: 1.5rem; }
+
+.project-detail-content p {
+    margin-bottom: 20px;
+}
+
+.project-detail-content blockquote {
+    border-left: 4px solid #0066cc;
+    padding-left: 20px;
+    margin: 25px 0;
+    font-style: italic;
+    color: #666;
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 0 12px 12px 0;
+}
+
+/* Dự án liên quan */
+.related-projects {
+    max-width: 900px;
+    margin: 0 auto 40px auto;
+}
+
+.related-projects h3 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #0066cc;
+    margin-bottom: 25px;
+    text-align: center;
+}
+
+.related-projects-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+}
+
+.related-project-card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 3px 15px rgba(0,0,0,0.08);
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    text-decoration: none;
+    color: inherit;
+}
+
+.related-project-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 25px rgba(0,0,0,0.15);
+    text-decoration: none;
+}
+
+.related-project-image {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    background: #e9ecef;
+}
+
+.related-project-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 200px;
+    background: #e9ecef;
+    color: #0066cc;
+    font-size: 2rem;
+}
+
+.related-project-content {
+    padding: 20px;
+}
+
+.related-project-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #0066cc;
+    margin-bottom: 10px;
+    line-height: 1.3;
+}
+
+.related-project-summary {
+    color: #666;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.back-to-projects {
+    text-align: center;
+    margin: 40px 0;
+}
+
+.back-to-projects a {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #0066cc;
+    color: white;
+    padding: 12px 25px;
+    border-radius: 25px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: background 0.3s ease;
+}
+
+.back-to-projects a:hover {
+    background: #003d99;
+    text-decoration: none;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+    .project-detail-title {
+        font-size: 2rem;
+    }
+    
+    .project-detail-meta {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .project-detail-content {
+        padding: 30px 25px;
+        margin: -40px 15px 20px 15px;
+    }
+    
+    .project-info-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+        padding: 20px;
+    }
+    
+    .related-projects-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="project-hero">
+    <div class="hero-image">
+        {% if project.featured_image %}
+            <img src="{{ project.featured_image.url }}" alt="{{ project.title }}">
+        {% else %}
+            <div class="hero-placeholder">
+                <i class="fas fa-project-diagram"></i>
+            </div>
+        {% endif %}
+        <div class="hero-overlay"></div>
+    </div>
+    <div class="hero-content">
+        <div class="container">
+            <div class="row">
+                <div class="col-12">
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="/">Trang chủ</a></li>
+                            <li class="breadcrumb-item"><a href="{% url 'public_project_list' %}">Dự án</a></li>
+                            <li class="breadcrumb-item active">{{ project.title }}</li>
+                        </ol>
+                    </nav>
+                    <h1 class="hero-title">{{ project.title }}</h1>
+                    <div class="hero-meta">
+                        <span class="project-status status-{{ project.status }}">
+                            {{ project.get_status_display }}
+                        </span>
+                        <span class="project-type">
+                            <i class="fas fa-tag"></i> {{ project.project_type }}
+                        </span>
+                        <span class="view-count">
+                            <i class="far fa-eye"></i> {{ project.view_count }} lượt xem
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Project Info Section -->
+<section class="project-info-section py-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8">
+                <!-- Project Summary -->
+                <div class="project-summary mb-5">
+                    <h2>Tóm tắt dự án</h2>
+                    <p class="lead">{{ project.summary }}</p>
+                </div>
+
+                <!-- Project Content -->
+                <div class="project-content">
+                    <h2>Chi tiết dự án</h2>
+                    <div class="content-body">
+                        {{ project.content|safe }}
+                    </div>
+                </div>
+
+                <!-- Tags -->
+                {% if project.tags %}
+                <div class="project-tags mt-5">
+                    <h3>Tags</h3>
+                    <div class="tags-list">
+                        {% for tag in project.get_tags_list %}
+                            <span class="badge bg-primary">{{ tag }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="col-lg-4">
+                <!-- Project Details Card -->
+                <div class="project-details-card sticky-top">
+                    <h3>Thông tin dự án</h3>
+                    <div class="details-grid">
+                        <div class="detail-item">
+                            <div class="detail-label">Khách hàng</div>
+                            <div class="detail-value">{{ project.client_name }}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Địa điểm</div>
+                            <div class="detail-value">{{ project.location }}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Loại dự án</div>
+                            <div class="detail-value">{{ project.project_type }}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Ngày hoàn thành</div>
+                            <div class="detail-value">{{ project.completion_date|date:"d/m/Y" }}</div>
+                        </div>
+                        {% if project.project_value %}
+                        <div class="detail-item">
+                            <div class="detail-label">Giá trị dự án</div>
+                            <div class="detail-value">{{ project.project_value }}</div>
+                        </div>
+                        {% endif %}
+                        <div class="detail-item">
+                            <div class="detail-label">Trạng thái</div>
+                            <div class="detail-value">
+                                <span class="badge status-{{ project.status }}">
+                                    {{ project.get_status_display }}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Ngày đăng</div>
+                            <div class="detail-value">{{ project.created_at|date:"d/m/Y" }}</div>
+                        </div>
+                    </div>
+
+                    <!-- Contact CTA -->
+                    <div class="contact-cta mt-4">
+                        <h4>Quan tâm đến dự án này?</h4>
+                        <p>Liên hệ với chúng tôi để biết thêm chi tiết</p>
+                        <a href="{% url 'contact' %}" class="btn btn-primary btn-block">
+                            <i class="fas fa-phone"></i> Liên hệ ngay
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Related Projects -->
+{% if related_projects %}
+<section class="related-projects py-5 bg-light">
+    <div class="container">
+        <h2 class="text-center mb-5">Dự án liên quan</h2>
+        <div class="row">
+            {% for related_project in related_projects %}
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="card project-card h-100">
+                    <div class="project-image">
+                        {% if related_project.featured_image %}
+                            <img src="{{ related_project.featured_image.url }}" class="card-img-top" alt="{{ related_project.title }}">
+                        {% else %}
+                            <img src="{% static 'images/project-placeholder.svg' %}" class="card-img-top" alt="{{ related_project.title }}">
+                        {% endif %}
+                    </div>
+                    <div class="card-body d-flex flex-column">
+                        <h5 class="card-title">{{ related_project.title }}</h5>
+                        <p class="card-text flex-grow-1">{{ related_project.summary|truncatewords:15 }}</p>
+                        <div class="project-meta mb-3">
+                            <small class="text-muted">
+                                <i class="fas fa-building"></i> {{ related_project.client_name }}
+                            </small>
+                            <small class="text-muted ms-3">
+                                <i class="fas fa-calendar"></i> {{ related_project.completion_date|date:"d/m/Y" }}
+                            </small>
+                        </div>
+                        <a href="{{ related_project.get_absolute_url }}" class="btn btn-outline-primary mt-auto">
+                            Xem chi tiết <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<style>
+.project-hero {
+    position: relative;
+    height: 60vh;
+    min-height: 400px;
+    overflow: hidden;
+}
+
+.hero-image {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.hero-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.hero-placeholder {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 5rem;
+}
+
+.hero-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,0.7));
+}
+
+.hero-content {
+    position: relative;
+    z-index: 2;
+    height: 100%;
+    display: flex;
+    align-items: end;
+    padding-bottom: 3rem;
+    color: white;
+}
+
+.hero-title {
+    font-size: 3rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+}
+
+.hero-meta {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.hero-meta span {
+    background: rgba(255,255,255,0.2);
+    backdrop-filter: blur(10px);
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+}
+
+.breadcrumb {
+    background: none;
+    padding: 0;
+    margin-bottom: 1rem;
+}
+
+.breadcrumb-item a {
+    color: rgba(255,255,255,0.8);
+    text-decoration: none;
+}
+
+.breadcrumb-item.active {
+    color: white;
+}
+
+.project-details-card {
+    background: white;
+    border-radius: 15px;
+    padding: 2rem;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    top: 2rem;
+}
+
+.project-details-card h3 {
+    margin-bottom: 1.5rem;
+    color: #333;
+    border-bottom: 2px solid #f8f9fa;
+    padding-bottom: 0.5rem;
+}
+
+.details-grid {
+    display: grid;
+    gap: 1rem;
+}
+
+.detail-item {
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #f8f9fa;
+}
+
+.detail-item:last-child {
+    border-bottom: none;
+}
+
+.detail-label {
+    font-weight: 600;
+    color: #6c757d;
+    font-size: 0.9rem;
+    margin-bottom: 0.25rem;
+}
+
+.detail-value {
+    color: #333;
+    font-weight: 500;
+}
+
+.status-completed {
+    background-color: #28a745;
+    color: white;
+}
+
+.status-ongoing {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.status-featured {
+    background-color: #dc3545;
+    color: white;
+}
+
+.contact-cta {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 1.5rem;
+    border-radius: 10px;
+    color: white;
+    text-align: center;
+}
+
+.contact-cta h4 {
+    margin-bottom: 0.5rem;
+}
+
+.contact-cta p {
+    margin-bottom: 1rem;
+    opacity: 0.9;
+}
+
+.contact-cta .btn {
+    background: rgba(255,255,255,0.2);
+    border: 2px solid white;
+    color: white;
+    font-weight: 600;
+}
+
+.contact-cta .btn:hover {
+    background: white;
+    color: #667eea;
+}
+
+.project-summary h2,
+.project-content h2 {
+    color: #333;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #f8f9fa;
+}
+
+.content-body {
+    line-height: 1.7;
+    color: #555;
+}
+
+.content-body h3 {
+    color: #333;
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+}
+
+.project-tags h3 {
+    margin-bottom: 1rem;
+}
+
+.tags-list .badge {
+    margin-right: 0.5rem;
+    margin-bottom: 0.5rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+}
+
+.project-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: none;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.project-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.project-image img {
+    height: 200px;
+    object-fit: cover;
+}
+
+.project-meta {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+    .hero-title {
+        font-size: 2rem;
+    }
+    
+    .hero-meta {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .project-details-card {
+        margin-top: 2rem;
+        position: static !important;
+    }
+}
+</style>
+{% endblock %} 

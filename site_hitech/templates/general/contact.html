@@ -1,0 +1,414 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Liên hệ - Hitech NDT{% endblock %}
+
+{% block extra_head %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="https://unpkg.com/aos@2.3.1/dist/aos.css">
+<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+<style>
+/* Breadcrumb */
+.breadcrumb-section {
+    background: #f8f9fa;
+    padding: 20px 0;
+    border-bottom: 1px solid #e9ecef;
+    margin-bottom: 0;
+    font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.breadcrumb-item a {
+    color: #185a9d;
+    text-decoration: none;
+}
+
+.breadcrumb-item.active {
+    color: #6c757d;
+}
+
+.contact-hero-pro {
+    background: linear-gradient(120deg, #185a9d 0%, #43cea2 100%);
+    color: #fff;
+    padding: 64px 0 48px 0;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    border-radius: 0 0 40px 40px;
+    margin-bottom: 32px;
+    margin-top: 0;
+}
+.contact-hero-pro h1 {
+    font-size: 2.8rem;
+    font-weight: 800;
+    margin-bottom: 12px;
+    text-shadow: 0 4px 24px rgba(0,0,0,0.13);
+    font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.2;
+}
+.contact-hero-pro p {
+    font-size: 1.25rem;
+    opacity: 0.92;
+    margin-bottom: 24px;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+    font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+}
+.cta-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 18px;
+    margin-top: 18px;
+    flex-wrap: wrap;
+}
+.cta-btn {
+    background: #fff;
+    color: #185a9d;
+    font-weight: 700;
+    border: none;
+    border-radius: 30px;
+    padding: 12px 32px;
+    font-size: 1.1rem;
+    box-shadow: 0 4px 24px rgba(44,83,100,0.13);
+    transition: all 0.22s;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    text-decoration: none;
+    font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+.cta-btn:hover {
+    background: #185a9d;
+    color: #fff;
+    transform: translateY(-3px) scale(1.04);
+}
+
+.contact-section-pro {
+    padding: 48px 0 32px 0;
+    background: #f9fafb;
+}
+.contact-card-list {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    margin-bottom: 32px;
+    justify-content: center;
+}
+.contact-card-pro {
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 4px 24px rgba(44,83,100,0.13);
+    padding: 32px 24px 24px 24px;
+    text-align: center;
+    min-width: 220px;
+    flex: 1 1 220px;
+    max-width: 320px;
+    transition: box-shadow 0.22s, transform 0.18s;
+    position: relative;
+    margin-bottom: 12px;
+}
+.contact-card-pro:hover {
+    box-shadow: 0 12px 36px rgba(44,83,100,0.22);
+    transform: translateY(-6px) scale(1.025);
+}
+.contact-card-icon-pro {
+    font-size: 2.5rem;
+    margin-bottom: 14px;
+    color: #185a9d;
+    background: linear-gradient(135deg, #43cea2 0%, #185a9d 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.contact-card-title-pro {
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin-bottom: 6px;
+    color: #185a9d;
+    font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+.contact-card-text-pro {
+    color: #444;
+    font-size: 1.08rem;
+    line-height: 1.7;
+    word-break: break-all;
+    font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+.contact-card-action {
+    margin-top: 10px;
+}
+.contact-card-action a {
+    color: #fff;
+    background: #43cea2;
+    border-radius: 20px;
+    padding: 6px 18px;
+    font-size: 1rem;
+    text-decoration: none;
+    margin: 0 4px;
+    transition: background 0.2s;
+    display: inline-block;
+}
+.contact-card-action a:hover {
+    background: #185a9d;
+}
+
+.contact-form-pro {
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 4px 24px rgba(44,83,100,0.13);
+    padding: 36px 28px 28px 28px;
+    margin-bottom: 32px;
+    transition: box-shadow 0.22s, transform 0.18s;
+}
+.contact-form-pro:hover {
+    box-shadow: 0 12px 36px rgba(44,83,100,0.22);
+    transform: translateY(-4px) scale(1.01);
+}
+.contact-form-pro h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    color: #185a9d;
+    font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+.form-group {
+    margin-bottom: 1.5rem;
+}
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: #374151;
+    font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+.form-control {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    font-size: 1rem;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+.form-control:focus {
+    border-color: #43cea2;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(67, 206, 162, 0.18);
+}
+.btn-send-pro {
+    background: linear-gradient(90deg, #43cea2 0%, #185a9d 100%);
+    color: #fff;
+    border: none;
+    padding: 0.75rem 2.2rem;
+    font-size: 1.1rem;
+    font-weight: 700;
+    border-radius: 30px;
+    cursor: pointer;
+    transition: background 0.18s, transform 0.18s;
+    box-shadow: 0 2px 10px rgba(44,83,100,0.10);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+.btn-send-pro:hover {
+    background: linear-gradient(90deg, #185a9d 0%, #43cea2 100%);
+    transform: translateY(-2px) scale(1.04);
+}
+
+.map-container-pro {
+    margin-top: 3rem;
+    border-radius: 1rem;
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(44,83,100,0.13);
+}
+.map-container-pro iframe {
+    width: 100%;
+    height: 420px;
+    border: 0;
+    display: block;
+}
+@media (max-width: 900px) {
+    .contact-card-list {
+        flex-direction: column;
+        gap: 12px;
+    }
+    .contact-form-pro {
+        padding: 18px 6px 18px 6px;
+    }
+}
+@media (max-width: 600px) {
+    .contact-hero-pro h1 { font-size: 2rem; }
+    .contact-card-pro { padding: 18px 6px; }
+    .contact-form-pro { padding: 10px 2px; }
+    .map-container-pro iframe { height: 260px; }
+}
+@media (max-width: 991.98px) {
+    .map-embed-inline { display: none !important; }
+}
+@media (min-width: 992px) {
+    .map-container-pro-bottom { display: none !important; }
+}
+/* Social icon đều, căn giữa, cùng màu, cùng size */
+.social-links {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1.5rem;
+    justify-content: center;
+}
+.social-link {
+    width: 44px;
+    height: 44px;
+    background-color: #e0e7ff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #185a9d;
+    font-size: 1.35rem;
+    transition: background-color 0.15s, color 0.15s, transform 0.15s;
+    box-shadow: 0 2px 8px rgba(44,83,100,0.07);
+}
+.social-link:hover {
+    background-color: #185a9d;
+    color: #fff;
+    transform: translateY(-3px) scale(1.08);
+}
+</style>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    AOS.init({ duration: 1000, once: true, mirror: false });
+});
+</script>
+{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb -->
+<div class="breadcrumb-section">
+    <div class="container">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'home' %}">Trang chủ</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Liên hệ</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<!-- Hero Section -->
+<section class="contact-hero-pro">
+    <div class="container">
+        <h1>Liên hệ với Hitech NDT</h1>
+        <p>Đội ngũ chuyên gia của chúng tôi luôn sẵn sàng hỗ trợ bạn. Đừng ngần ngại liên hệ hoặc gửi yêu cầu, chúng tôi sẽ phản hồi nhanh nhất!</p>
+        <div class="cta-buttons">
+            <a href="tel:{{ contact_settings.phone_numbers|default:'+84123456789' }}" class="cta-btn"><i class="fas fa-phone-alt"></i>Gọi ngay</a>
+            <a href="https://zalo.me/0369617913" class="cta-btn" target="_blank"><i class="fab fa-zalo"></i>Nhắn Zalo</a>
+            <a href="mailto:{{ contact_settings.email_contact|default:'info@hitechndt.com' }}" class="cta-btn"><i class="fas fa-envelope"></i>Gửi Email</a>
+        </div>
+    </div>
+</section>
+
+<!-- Contact Section -->
+<section class="contact-section-pro">
+    <div class="container">
+        <div class="contact-card-list">
+            <div class="contact-card-pro" data-aos="fade-up">
+                <div class="contact-card-icon-pro"><i class="fas fa-map-marker-alt"></i></div>
+                <div class="contact-card-title-pro">Địa chỉ</div>
+                <div class="contact-card-text-pro">{{ contact_settings.address|default:'123 Đường ABC, Quận XYZ, TP.HCM' }}</div>
+                <div class="contact-card-action"><a href="https://maps.google.com/?q={{ contact_settings.address|urlencode }}" target="_blank">Xem bản đồ</a></div>
+            </div>
+            <div class="contact-card-pro" data-aos="fade-up" data-aos-delay="100">
+                <div class="contact-card-icon-pro"><i class="fas fa-phone-alt"></i></div>
+                <div class="contact-card-title-pro">Điện thoại</div>
+                <div class="contact-card-text-pro">
+                    {% for phone in contact_settings.phone_numbers.splitlines %}
+                        <div>{{ phone }}</div>
+                    {% endfor %}
+                </div>
+                <div class="contact-card-action"><a href="tel:{{ contact_settings.phone_numbers|default:'+84123456789' }}">Gọi ngay</a></div>
+            </div>
+            <div class="contact-card-pro" data-aos="fade-up" data-aos-delay="200">
+                <div class="contact-card-icon-pro"><i class="fas fa-envelope"></i></div>
+                <div class="contact-card-title-pro">Email</div>
+                <div class="contact-card-text-pro">
+                    {% for email in contact_settings.email_contact.splitlines %}
+                        <div>{{ email }}</div>
+                    {% endfor %}
+                </div>
+                <div class="contact-card-action"><a href="mailto:{{ contact_settings.email_contact|default:'info@hitechndt.com' }}">Gửi Email</a></div>
+            </div>
+            <div class="contact-card-pro" data-aos="fade-up" data-aos-delay="300">
+                <div class="contact-card-icon-pro"><i class="fas fa-clock"></i></div>
+                <div class="contact-card-title-pro">Giờ làm việc</div>
+                <div class="contact-card-text-pro">
+                    {% for hours in contact_settings.business_hours.splitlines %}
+                        <div>{{ hours }}</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <!-- Contact Form -->
+            <div class="col-lg-7">
+                <div class="contact-form-pro" data-aos="fade-right">
+                    <h2>Gửi yêu cầu liên hệ</h2>
+                    <form method="post" action="{% url 'contact' %}">
+                        {% csrf_token %}
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="name">Họ tên</label>
+                                    <input type="text" class="form-control" id="name" name="name" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="email">Email</label>
+                                    <input type="email" class="form-control" id="email" name="email" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="phone">Số điện thoại</label>
+                            <input type="tel" class="form-control" id="phone" name="phone">
+                        </div>
+                        <div class="form-group">
+                            <label for="subject">Tiêu đề</label>
+                            <input type="text" class="form-control" id="subject" name="subject" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="message">Nội dung</label>
+                            <textarea class="form-control" id="message" name="message" rows="5" required></textarea>
+                        </div>
+                        <button type="submit" class="btn-send-pro"><i class="fas fa-paper-plane"></i>Gửi yêu cầu</button>
+                    </form>
+                </div>
+            </div>
+            <!-- Social & Info -->
+            <div class="col-lg-5">
+                <div class="contact-form-pro" data-aos="fade-left">
+                    <h2>Kết nối với chúng tôi</h2>
+                    <div class="social-links" style="justify-content:center; margin-bottom: 18px;">
+                        <a href="#" class="social-link" title="Facebook"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" class="social-link" title="Messenger"><i class="fab fa-facebook-messenger"></i></a>
+                        <a href="#" class="social-link" title="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
+                        <a href="#" class="social-link" title="YouTube"><i class="fab fa-youtube"></i></a>
+                    </div>
+                    <div style="margin-bottom: 18px; text-align:center; color:#888; font-size:1rem;">
+                        <i class="fas fa-headset"></i> Hỗ trợ 24/7 - Đội ngũ tư vấn nhiệt tình, chuyên nghiệp
+                    </div>
+                    <div class="map-container-pro" style="margin-top:0; border-radius: 1rem; box-shadow: 0 4px 24px rgba(44,83,100,0.13); overflow: hidden;">
+                        {{ contact_settings.maps_embed|safe }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

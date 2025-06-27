@@ -1,0 +1,348 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ title }} - Hitech NDT ERP{% endblock %}
+
+{% block extra_head %}
+<style>
+    body {
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        min-height: 100vh;
+    }
+
+    .erp-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 40px 20px;
+    }
+
+    .module-header {
+        text-align: center;
+        margin-bottom: 50px;
+        padding: 50px 30px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 20px;
+        color: white;
+        box-shadow: 0 15px 35px rgba(102, 126, 234, 0.3);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .module-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
+        transform: rotate(45deg);
+        animation: shimmer 3s infinite;
+    }
+
+    @keyframes shimmer {
+        0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+        50% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+        100% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+    }
+
+    .module-icon {
+        font-size: 4rem;
+        margin-bottom: 20px;
+        text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    }
+
+    .module-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 15px;
+        text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    }
+
+    .module-description {
+        font-size: 1.2rem;
+        opacity: 0.9;
+        max-width: 600px;
+        margin: 0 auto;
+        line-height: 1.6;
+    }
+
+    .features-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 30px;
+        margin-bottom: 50px;
+    }
+
+    .feature-card {
+        background: white;
+        border-radius: 15px;
+        padding: 30px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+        border-left: 5px solid #667eea;
+    }
+
+    .feature-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 20px 40px rgba(102, 126, 234, 0.2);
+    }
+
+    .feature-icon {
+        font-size: 2.5rem;
+        color: #667eea;
+        margin-bottom: 20px;
+    }
+
+    .feature-title {
+        font-size: 1.3rem;
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 15px;
+    }
+
+    .feature-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .feature-list li {
+        padding: 8px 0;
+        border-bottom: 1px solid #f0f0f0;
+        position: relative;
+        padding-left: 25px;
+    }
+
+    .feature-list li:before {
+        content: '✓';
+        position: absolute;
+        left: 0;
+        color: #27ae60;
+        font-weight: bold;
+    }
+
+    .feature-list li:last-child {
+        border-bottom: none;
+    }
+
+    .coming-soon-badge {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        color: white;
+        padding: 60px 40px;
+        border-radius: 20px;
+        text-align: center;
+        margin-top: 50px;
+        box-shadow: 0 15px 35px rgba(245, 87, 108, 0.3);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .coming-soon-badge::before {
+        content: '';
+        position: absolute;
+        top: -2px;
+        left: -2px;
+        right: -2px;
+        bottom: -2px;
+        background: linear-gradient(45deg, #f093fb, #f5576c, #f093fb);
+        border-radius: 20px;
+        z-index: -1;
+        animation: glow 2s linear infinite;
+    }
+
+    @keyframes glow {
+        0%, 100% { filter: hue-rotate(0deg); }
+        50% { filter: hue-rotate(45deg); }
+    }
+
+    .coming-soon-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 15px;
+        text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    }
+
+    .coming-soon-text {
+        font-size: 1.1rem;
+        opacity: 0.9;
+        margin-bottom: 30px;
+    }
+
+    .notification-btn {
+        background: rgba(255,255,255,0.2);
+        border: 2px solid rgba(255,255,255,0.3);
+        color: white;
+        padding: 12px 30px;
+        border-radius: 25px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .notification-btn:hover {
+        background: rgba(255,255,255,0.3);
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+
+    .back-to-dashboard {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        background: #667eea;
+        color: white;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        text-decoration: none;
+        box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        transition: all 0.3s ease;
+        z-index: 1000;
+    }
+
+    .back-to-dashboard:hover {
+        background: #764ba2;
+        color: white;
+        transform: scale(1.1);
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .module-title {
+            font-size: 2rem;
+        }
+        
+        .module-description {
+            font-size: 1rem;
+        }
+        
+        .features-grid {
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+        
+        .coming-soon-title {
+            font-size: 2rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="erp-container">
+    <!-- Module Header -->
+    <div class="module-header">
+        <div class="module-icon">
+            {% block module_icon %}
+            <i class="fas fa-cogs"></i>
+            {% endblock %}
+        </div>
+        <h1 class="module-title">{{ module_name }}</h1>
+        <p class="module-description">{{ description }}</p>
+    </div>
+
+    <!-- Features Grid -->
+    <div class="features-grid">
+        {% block features_content %}
+        <div class="feature-card">
+            <div class="feature-icon">
+                <i class="fas fa-star"></i>
+            </div>
+            <h3 class="feature-title">Tính năng chính</h3>
+            <ul class="feature-list">
+                {% for feature in features %}
+                <li>{{ feature }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon">
+                <i class="fas fa-rocket"></i>
+            </div>
+            <h3 class="feature-title">Công nghệ hiện đại</h3>
+            <ul class="feature-list">
+                <li>Giao diện thân thiện với người dùng</li>
+                <li>Tốc độ xử lý nhanh chóng</li>
+                <li>Bảo mật dữ liệu cao</li>
+                <li>Tích hợp API linh hoạt</li>
+                <li>Hỗ trợ mobile responsive</li>
+            </ul>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <h3 class="feature-title">Báo cáo & Phân tích</h3>
+            <ul class="feature-list">
+                <li>Dashboard trực quan</li>
+                <li>Báo cáo tự động</li>
+                <li>Xuất Excel/PDF</li>
+                <li>Biểu đồ thống kê</li>
+                <li>Cảnh báo thông minh</li>
+            </ul>
+        </div>
+        {% endblock %}
+    </div>
+
+    <!-- Coming Soon Section -->
+    {% if coming_soon %}
+    <div class="coming-soon-badge">
+        <div class="coming-soon-title">
+            <i class="fas fa-clock me-3"></i>Đang Phát Triển
+        </div>
+        <p class="coming-soon-text">
+            Module này đang được đội ngũ phát triển tích cực xây dựng. 
+            Chúng tôi sẽ sớm ra mắt với đầy đủ tính năng hiện đại và tiện ích.
+        </p>
+        <a href="#" class="notification-btn" onclick="alert('Chức năng đăng ký thông báo sẽ sớm được bổ sung!')">
+            <i class="fas fa-bell me-2"></i>Nhận thông báo khi ra mắt
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Back to Dashboard Button -->
+<a href="{% url 'staff_dashboard' %}" class="back-to-dashboard" title="Quay lại Dashboard">
+    <i class="fas fa-arrow-left"></i>
+</a>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Animate feature cards on scroll
+    $(window).scroll(function() {
+        $('.feature-card').each(function() {
+            var elementTop = $(this).offset().top;
+            var elementBottom = elementTop + $(this).outerHeight();
+            var viewportTop = $(window).scrollTop();
+            var viewportBottom = viewportTop + $(window).height();
+            
+            if (elementBottom > viewportTop && elementTop < viewportBottom) {
+                $(this).addClass('animate__animated animate__fadeInUp');
+            }
+        });
+    });
+    
+    // Add smooth scrolling
+    $('a[href^="#"]').on('click', function(event) {
+        var target = $(this.getAttribute('href'));
+        if (target.length) {
+            event.preventDefault();
+            $('html, body').stop().animate({
+                scrollTop: target.offset().top - 100
+            }, 1000);
+        }
+    });
+});
+</script>
+{% endblock %} 

@@ -1,0 +1,299 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dự án của chúng tôi - {{ block.super }}{% endblock %}
+
+{% block content %}
+<section class="page-header">
+    <div class="container">
+        <div class="row">
+            <div class="col-12">
+                <h1>Dự án của chúng tôi</h1>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="/">Trang chủ</a></li>
+                        <li class="breadcrumb-item active">Dự án</li>
+                    </ol>
+                </nav>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="projects-section py-5">
+    <div class="container">
+        <!-- Search and Filter -->
+        <div class="row mb-4">
+            <div class="col-md-8">
+                <form method="GET" class="search-form">
+                    <div class="input-group">
+                        <input type="text" name="search" class="form-control" 
+                               placeholder="Tìm kiếm dự án..." value="{{ search }}">
+                        <button class="btn btn-primary" type="submit">
+                            <i class="fas fa-search"></i> Tìm kiếm
+                        </button>
+                    </div>
+                </form>
+            </div>
+            <div class="col-md-4">
+                <form method="GET">
+                    {% if search %}<input type="hidden" name="search" value="{{ search }}">{% endif %}
+                    <select name="type" class="form-select" onchange="this.form.submit()">
+                        <option value="">Tất cả loại dự án</option>
+                        {% for type in project_types %}
+                            <option value="{{ type }}" {% if project_type == type %}selected{% endif %}>
+                                {{ type }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </form>
+            </div>
+        </div>
+
+        <!-- Results info -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <p class="text-muted">
+                    Hiển thị {{ projects.start_index }}-{{ projects.end_index }} 
+                    trong tổng số {{ total_projects }} dự án
+                    {% if search %}cho từ khóa "{{ search }}"{% endif %}
+                    {% if project_type %}thuộc loại "{{ project_type }}"{% endif %}
+                </p>
+            </div>
+        </div>
+
+        <!-- Projects Grid -->
+        <div class="row">
+            {% for project in projects %}
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="card project-card h-100">
+                    <div class="project-image">
+                        {% if project.featured_image %}
+                            <img src="{{ project.featured_image.url }}" class="card-img-top" alt="{{ project.title }}">
+                        {% else %}
+                            <img src="{% static 'images/project-placeholder.svg' %}" class="card-img-top" alt="{{ project.title }}">
+                        {% endif %}
+                        <div class="project-status badge-{{ project.status }}">
+                            {{ project.get_status_display }}
+                        </div>
+                    </div>
+                    <div class="card-body d-flex flex-column">
+                        <h5 class="card-title">{{ project.title }}</h5>
+                        <p class="card-text flex-grow-1">{{ project.summary|truncatewords:20 }}</p>
+                        
+                        <div class="project-info mb-3">
+                            <div class="info-item">
+                                <i class="fas fa-building"></i>
+                                <span>{{ project.client_name }}</span>
+                            </div>
+                            <div class="info-item">
+                                <i class="fas fa-map-marker-alt"></i>
+                                <span>{{ project.location }}</span>
+                            </div>
+                            <div class="info-item">
+                                <i class="fas fa-calendar"></i>
+                                <span>{{ project.completion_date|date:"d/m/Y" }}</span>
+                            </div>
+                            <div class="info-item">
+                                <i class="fas fa-tag"></i>
+                                <span>{{ project.project_type }}</span>
+                            </div>
+                        </div>
+
+                        {% if project.tags %}
+                        <div class="project-tags mb-3">
+                            {% for tag in project.get_tags_list %}
+                                <span class="badge bg-secondary">{{ tag }}</span>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+
+                        <div class="project-footer mt-auto">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">
+                                    <i class="far fa-eye"></i> {{ project.view_count }} lượt xem
+                                </small>
+                                <a href="{{ project.get_absolute_url }}" class="btn btn-primary">
+                                    Xem chi tiết <i class="fas fa-arrow-right"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12">
+                <div class="text-center py-5">
+                    <i class="fas fa-folder-open fa-5x text-muted mb-3"></i>
+                    <h4>Không tìm thấy dự án nào</h4>
+                    <p class="text-muted">
+                        {% if search or project_type %}
+                            Vui lòng thử tìm kiếm với từ khóa khác hoặc bỏ bộ lọc.
+                        {% else %}
+                            Hiện tại chưa có dự án nào được công bố.
+                        {% endif %}
+                    </p>
+                    {% if search or project_type %}
+                        <a href="{% url 'public_project_list' %}" class="btn btn-primary">Xem tất cả dự án</a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Pagination -->
+        {% if projects.has_other_pages %}
+        <div class="row">
+            <div class="col-12">
+                <nav aria-label="Project pagination">
+                    <ul class="pagination justify-content-center">
+                        {% if projects.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1{% if search %}&search={{ search }}{% endif %}{% if project_type %}&type={{ project_type }}{% endif %}">
+                                    <i class="fas fa-angle-double-left"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ projects.previous_page_number }}{% if search %}&search={{ search }}{% endif %}{% if project_type %}&type={{ project_type }}{% endif %}">
+                                    <i class="fas fa-angle-left"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+
+                        {% for num in projects.paginator.page_range %}
+                            {% if projects.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                            {% elif num > projects.number|add:'-3' and num < projects.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}{% if search %}&search={{ search }}{% endif %}{% if project_type %}&type={{ project_type }}{% endif %}">{{ num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if projects.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ projects.next_page_number }}{% if search %}&search={{ search }}{% endif %}{% if project_type %}&type={{ project_type }}{% endif %}">
+                                    <i class="fas fa-angle-right"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ projects.paginator.num_pages }}{% if search %}&search={{ search }}{% endif %}{% if project_type %}&type={{ project_type }}{% endif %}">
+                                    <i class="fas fa-angle-double-right"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</section>
+
+<style>
+.project-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: none;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.project-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.project-image {
+    position: relative;
+    overflow: hidden;
+}
+
+.project-image img {
+    height: 200px;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.project-card:hover .project-image img {
+    transform: scale(1.05);
+}
+
+.project-status {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    padding: 5px 10px;
+    border-radius: 15px;
+    font-size: 0.8em;
+    font-weight: bold;
+}
+
+.badge-completed {
+    background-color: #28a745;
+    color: white;
+}
+
+.badge-ongoing {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.badge-featured {
+    background-color: #dc3545;
+    color: white;
+}
+
+.project-info .info-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 5px;
+    font-size: 0.9em;
+}
+
+.project-info .info-item i {
+    width: 15px;
+    margin-right: 8px;
+    color: #6c757d;
+}
+
+.project-tags .badge {
+    margin-right: 5px;
+    margin-bottom: 5px;
+}
+
+.search-form {
+    margin-bottom: 0;
+}
+
+.page-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 60px 0;
+}
+
+.page-header h1 {
+    margin-bottom: 10px;
+    font-weight: 700;
+}
+
+.breadcrumb {
+    background: none;
+    padding: 0;
+    margin: 0;
+}
+
+.breadcrumb-item + .breadcrumb-item::before {
+    color: rgba(255,255,255,0.7);
+}
+
+.breadcrumb-item a {
+    color: rgba(255,255,255,0.8);
+    text-decoration: none;
+}
+
+.breadcrumb-item.active {
+    color: white;
+}
+</style>
+{% endblock %} 

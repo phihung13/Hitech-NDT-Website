@@ -1,0 +1,268 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ category.name }} - Bài viết{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+<style>
+.bloglist-header {
+    background: linear-gradient(120deg,rgb(23, 15, 188), #2c5364 70%, #fff0 100%);
+    color: #fff;
+    padding: 48px 0 32px 0;
+    text-align: center;
+    border-radius: 0 0 32px 32px;
+    margin-bottom: 32px;
+    position: relative;
+    overflow: hidden;
+}
+.bloglist-title {
+    font-size: 2.8rem;
+    font-weight: bold;
+    margin-bottom: 8px;
+    letter-spacing: 1px;
+}
+.bloglist-subtitle {
+    font-size: 1.2rem;
+    opacity: 0.85;
+}
+.blogcat-breadcrumb {
+    padding: 18px 0 0 0;
+    margin-bottom: 0;
+}
+.blogcat-breadcrumb .breadcrumb {
+    background: none;
+    padding: 0;
+    margin: 0;
+    font-size: 1.08rem;
+}
+.blogcat-breadcrumb .breadcrumb-item a {
+    color: #2c5364;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    transition: all 0.2s;
+}
+.blogcat-breadcrumb .breadcrumb-item a:hover {
+    text-decoration: underline;
+    color:rgb(0, 31, 132);
+}
+.blogcat-breadcrumb .breadcrumb-item.active {
+    color: #1a2a36;
+    font-weight: 700;
+    letter-spacing: 1px;
+    font-size: 1.13rem;
+}
+.blogcat-title {
+    font-size: 2.2rem;
+    font-weight: bold;
+    margin-bottom: 8px;
+    letter-spacing: 1px;
+}
+.blogcat-desc {
+    font-size: 1.1rem;
+    opacity: 0.92;
+}
+.blogcat-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 32px 24px;
+    margin-bottom: 32px;
+}
+.blogcat-card {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 4px 24px rgba(44,83,100,0.10);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    text-decoration: none;
+    color: inherit;
+    transition: box-shadow 0.22s, transform 0.16s;
+    min-height: 340px;
+    border: 1.5px solid #f2f6fa;
+    position: relative;
+}
+.blogcat-card:hover {
+    box-shadow: 0 12px 36px rgba(44,83,100,0.18);
+    transform: translateY(-6px) scale(1.025);
+    border-color: #2c5364;
+}
+.blogcat-image {
+    width: 100%;
+    height: 170px;
+    object-fit: cover;
+    background: #e9ecef;
+    border-bottom: 1.5px solid #f2f6fa;
+}
+.blogcat-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 170px;
+    background: #e9ecef;
+    color: #b0b0b0;
+    font-size: 2.2rem;
+}
+.blogcat-content {
+    padding: 18px 18px 14px 18px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+.blogcat-card-title {
+    font-size: 1.13rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: #1a2a36;
+    line-height: 1.3;
+    transition: color 0.16s;
+}
+.blogcat-card:hover .blogcat-card-title {
+    color: #2c5364;
+}
+.blogcat-meta {
+    display: flex;
+    gap: 12px;
+    font-size: 0.95rem;
+    color: #6c7a89;
+    align-items: center;
+    margin-top: 8px;
+    flex-wrap: wrap;
+}
+.blogcat-meta i {
+    margin-right: 4px;
+}
+.blogcat-empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    color: #aaa;
+    padding: 40px 0;
+}
+.blogcat-pagination-wrap {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 28px;
+}
+.blogcat-pagination {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+.blogcat-page-link {
+    display: inline-block;
+    padding: 7px 13px;
+    border-radius: 6px;
+    background: #f2f6fa;
+    color: #2c5364;
+    font-weight: 500;
+    text-decoration: none;
+    transition: background 0.15s, color 0.15s;
+    border: none;
+    margin: 0 1px;
+}
+.blogcat-page-link:hover {
+    background: #2c5364;
+    color: #fff;
+}
+.blogcat-page-current {
+    background: #2c5364;
+    color: #fff;
+    font-weight: bold;
+    pointer-events: none;
+}
+@media (max-width: 900px) {
+    .blogcat-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+@media (max-width: 600px) {
+    .blogcat-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="breadcrumb-section">
+    <div class="container">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'home' %}">Trang chủ</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'blog_list' %}">Bài viết</a></li>
+                <li class="breadcrumb-item active" aria-current="page">{{ category.name }}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+<div class="container">
+    <div class="bloglist-header">
+        <h1 class="bloglist-title">{{ category.name }}</h1>
+        {% if category.description %}
+        <p class="bloglist-subtitle">{{ category.description }}</p>
+        {% endif %}
+    </div>
+    <div class="blogcat-grid">
+        {% for post in posts %}
+        <a href="{{ post.get_absolute_url }}" class="blogcat-card">
+            {% if post.featured_image %}
+                <img src="{{ post.featured_image.url }}" alt="{{ post.title }}" class="blogcat-image">
+            {% else %}
+                <div class="blogcat-image blogcat-placeholder">
+                    <i class="fas fa-image"></i>
+                </div>
+            {% endif %}
+            <div class="blogcat-content">
+                <h3 class="blogcat-card-title">{{ post.title }}</h3>
+                <div class="blogcat-meta">
+                    <div class="blogcat-author">
+                        <i class="fas fa-user"></i>
+                        <span>{{ post.author.get_full_name|default:post.author.username }}</span>
+                    </div>
+                    <div class="blogcat-date">
+                        <i class="fas fa-calendar"></i>
+                        <span>{{ post.created_at|date:"d/m/Y" }}</span>
+                    </div>
+                </div>
+            </div>
+        </a>
+        {% empty %}
+        <div class="blogcat-empty">
+            <i class="fas fa-file-alt"></i>
+            <h3>Chưa có bài viết nào trong chuyên mục này</h3>
+            <p>Hãy quay lại sau để xem những bài viết mới nhất.</p>
+        </div>
+        {% endfor %}
+    </div>
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+    <div class="blogcat-pagination-wrap">
+        <nav class="blogcat-pagination">
+            {% if page_obj.has_previous %}
+                <a href="?page=1" class="blogcat-page-link">
+                    <i class="fas fa-angle-double-left"></i>
+                </a>
+                <a href="?page={{ page_obj.previous_page_number }}" class="blogcat-page-link">
+                    <i class="fas fa-angle-left"></i>
+                </a>
+            {% endif %}
+            {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                    <span class="blogcat-page-link blogcat-page-current">{{ num }}</span>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <a href="?page={{ num }}" class="blogcat-page-link">{{ num }}</a>
+                {% endif %}
+            {% endfor %}
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}" class="blogcat-page-link">
+                    <i class="fas fa-angle-right"></i>
+                </a>
+                <a href="?page={{ page_obj.paginator.num_pages }}" class="blogcat-page-link">
+                    <i class="fas fa-angle-double-right"></i>
+                </a>
+            {% endif %}
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

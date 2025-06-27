@@ -1,0 +1,489 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ document.title }} - Tài liệu nội bộ{% endblock %}
+
+{% block extra_css %}
+<style>
+    .document-hero {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 60px 0;
+        border-radius: 0 0 50px 50px;
+        margin-bottom: 40px;
+    }
+    
+    .document-icon {
+        font-size: 4rem;
+        margin-bottom: 20px;
+        opacity: 0.9;
+    }
+    
+    .access-level-badge {
+        font-size: 0.9rem;
+        padding: 8px 16px;
+        border-radius: 25px;
+        font-weight: 500;
+        border: 2px solid rgba(255,255,255,0.3);
+        background: rgba(255,255,255,0.1);
+        backdrop-filter: blur(10px);
+    }
+    
+    .document-meta-card {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        border: 1px solid #e3e6f0;
+    }
+    
+    .meta-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+        padding: 15px;
+        background: #f8f9fc;
+        border-radius: 10px;
+        transition: all 0.3s ease;
+    }
+    
+    .meta-item:hover {
+        background: #e3f2fd;
+        transform: translateX(5px);
+    }
+    
+    .meta-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #4e73df, #224abe);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 15px;
+        font-size: 0.9rem;
+    }
+    
+    .download-section {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 20px;
+        text-align: center;
+        margin: 30px 0;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .download-section::before {
+        content: '';
+        position: absolute;
+        top: -50px;
+        right: -50px;
+        width: 100px;
+        height: 100px;
+        background: rgba(255,255,255,0.1);
+        border-radius: 50%;
+    }
+    
+    .download-btn {
+        background: rgba(255,255,255,0.2);
+        border: 2px solid rgba(255,255,255,0.3);
+        color: white;
+        padding: 15px 30px;
+        border-radius: 50px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(10px);
+    }
+    
+    .download-btn:hover {
+        background: white;
+        color: #28a745;
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    }
+    
+    .related-documents {
+        background: #f8f9fc;
+        padding: 40px 0;
+        margin-top: 50px;
+        border-radius: 30px 30px 0 0;
+    }
+    
+    .related-doc-card {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        text-align: center;
+        transition: all 0.3s ease;
+        border: 1px solid #e3e6f0;
+        height: 100%;
+    }
+    
+    .related-doc-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        border-color: #4e73df;
+    }
+    
+    .tag-list .tag {
+        display: inline-block;
+        padding: 6px 12px;
+        margin: 4px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        border: 2px solid;
+    }
+    
+    .tag:hover {
+        transform: scale(1.05);
+        text-decoration: none;
+    }
+    
+    .breadcrumb-custom {
+        background: none;
+        padding: 0;
+        margin-bottom: 20px;
+    }
+    
+    .breadcrumb-custom .breadcrumb-item a {
+        color: rgba(255,255,255,0.8);
+        text-decoration: none;
+    }
+    
+    .breadcrumb-custom .breadcrumb-item.active {
+        color: white;
+    }
+    
+    .version-info {
+        background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+        color: white;
+        padding: 15px 20px;
+        border-radius: 10px;
+        margin: 20px 0;
+    }
+    
+    .stats-counter {
+        background: white;
+        padding: 20px;
+        border-radius: 12px;
+        text-align: center;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        border: 1px solid #e3e6f0;
+    }
+    
+    .stats-number {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #4e73df;
+        margin-bottom: 5px;
+    }
+    
+    .stats-label {
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Document Hero Section -->
+<div class="document-hero">
+    <div class="container">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb breadcrumb-custom">
+                <li class="breadcrumb-item"><a href="{% url 'home' %}">Trang chủ</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'documents_management' %}">Tài liệu</a></li>
+                <li class="breadcrumb-item"><a href="?category={{ document.category.slug }}">{{ document.category.name }}</a></li>
+                <li class="breadcrumb-item active">{{ document.title }}</li>
+            </ol>
+        </nav>
+        
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <div class="document-icon">
+                    <i class="{{ document.get_file_icon }}"></i>
+                </div>
+                <h1 class="display-4 mb-3">{{ document.title }}</h1>
+                {% if document.description %}
+                <p class="lead">{{ document.description }}</p>
+                {% endif %}
+                <div class="d-flex flex-wrap align-items-center mt-4">
+                    <span class="access-level-badge me-3">
+                        <i class="fas fa-shield-alt me-2"></i>
+                        {% if document.access_level == 'public' %}Công khai
+                        {% elif document.access_level == 'internal' %}Nội bộ
+                        {% elif document.access_level == 'restricted' %}Hạn chế
+                        {% else %}Bí mật{% endif %}
+                    </span>
+                    <span class="badge bg-light text-dark me-2">
+                        <i class="fas fa-folder me-1"></i>{{ document.category.name }}
+                    </span>
+                    <span class="badge bg-light text-dark">
+                        <i class="fas fa-code-branch me-1"></i>v{{ document.version }}
+                    </span>
+                </div>
+            </div>
+            <div class="col-lg-4 text-center">
+                <div class="row">
+                    <div class="col-6">
+                        <div class="stats-counter">
+                            <div class="stats-number">{{ document.view_count }}</div>
+                            <div class="stats-label">Lượt xem</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="stats-counter">
+                            <div class="stats-number">{{ document.download_count }}</div>
+                            <div class="stats-label">Lượt tải</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <div class="row">
+        <!-- Main Content -->
+        <div class="col-lg-8">
+            <!-- Download Section -->
+            <div class="download-section">
+                <h3><i class="fas fa-download me-2"></i>Tải xuống tài liệu</h3>
+                <p class="mb-4">Nhấn vào nút bên dưới để tải xuống tài liệu này</p>
+                <a href="{% url 'document_download' document.slug %}" class="btn download-btn">
+                    <i class="fas fa-cloud-download-alt me-2"></i>Tải xuống ({{ document.get_file_size_display }})
+                </a>
+                <div class="version-info mt-4">
+                    <div class="row">
+                        <div class="col-md-4 text-center">
+                            <i class="fas fa-file-alt fa-2x mb-2"></i>
+                            <div class="small">Loại file</div>
+                            <strong>{{ document.file_type|upper }}</strong>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <i class="fas fa-calendar fa-2x mb-2"></i>
+                            <div class="small">Ngày tải lên</div>
+                            <strong>{{ document.created_at|date:"d/m/Y" }}</strong>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <i class="fas fa-user fa-2x mb-2"></i>
+                            <div class="small">Người tạo</div>
+                            <strong>{{ document.created_by.get_full_name|default:document.created_by.username }}</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Document Info -->
+            {% if document.tags.all %}
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="fas fa-tags text-primary me-2"></i>Thẻ tags
+                    </h5>
+                    <div class="tag-list">
+                        {% for tag in document.tags.all %}
+                        <a href="{% url 'documents_management' %}?tag={{ tag.slug }}" 
+                           class="tag" style="background: {{ tag.color }}20; color: {{ tag.color }}; border-color: {{ tag.color }};">
+                            #{{ tag.name }}
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <div class="document-meta-card">
+                <h5 class="mb-4">
+                    <i class="fas fa-info-circle text-primary me-2"></i>Thông tin tài liệu
+                </h5>
+                
+                <div class="meta-item">
+                    <div class="meta-icon">
+                        <i class="fas fa-hashtag"></i>
+                    </div>
+                    <div>
+                        <strong>Mã tài liệu</strong><br>
+                        <span class="text-muted">{{ document.document_code }}</span>
+                    </div>
+                </div>
+                
+                <div class="meta-item">
+                    <div class="meta-icon">
+                        <i class="fas fa-folder"></i>
+                    </div>
+                    <div>
+                        <strong>Danh mục</strong><br>
+                        <span class="text-muted">{{ document.category.name }}</span>
+                    </div>
+                </div>
+                
+                <div class="meta-item">
+                    <div class="meta-icon">
+                        <i class="fas fa-file"></i>
+                    </div>
+                    <div>
+                        <strong>Kích thước</strong><br>
+                        <span class="text-muted">{{ document.get_file_size_display }}</span>
+                    </div>
+                </div>
+                
+                <div class="meta-item">
+                    <div class="meta-icon">
+                        <i class="fas fa-calendar-plus"></i>
+                    </div>
+                    <div>
+                        <strong>Ngày tạo</strong><br>
+                        <span class="text-muted">{{ document.created_at|date:"d/m/Y H:i" }}</span>
+                    </div>
+                </div>
+                
+                {% if document.updated_at != document.created_at %}
+                <div class="meta-item">
+                    <div class="meta-icon">
+                        <i class="fas fa-edit"></i>
+                    </div>
+                    <div>
+                        <strong>Cập nhật lần cuối</strong><br>
+                        <span class="text-muted">{{ document.updated_at|date:"d/m/Y H:i" }}</span>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <div class="meta-item">
+                    <div class="meta-icon">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div>
+                        <strong>Người tạo</strong><br>
+                        <span class="text-muted">{{ document.created_by.get_full_name|default:document.created_by.username }}</span>
+                    </div>
+                </div>
+                
+                {% if document.approved_by %}
+                <div class="meta-item">
+                    <div class="meta-icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div>
+                        <strong>Người phê duyệt</strong><br>
+                        <span class="text-muted">{{ document.approved_by.get_full_name|default:document.approved_by.username }}</span>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Quick Actions -->
+            <div class="card shadow-sm mt-4">
+                <div class="card-body text-center">
+                    <h6 class="card-title">Thao tác nhanh</h6>
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'documents_management' %}" class="btn btn-outline-primary">
+                            <i class="fas fa-arrow-left me-2"></i>Quay lại danh sách
+                        </a>
+                        <a href="{% url 'documents_management' %}?category={{ document.category.slug }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-folder me-2"></i>Xem cùng danh mục
+                        </a>
+                        
+                        <!-- Edit/Delete for authorized users -->
+                        {% if user.is_authenticated %}
+                            {% if user.user_profile.role == 'admin' or user.user_profile.role == 'manager' or document.created_by == user %}
+                            <hr>
+                            <a href="{% url 'document_edit' document.slug %}" class="btn btn-warning">
+                                <i class="fas fa-edit me-2"></i>Chỉnh sửa
+                            </a>
+                            {% if user.user_profile.role == 'admin' or document.created_by == user %}
+                            <a href="{% url 'document_delete' document.slug %}" class="btn btn-danger" 
+                               onclick="return confirm('Bạn có chắc muốn xóa tài liệu này?')">
+                                <i class="fas fa-trash me-2"></i>Xóa tài liệu
+                            </a>
+                            {% endif %}
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Related Documents -->
+{% if related_docs %}
+<div class="related-documents">
+    <div class="container">
+        <h3 class="text-center mb-5">
+            <i class="fas fa-file-alt text-primary me-2"></i>Tài liệu liên quan
+        </h3>
+        <div class="row">
+            {% for related in related_docs %}
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="related-doc-card">
+                    <div class="text-center mb-3">
+                        <i class="{{ related.get_file_icon }} fa-2x mb-2"></i>
+                        <h6>{{ related.title|truncatechars:50 }}</h6>
+                    </div>
+                    <div class="small text-muted mb-3">
+                        <i class="fas fa-calendar me-1"></i>{{ related.created_at|date:"d/m/Y" }} •
+                        <i class="fas fa-download ms-2 me-1"></i>{{ related.download_count }}
+                    </div>
+                    <a href="{% url 'document_detail' related.slug %}" class="btn btn-primary btn-sm">
+                        <i class="fas fa-eye me-1"></i>Xem chi tiết
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Smooth scroll for internal links
+    $('a[href^="#"]').on('click', function(event) {
+        var target = $(this.getAttribute('href'));
+        if( target.length ) {
+            event.preventDefault();
+            $('html, body').stop().animate({
+                scrollTop: target.offset().top - 100
+            }, 1000);
+        }
+    });
+    
+    // Download button animation
+    $('.download-btn').on('click', function() {
+        const btn = $(this);
+        const originalHtml = btn.html();
+        
+        btn.html('<i class="fas fa-spinner fa-spin me-2"></i>Đang tải xuống...');
+        btn.prop('disabled', true);
+        
+        setTimeout(function() {
+            btn.html('<i class="fas fa-check me-2"></i>Tải xuống thành công!');
+            setTimeout(function() {
+                btn.html(originalHtml);
+                btn.prop('disabled', false);
+            }, 2000);
+        }, 1000);
+    });
+    
+    // Add loading animation to related documents
+    $('.related-doc-card a').on('click', function() {
+        $(this).html('<i class="fas fa-spinner fa-spin me-1"></i>Đang tải...');
+    });
+});
+</script>
+{% endblock %} 

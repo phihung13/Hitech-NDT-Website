@@ -1,0 +1,526 @@
+{% extends "dashboard/dashboard_base.html" %}
+{% load static %}
+
+{% block title %}Staff Dashboard - Hitech NDT{% endblock %}
+
+{% block page_title %}
+<i class="fas fa-tachometer-alt text-primary me-2"></i>Dashboard
+{% endblock %}
+
+{% block header_controls %}
+<div class="d-flex align-items-center gap-2">
+    <button class="btn btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+        <i class="fas fa-filter me-1"></i>Bộ lọc
+    </button>
+    <button class="btn btn-success">
+        <i class="fas fa-sync-alt me-1"></i>Làm mới
+    </button>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Modern Dashboard Variables */
+    :root {
+        --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        --warning-gradient: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        --danger-gradient: linear-gradient(135deg, #ff6b6b 0%, #ffa500 100%);
+        --shadow-soft: 0 8px 30px rgba(0,0,0,0.1);
+        --shadow-medium: 0 15px 40px rgba(0,0,0,0.15);
+        --border-radius: 16px;
+        --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Welcome Section */
+    .welcome-section {
+        background: var(--primary-gradient);
+        border-radius: var(--border-radius);
+        padding: 2rem;
+        margin-bottom: 2rem;
+        position: relative;
+        overflow: hidden;
+        box-shadow: var(--shadow-medium);
+        color: white;
+    }
+
+    .welcome-section::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -10%;
+        width: 200px;
+        height: 200px;
+        background: rgba(255,255,255,0.1);
+        border-radius: 50%;
+        animation: float 6s ease-in-out infinite;
+    }
+
+    @keyframes float {
+        0%, 100% { transform: translateY(0px) rotate(0deg); }
+        50% { transform: translateY(-20px) rotate(10deg); }
+    }
+
+    .welcome-content {
+        position: relative;
+        z-index: 2;
+    }
+
+    .welcome-title {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: #1e3a8a;
+        margin-bottom: 0.5rem;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .welcome-subtitle {
+        color: #1e40af;
+        font-size: 1rem;
+        margin-bottom: 0;
+    }
+
+    /* Modern Stats Grid */
+    .stats-container {
+        margin-bottom: 2.5rem;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: var(--border-radius);
+        padding: 1.5rem;
+        position: relative;
+        overflow: hidden;
+        box-shadow: var(--shadow-soft);
+        transition: var(--transition);
+        border: 1px solid rgba(0,0,0,0.05);
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+        transition: var(--transition);
+    }
+
+    .stat-card.projects::before { background: var(--primary-gradient); }
+    .stat-card.staff::before { background: var(--success-gradient); }
+    .stat-card.equipment::before { background: var(--warning-gradient); }
+    .stat-card.quality::before { background: var(--danger-gradient); }
+
+    .stat-card:hover {
+        transform: translateY(-8px);
+        box-shadow: var(--shadow-medium);
+    }
+
+    .stat-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 1rem;
+    }
+
+    .stat-info h3 {
+        font-size: 2.2rem;
+        font-weight: 800;
+        margin: 0;
+        color: #2c3e50;
+        line-height: 1;
+    }
+
+    .stat-info p {
+        margin: 0.25rem 0 0 0;
+        color: #64748b;
+        font-weight: 600;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .stat-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.5rem;
+    }
+
+    .stat-icon.projects { background: var(--primary-gradient); }
+    .stat-icon.staff { background: var(--success-gradient); }
+    .stat-icon.equipment { background: var(--warning-gradient); }
+    .stat-icon.quality { background: var(--danger-gradient); }
+
+    .stat-change {
+        font-size: 0.85rem;
+        font-weight: 600;
+        padding: 0.5rem 1rem;
+        border-radius: 25px;
+        display: inline-block;
+        margin-top: 0.5rem;
+    }
+
+    .stat-change.positive {
+        background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+        color: #065f46;
+    }
+
+    .stat-change.neutral {
+        background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
+        color: #374151;
+    }
+
+    /* Modern Cards */
+    .modern-card {
+        background: white;
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow-soft);
+        border: 1px solid rgba(0,0,0,0.05);
+        overflow: hidden;
+        transition: var(--transition);
+        margin-bottom: 2rem;
+    }
+
+    .modern-card:hover {
+        box-shadow: var(--shadow-medium);
+    }
+
+    .card-header-modern {
+        padding: 1.5rem;
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        border-bottom: 1px solid rgba(0,0,0,0.08);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .card-title-modern {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .card-body-modern {
+        padding: 1.5rem;
+    }
+
+    /* Modern Table */
+    .modern-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .modern-table th {
+        background: #f8fafc;
+        padding: 1rem 1.5rem;
+        font-weight: 600;
+        color: #475569;
+        border-bottom: 2px solid #e2e8f0;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .modern-table td {
+        padding: 1.25rem 1.5rem;
+        border-bottom: 1px solid #f1f5f9;
+        vertical-align: middle;
+    }
+
+    .modern-table tbody tr:hover {
+        background: rgba(99, 102, 241, 0.02);
+    }
+
+    /* Status Badges */
+    .status-badge-modern {
+        padding: 0.4rem 1rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        display: inline-block;
+    }
+
+    .status-active { background: #dcfce7; color: #166534; }
+    .status-pending { background: #fef3c7; color: #92400e; }
+    .status-completed { background: #dbeafe; color: #1e40af; }
+
+    /* Quick Actions */
+    .quick-action-btn {
+        background: white;
+        border: 2px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 1rem;
+        text-decoration: none;
+        color: #475569;
+        transition: var(--transition);
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 0.75rem;
+        font-weight: 600;
+    }
+
+    .quick-action-btn:hover {
+        border-color: #6366f1;
+        background: rgba(99, 102, 241, 0.02);
+        color: #6366f1;
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-soft);
+    }
+
+    .quick-action-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f1f5f9;
+        color: #6366f1;
+        font-size: 1rem;
+    }
+
+    /* Empty States */
+    .empty-state-modern {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: #64748b;
+    }
+
+    .empty-state-modern i {
+        font-size: 3.5rem;
+        margin-bottom: 1rem;
+        opacity: 0.3;
+        color: #6366f1;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Welcome Section -->
+    <div class="welcome-section">
+        <div class="welcome-content">
+            <h1 class="welcome-title">
+                Chào mừng trở lại, {{ user.get_full_name|default:user.username }}! 👋
+            </h1>
+            <p class="welcome-subtitle">
+                <i class="fas fa-user-tag me-2"></i>
+                {% if user.user_profile.role == 'admin' %}Quản trị viên
+                {% elif user.user_profile.role == 'manager' %}Quản lý
+                {% else %}Nhân viên{% endif %}
+                • Hôm nay: {% now "l, d/m/Y" %}
+            </p>
+        </div>
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="stats-container">
+        <div class="stats-grid">
+            <div class="stat-card projects">
+                <div class="stat-header">
+                    <div class="stat-info">
+                        <h3>{{ total_projects|default:"0" }}</h3>
+                        <p>Dự án</p>
+                    </div>
+                    <div class="stat-icon projects">
+                        <i class="fas fa-project-diagram"></i>
+                    </div>
+                </div>
+                <div class="stat-change {% if total_projects %}positive{% else %}neutral{% endif %}">
+                    {% if total_projects %}
+                        <i class="fas fa-arrow-up me-1"></i>{{ active_projects|default:"0" }} đang thực hiện
+                    {% else %}
+                        <i class="fas fa-info-circle me-1"></i>Chưa có dữ liệu
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="stat-card staff">
+                <div class="stat-header">
+                    <div class="stat-info">
+                        <h3>{{ staff_list|length|default:"0" }}</h3>
+                        <p>Nhân viên</p>
+                    </div>
+                    <div class="stat-icon staff">
+                        <i class="fas fa-users"></i>
+                    </div>
+                </div>
+                <div class="stat-change {% if staff_list %}positive{% else %}neutral{% endif %}">
+                    {% if staff_list %}
+                        <i class="fas fa-check-circle me-1"></i>{{ staff_list|length }} hoạt động
+                    {% else %}
+                        <i class="fas fa-info-circle me-1"></i>Chưa có dữ liệu
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="stat-card equipment">
+                <div class="stat-header">
+                    <div class="stat-info">
+                        <h3>{{ total_equipment|default:"0" }}</h3>
+                        <p>Thiết bị</p>
+                    </div>
+                    <div class="stat-icon equipment">
+                        <i class="fas fa-tools"></i>
+                    </div>
+                </div>
+                <div class="stat-change {% if total_equipment %}positive{% else %}neutral{% endif %}">
+                    {% if total_equipment %}
+                        <i class="fas fa-wrench me-1"></i>{{ maintenance_equipment|default:"0" }} bảo trì
+                    {% else %}
+                        <i class="fas fa-info-circle me-1"></i>Chưa có dữ liệu
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="stat-card quality">
+                <div class="stat-header">
+                    <div class="stat-info">
+                        <h3>--</h3>
+                        <p>Chất lượng</p>
+                    </div>
+                    <div class="stat-icon quality">
+                        <i class="fas fa-award"></i>
+                    </div>
+                </div>
+                <div class="stat-change neutral">
+                    <i class="fas fa-info-circle me-1"></i>Chưa có dữ liệu
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="modern-card">
+                <div class="card-header-modern">
+                    <h2 class="card-title-modern">
+                        <i class="fas fa-project-diagram text-primary"></i>
+                        Dự án gần đây
+                    </h2>
+                    <a href="{% url 'projects_management' %}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-external-link-alt me-1"></i>Xem tất cả
+                    </a>
+                </div>
+                <div class="card-body-modern">
+                    {% if projects %}
+                    <div class="table-responsive">
+                        <table class="modern-table">
+                            <thead>
+                                <tr>
+                                    <th>Dự án</th>
+                                    <th>Công ty</th>
+                                    <th>Phương pháp</th>
+                                    <th>Trạng thái</th>
+                                    <th>Ngày tạo</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for project in projects %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'project_detail' project.id %}" class="text-decoration-none fw-bold text-primary">
+                                            {{ project.name|truncatechars:35 }}
+                                        </a>
+                                    </td>
+                                    <td class="text-muted">{{ project.company.name|default:"--" }}</td>
+                                    <td>
+                                        {% if project.ndt_methods.all %}
+                                            {% for method in project.ndt_methods.all %}
+                                                <span class="badge bg-light text-dark me-1">{{ method.name }}</span>
+                                            {% endfor %}
+                                        {% else %}
+                                            <span class="text-muted">--</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if project.status == 'active' %}
+                                            <span class="status-badge-modern status-active">Đang thực hiện</span>
+                                        {% elif project.status == 'completed' %}
+                                            <span class="status-badge-modern status-completed">Hoàn thành</span>
+                                        {% elif project.status == 'pending' %}
+                                            <span class="status-badge-modern status-pending">Chờ duyệt</span>
+                                        {% else %}
+                                            <span class="status-badge-modern">{{ project.get_status_display }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-muted">{{ project.created_at|date:"d/m/Y" }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="empty-state-modern">
+                        <i class="fas fa-project-diagram"></i>
+                        <h5>Chưa có dự án nào</h5>
+                        <p>Hệ thống chưa có dữ liệu dự án để hiển thị</p>
+                        <a href="{% url 'projects_management' %}" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>Tạo dự án đầu tiên
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <!-- Quick Actions -->
+            <div class="modern-card">
+                <div class="card-header-modern">
+                    <h2 class="card-title-modern">
+                        <i class="fas fa-bolt text-success"></i>
+                        Hành động nhanh
+                    </h2>
+                </div>
+                <div class="card-body-modern">
+                    <a href="{% url 'documents_management' %}" class="quick-action-btn">
+                        <div class="quick-action-icon">
+                            <i class="fas fa-folder-open"></i>
+                        </div>
+                        <span>Quản lý tài liệu</span>
+                    </a>
+                    <a href="{% url 'projects_management' %}" class="quick-action-btn">
+                        <div class="quick-action-icon">
+                            <i class="fas fa-plus"></i>
+                        </div>
+                        <span>Tạo dự án mới</span>
+                    </a>
+                    <a href="{% url 'equipment_management' %}" class="quick-action-btn">
+                        <div class="quick-action-icon">
+                            <i class="fas fa-wrench"></i>
+                        </div>
+                        <span>Kiểm tra thiết bị</span>
+                    </a>
+                    <a href="{% url 'analytics_management' %}" class="quick-action-btn">
+                        <div class="quick-action-icon">
+                            <i class="fas fa-chart-bar"></i>
+                        </div>
+                        <span>Xem báo cáo</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

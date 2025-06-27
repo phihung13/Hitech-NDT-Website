@@ -1,181 +1,262 @@
-# Hitech-NDT-Website
+# Website Hitech NDT
 
-Website cho công ty Hitech NDT sử dụng Django framework.
+## 📋 Tổng Quan
+Website chính thức của công ty Hitech NDT - chuyên về kiểm tra không phá hủy (Non-Destructive Testing).
 
-## Cài đặt và Phát triển
+## 🏗️ Công Nghệ Sử Dụng
+- **Backend**: Django 4.2.7 + PostgreSQL 14
+- **Frontend**: HTML/CSS/JavaScript + Bootstrap
+- **Web Server**: Nginx + Gunicorn
+- **Domain**: hitechndt.vn, www.hitechndt.vn
+- **Server**: Ubuntu 22.04 LTS
 
-### Yêu cầu
+## 📁 Cấu Trúc Project
+```
+Hitech-NDT-Website/
+├── README.md              # File này - hướng dẫn tổng quan
+├── deploy.sh              # Script deploy tự động (lần đầu)
+├── update.sh              # Script update code
+└── site_hitech/           # Thư mục chứa source code Django
+    ├── manage.py          # Django management
+    ├── requirements.txt   # Python dependencies
+    ├── api/              # App chính
+    ├── blog/             # App blog
+    ├── templates/        # HTML templates
+    ├── static/           # CSS, JS, hình ảnh
+    └── site_hitech/      # Django settings
+```
 
-- Python 3.11+
-- pip (Python package manager)
+## 🚀 Hướng Dẫn Deploy Lần Đầu
 
-### Cài đặt môi trường phát triển
+### 1. Chuẩn Bị Server
+- Server Ubuntu 22.04 LTS
+- Domain đã trỏ về IP server  
+- Quyền root hoặc sudo
 
-1. Clone repository:
-   ```
-   git clone <repository-url>
-   cd Hitech-NDT-Website
-   ```
+### 2. Chạy Script Deploy
+```bash
+# Upload code lên server và chạy
+sudo bash deploy.sh
+```
 
-2. Cài đặt các thư viện cần thiết:
-   ```
-   pip install -r requirements.txt
-   ```
+### 3. Tạo Superuser (Sau khi deploy)
+```bash
+cd /var/www/hitech_ndt
+source venv/bin/activate
+export DJANGO_SETTINGS_MODULE=site_hitech.settings_production
+python manage.py createsuperuser
+```
 
-3. Tạo và áp dụng migrations:
-   ```
-   cd site_hitech
-   python manage.py makemigrations
-   python manage.py migrate
-   ```
+## 🔄 Hướng Dẫn Update Code
 
-4. Tạo tài khoản admin:
-   ```
-   python manage.py createsuperuser
-   ```
+### Cách 1: Sử dụng Script (Khuyến Nghị)
+```bash
+# Chạy script update tự động
+sudo bash update.sh
+```
 
-5. Chạy server phát triển:
-   ```
-   python manage.py runserver
-   ```
+### Cách 2: Update Thủ Công
+```bash
+# 1. Backup code hiện tại
+sudo cp -r /var/www/hitech_ndt /var/www/hitech_ndt_backup_$(date +%Y%m%d)
 
-## Triển khai lên Hosting
+# 2. Copy code mới
+sudo cp -r site_hitech/* /var/www/hitech_ndt/
 
-### Chuẩn bị triển khai
+# 3. Chạy migrations và collect static
+cd /var/www/hitech_ndt
+source venv/bin/activate
+export DJANGO_SETTINGS_MODULE=site_hitech.settings_production
+python manage.py migrate
+python manage.py collectstatic --noinput
 
-1. Cập nhật file `.env` với các thông tin cấu hình cho môi trường production:
-   - Đặt `DEBUG=False`
-   - Cập nhật `ALLOWED_HOSTS` với tên miền của bạn
-   - Cấu hình thông tin database
-   - Đảm bảo `SECRET_KEY` được thay đổi và giữ bí mật
+# 4. Restart services
+sudo systemctl restart hitech-ndt
+sudo systemctl restart nginx
+```
 
-2. Cài đặt các thư viện cần thiết cho production:
-   ```
-   pip install gunicorn whitenoise daphne
-   ```
+## 📊 Quản Lý Services
 
-### Triển khai lên shared hosting (cPanel)
+### Kiểm Tra Trạng Thái
+```bash
+# Kiểm tra Django app
+sudo systemctl status hitech-ndt
 
-1. Tải mã nguồn lên hosting sử dụng FTP hoặc Git
+# Kiểm tra Nginx
+sudo systemctl status nginx
 
-2. Tạo môi trường ảo Python và cài đặt các thư viện:
-   ```
-   python -m venv venv
-   source venv/bin/activate
-   pip install -r requirements.txt
-   ```
+# Kiểm tra database
+sudo systemctl status postgresql@14-main
+```
 
-3. Cấu hình database trên cPanel và cập nhật thông tin trong file `.env`
+### Restart Services
+```bash
+# Restart Django app
+sudo systemctl restart hitech-ndt
 
-4. Chạy migrations và thu thập static files:
-   ```
-   python manage.py migrate
-   python manage.py collectstatic
-   ```
+# Restart Nginx
+sudo systemctl restart nginx
+```
 
-5. Cấu hình WSGI/ASGI trong cPanel để trỏ đến file wsgi.py/asgi.py của dự án
+### Xem Logs
+```bash
+# Xem log Django
+sudo journalctl -u hitech-ndt -f
 
-### Triển khai lên VPS/Cloud Server
+# Xem log Nginx
+sudo tail -f /var/log/nginx/error.log
 
-1. Cài đặt Nginx làm reverse proxy:
-   ```
-   sudo apt update
-   sudo apt install nginx
-   ```
+# Xem log Django file
+sudo tail -f /var/log/django.log
+```
 
-2. Cấu hình Nginx để phục vụ ứng dụng Django:
-   ```
-   # /etc/nginx/sites-available/hitech-ndt
-   server {
-       listen 80;
-       server_name yourdomain.com www.yourdomain.com;
+## 💾 Cấu Hình Database
 
-       location /static/ {
-           alias /path/to/Hitech-NDT-Website/site_hitech/staticfiles/;
-       }
+### Thông Tin Database Hiện Tại
+- **Engine**: PostgreSQL 14
+- **Database**: hitech_ndt_db
+- **User**: hitech_ndt_user
+- **Password**: hitech2024
+- **Host**: localhost
+- **Port**: 5432
 
-       location /media/ {
-           alias /path/to/Hitech-NDT-Website/site_hitech/media/;
-       }
+### Backup Database
+```bash
+# Backup database
+sudo -u postgres pg_dump hitech_ndt_db > backup_$(date +%Y%m%d).sql
 
-       location / {
-           proxy_pass http://127.0.0.1:8000;
-           proxy_set_header Host $host;
-           proxy_set_header X-Real-IP $remote_addr;
-       }
-   }
-   ```
+# Restore database
+sudo -u postgres psql hitech_ndt_db < backup_file.sql
+```
 
-3. Kích hoạt cấu hình Nginx:
-   ```
-   sudo ln -s /etc/nginx/sites-available/hitech-ndt /etc/nginx/sites-enabled/
-   sudo nginx -t
+## 🔧 Troubleshooting
+
+### Lỗi Thường Gặp
+
+1. **Website không truy cập được**
+   ```bash
+   # Kiểm tra service
+   sudo systemctl status nginx
+   sudo systemctl status hitech-ndt
+   
+   # Restart services
    sudo systemctl restart nginx
+   sudo systemctl restart hitech-ndt
    ```
 
-4. Cài đặt và cấu hình Supervisor để quản lý quy trình Gunicorn:
-   ```
-   sudo apt install supervisor
-   ```
-
-5. Tạo file cấu hình Supervisor:
-   ```
-   # /etc/supervisor/conf.d/hitech-ndt.conf
-   [program:hitech-ndt]
-   command=/path/to/venv/bin/gunicorn site_hitech.wsgi:application --workers 3 --bind 127.0.0.1:8000
-   directory=/path/to/Hitech-NDT-Website/site_hitech
-   autostart=true
-   autorestart=true
-   stderr_logfile=/var/log/hitech-ndt.err.log
-   stdout_logfile=/var/log/hitech-ndt.out.log
-   user=your_user
+2. **Lỗi database connection**
+   ```bash
+   # Kiểm tra PostgreSQL
+   sudo systemctl status postgresql@14-main
+   
+   # Kiểm tra kết nối
+   sudo -u postgres psql -c "SELECT version();"
    ```
 
-6. Khởi động Supervisor:
-   ```
-   sudo supervisorctl reread
-   sudo supervisorctl update
-   sudo supervisorctl start hitech-ndt
-   ```
-
-## Cấu hình tên miền
-
-1. Đăng ký tên miền với nhà cung cấp tên miền (VD: PA Việt Nam, Vietnix, VinaHost, Nhân Hòa)
-
-2. Trỏ tên miền về hosting bằng cách cập nhật DNS:
-   - Nếu sử dụng shared hosting: Cập nhật nameserver theo hướng dẫn của nhà cung cấp hosting
-   - Nếu sử dụng VPS/Cloud Server: Tạo bản ghi A trỏ đến địa chỉ IP của server
-
-3. Cấu hình SSL cho tên miền:
-   - Với shared hosting: Sử dụng tính năng Let's Encrypt trong cPanel
-   - Với VPS/Cloud Server: Sử dụng Certbot để cài đặt Let's Encrypt
-     ```
-     sudo apt install certbot python3-certbot-nginx
-     sudo certbot --nginx -d yourdomain.com -d www.yourdomain.com
-     ```
-
-## Bảo trì và cập nhật
-
-1. Cập nhật mã nguồn:
-   ```
-   git pull
+3. **Lỗi static files**
+   ```bash
+   # Collect static lại
+   cd /var/www/hitech_ndt
+   source venv/bin/activate
+   export DJANGO_SETTINGS_MODULE=site_hitech.settings_production
+   python manage.py collectstatic --noinput
    ```
 
-2. Cập nhật dependencies:
-   ```
-   pip install -r requirements.txt
-   ```
-
-3. Áp dụng migrations mới:
-   ```
-   python manage.py migrate
-   ```
-
-4. Thu thập static files mới:
-   ```
-   python manage.py collectstatic
+4. **Lỗi SSL certificate**
+   ```bash
+   # Renew SSL certificate
+   sudo certbot renew
+   
+   # Test SSL config
+   sudo nginx -t && sudo systemctl reload nginx
    ```
 
-5. Khởi động lại ứng dụng:
-   - Shared hosting: Khởi động lại ứng dụng qua cPanel
-   - VPS/Cloud Server: `sudo supervisorctl restart hitech-ndt`
+5. **Editor (CKEditor/Summernote) không hiển thị**
+   ```bash
+   # Check static files
+   curl -I https://hitechndt.vn/static/ckeditor/ckeditor/ckeditor.js
+   
+   # If 404, check Nginx config
+   grep "/static" /etc/nginx/sites-available/hitechndt
+   
+   # Should use 'alias' not 'root':
+   # location /static/ {
+   #     alias /var/www/hitech_ndt/staticfiles/;
+   # }
+   
+   # Restart services if fixed
+   sudo nginx -t && sudo systemctl reload nginx
+   ```
+
+## 📁 Đường Dẫn Quan Trọng
+
+- **Project Directory**: `/var/www/hitech_ndt`
+- **Virtual Environment**: `/var/www/hitech_ndt/venv`
+- **Static Files**: `/var/www/hitech_ndt/staticfiles`
+- **Media Files**: `/var/www/hitech_ndt/media`
+- **Nginx Config**: `/etc/nginx/sites-available/hitechndt`
+- **Service File**: `/etc/systemd/system/hitech-ndt.service`
+- **SSL Certificates**: `/etc/letsencrypt/live/hitechndt.vn/`
+
+## 📞 Liên Hệ
+- **Website**: hitechndt.vn
+- **Email**: info@hitechndt.vn
+- **Admin Panel**: https://hitechndt.vn/admin/
+
+## 📄 License
+Proprietary - Hitech NDT Company
+## 🛠️ CHẾ ĐỘ BẢO TRÌ
+
+### Trên VPS
+```bash
+# Bật chế độ bảo trì
+maintenance-mode on
+
+# Tắt chế độ bảo trì  
+maintenance-mode off
+
+# Kiểm tra trạng thái
+maintenance-mode status
+```
+
+### Từ máy Local
+
+**Cách 1: SSH trực tiếp**
+```bash
+ssh root@103.90.224.176 "maintenance-mode on"
+ssh root@103.90.224.176 "maintenance-mode off"
+ssh root@103.90.224.176 "maintenance-mode status"
+```
+
+**Cách 2: Tạo script local (Windows)**
+Tạo file `maintenance.bat`:
+```batch
+@echo off
+if "%1"=="on" (
+    ssh root@103.90.224.176 "maintenance-mode on"
+) else if "%1"=="off" (
+    ssh root@103.90.224.176 "maintenance-mode off"  
+) else if "%1"=="status" (
+    ssh root@103.90.224.176 "maintenance-mode status"
+) else (
+    echo Sử dụng: maintenance.bat [on/off/status]
+)
+```
+
+Sử dụng: `maintenance.bat on`
+
+**Cách 3: Tạo script local (Mac/Linux)**
+Tạo file `maintenance.sh`:
+```bash
+#!/bin/bash
+ssh root@103.90.224.176 "maintenance-mode $1"
+chmod +x maintenance.sh
+```
+
+Sử dụng: `./maintenance.sh on`
+
+### Tự động bảo trì
+- Khi Django service down → Tự động hiển thị trang bảo trì
+- Khi có lỗi 502, 503, 504 → Chuyển sang trang bảo trì
+- Trang bảo trì: `/var/www/maintenance/index.html`
+

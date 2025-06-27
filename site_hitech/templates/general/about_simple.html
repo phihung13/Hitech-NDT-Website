@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Giới thiệu - Hitech NDT{% endblock %}
+
+{% block meta_description %}Giới thiệu về công ty Hitech NDT{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="hero-section" style="background: linear-gradient(135deg, #1a365d, #2c5282); color: white; text-align: center; padding: 100px 0;">
+                <div class="container">
+                    <h1 class="display-4 fw-bold mb-4">Giới thiệu về Hitech NDT</h1>
+                    <p class="lead">Chúng tôi là công ty hàng đầu trong lĩnh vực kiểm tra không phá hủy (NDT)</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="py-5">
+                <div class="container">
+                    <div class="row">
+                        <div class="col-lg-6">
+                            <h2 class="mb-4">Về chúng tôi</h2>
+                            <p>Hitech NDT là công ty chuyên nghiệp trong lĩnh vực kiểm tra không phá hủy, cung cấp các dịch vụ kiểm tra chất lượng hàng đầu cho các ngành công nghiệp.</p>
+                            <p>Với đội ngũ kỹ thuật viên giàu kinh nghiệm và trang thiết bị hiện đại, chúng tôi cam kết mang lại những giải pháp kiểm tra chính xác và đáng tin cậy.</p>
+                        </div>
+                        <div class="col-lg-6">
+                            <img src="{% static 'images/placeholder.svg' %}" alt="About us" class="img-fluid rounded">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="py-5 bg-light">
+                <div class="container">
+                    <div class="row text-center">
+                        <div class="col-md-4">
+                            <div class="p-4">
+                                <i class="fas fa-eye fa-3x text-primary mb-3"></i>
+                                <h4>Tầm nhìn</h4>
+                                <p>Trở thành công ty hàng đầu trong lĩnh vực NDT tại Việt Nam</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="p-4">
+                                <i class="fas fa-bullseye fa-3x text-success mb-3"></i>
+                                <h4>Sứ mệnh</h4>
+                                <p>Cung cấp dịch vụ kiểm tra chất lượng cao, đáng tin cậy cho khách hàng</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="p-4">
+                                <i class="fas fa-heart fa-3x text-danger mb-3"></i>
+                                <h4>Giá trị</h4>
+                                <p>Chính xác, chuyên nghiệp, và tận tâm với khách hàng</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

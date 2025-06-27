@@ -2,7 +2,9 @@ from django.contrib import admin
 from .models import Category, Post, Course, Lesson, Comment, CourseCategory, ContactSettings, SiteSettings
 from .models import UserProfile  # Thay đổi từ Profile thành UserProfile
 from .models import ChatSettings, ChatMessage
-from .models import AboutPage
+from .models import AboutPage, HomePageSettings
+from .models import DocumentCategory, Document, DocumentTag, DocumentVersion, DocumentAccess
+from .models import Project, PublicProject
 
 @admin.register(SiteSettings)
 class SiteSettingsAdmin(admin.ModelAdmin):
@@ -156,6 +158,90 @@ class ChatSettingsAdmin(admin.ModelAdmin):
     def has_delete_permission(self, request, obj=None):
         return False
 
+# ========== DOCUMENT MANAGEMENT ADMIN ==========
+
+@admin.register(DocumentCategory)
+class DocumentCategoryAdmin(admin.ModelAdmin):
+    list_display = ('name', 'slug', 'parent', 'order', 'is_active')
+    list_filter = ('parent', 'is_active')
+    search_fields = ('name', 'description')
+    prepopulated_fields = {'slug': ('name',)}
+    ordering = ('order', 'name')
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('parent')
+
+@admin.register(DocumentTag)
+class DocumentTagAdmin(admin.ModelAdmin):
+    list_display = ('name', 'slug', 'color')
+    search_fields = ('name',)
+    prepopulated_fields = {'slug': ('name',)}
+    ordering = ('name',)
+
+@admin.register(Document)
+class DocumentAdmin(admin.ModelAdmin):
+    list_display = ('title', 'category', 'file_type', 'access_level', 'status', 
+                   'created_by', 'created_at', 'download_count')
+    list_filter = ('category', 'file_type', 'access_level', 'status', 'created_at')
+    search_fields = ('title', 'description', 'document_code')
+    prepopulated_fields = {'slug': ('title',)}
+    filter_horizontal = ('tags',)
+    readonly_fields = ('file_size', 'download_count', 'view_count', 'created_at', 'updated_at')
+    date_hierarchy = 'created_at'
+    
+    fieldsets = [
+        ('Thông tin cơ bản', {
+            'fields': ['title', 'slug', 'category', 'description', 'file']
+        }),
+        ('Metadata', {
+            'fields': ['document_code', 'version', 'file_type', 'file_size', 'tags']
+        }),
+        ('Quyền truy cập', {
+            'fields': ['access_level', 'allowed_roles']
+        }),
+        ('Trạng thái', {
+            'fields': ['status', 'approved_by', 'approved_at']
+        }),
+        ('Thống kê', {
+            'fields': ['download_count', 'view_count', 'created_at', 'updated_at'],
+            'classes': ['collapse']
+        }),
+    ]
+    
+    def save_model(self, request, obj, form, change):
+        if not change:  # Khi tạo mới
+            obj.created_by = request.user
+        super().save_model(request, obj, form, change)
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('category', 'created_by', 'approved_by')
+
+@admin.register(DocumentVersion)
+class DocumentVersionAdmin(admin.ModelAdmin):
+    list_display = ('document', 'version', 'created_by', 'created_at')
+    list_filter = ('created_at',)
+    search_fields = ('document__title', 'version', 'change_log')
+    readonly_fields = ('created_at',)
+    
+    def save_model(self, request, obj, form, change):
+        if not change:
+            obj.created_by = request.user
+        super().save_model(request, obj, form, change)
+
+@admin.register(DocumentAccess)
+class DocumentAccessAdmin(admin.ModelAdmin):
+    list_display = ('user', 'document', 'action', 'ip_address', 'accessed_at')
+    list_filter = ('action', 'accessed_at')
+    search_fields = ('user__username', 'document__title', 'ip_address')
+    readonly_fields = ('accessed_at',)
+    date_hierarchy = 'accessed_at'
+    
+    def has_add_permission(self, request):
+        return False  # Chỉ được tạo tự động từ code
+    
+    def has_change_permission(self, request, obj=None):
+        return False  # Không cho phép chỉnh sửa log
+
 @admin.register(ChatMessage)
 class ChatMessageAdmin(admin.ModelAdmin):
     list_display = ('sender_name', 'sender_type', 'content', 'created_at', 'is_read')
@@ -164,40 +250,299 @@ class ChatMessageAdmin(admin.ModelAdmin):
     readonly_fields = ('created_at',)
     ordering = ('-created_at',)
 
+@admin.register(HomePageSettings)
+class HomePageSettingsAdmin(admin.ModelAdmin):
+    fieldsets = [
+        ('🏠 Hero Section', {
+            'fields': ['hero_title', 'hero_subtitle', 'hero_bg_image', 'hero_bg_color', 
+                      'hero_btn_primary_text', 'hero_btn_primary_url', 
+                      'hero_btn_secondary_text', 'hero_btn_secondary_url'],
+            'classes': ['wide']
+        }),
+        ('🔬 Phương pháp NDT', {
+            'fields': ['show_ndt_section', 'ndt_section_title', 'ndt_section_subtitle', 
+                      'ndt_bg_image', 'ndt_bg_color', 'ndt_overlay_opacity'],
+            'classes': ['collapse'],
+            'description': 'Hình nền sẽ được ưu tiên sử dụng. Overlay opacity từ 0.0 (trong suốt) đến 1.0 (hoàn toàn mờ).'
+        }),
+        ('🏢 Dự án nổi bật', {
+            'fields': ['show_projects_section', 'projects_section_title', 'projects_section_subtitle', 'projects_bg_color'],
+            'classes': ['collapse']
+        }),
+        ('📰 Blog/Tin tức', {
+            'fields': ['show_blog_section', 'blog_section_title', 'blog_section_subtitle', 'blog_bg_color'],
+            'classes': ['collapse']
+        }),
+        ('🛠️ Dịch vụ', {
+            'fields': ['show_services_section', 'services_section_title', 'services_section_subtitle', 'services_bg_color'],
+            'classes': ['collapse']
+        }),
+        ('💬 Khách hàng testimonials', {
+            'fields': ['show_testimonials_section', 'testimonials_section_title', 'testimonials_section_subtitle', 
+                      'testimonials_bg_image', 'testimonials_bg_color', 'testimonials_overlay_opacity'],
+            'classes': ['collapse'],
+            'description': 'Hình nền sẽ được ưu tiên sử dụng. Overlay opacity để điều chỉnh độ mờ của lớp phủ.'
+        }),
+        ('💬 Quản lý nội dung Testimonials', {
+            'fields': [
+                ('testimonial1_content',),
+                ('testimonial1_name', 'testimonial1_position', 'testimonial1_company'),
+                ('testimonial1_avatar',),
+                ('testimonial2_content',),
+                ('testimonial2_name', 'testimonial2_position', 'testimonial2_company'),
+                ('testimonial2_avatar',),
+                ('testimonial3_content',),
+                ('testimonial3_name', 'testimonial3_position', 'testimonial3_company'),
+                ('testimonial3_avatar',),
+                ('testimonial4_content',),
+                ('testimonial4_name', 'testimonial4_position', 'testimonial4_company'),
+                ('testimonial4_avatar',),
+                ('testimonial5_content',),
+                ('testimonial5_name', 'testimonial5_position', 'testimonial5_company'),
+                ('testimonial5_avatar',),
+            ],
+            'classes': ['collapse'],
+            'description': 'Quản lý nội dung, tên, chức vụ, công ty và ảnh đại diện của 5 testimonials.'
+        }),
+        ('🤝 Đối tác', {
+            'fields': ['show_partners_section', 'partners_section_title', 'partners_section_subtitle', 
+                      'partners_bg_image', 'partners_bg_color', 'partners_overlay_opacity'],
+            'classes': ['collapse'],
+            'description': 'Hình nền section và overlay opacity.'
+        }),
+        ('🏢 Quản lý Logo Đối tác', {
+            'fields': [
+                ('partner1_name', 'partner1_logo', 'partner1_icon'),
+                ('partner2_name', 'partner2_logo', 'partner2_icon'),
+                ('partner3_name', 'partner3_logo', 'partner3_icon'),
+                ('partner4_name', 'partner4_logo', 'partner4_icon'),
+                ('partner5_name', 'partner5_logo', 'partner5_icon'),
+                ('partner6_name', 'partner6_logo', 'partner6_icon'),
+                ('partner7_name', 'partner7_logo', 'partner7_icon'),
+                ('partner8_name', 'partner8_logo', 'partner8_icon'),
+                ('partner9_name', 'partner9_logo', 'partner9_icon'),
+                ('partner10_name', 'partner10_logo', 'partner10_icon'),
+                ('partner11_name', 'partner11_logo', 'partner11_icon'),
+                ('partner12_name', 'partner12_logo', 'partner12_icon'),
+            ],
+            'classes': ['collapse'],
+            'description': 'Quản lý tên và logo của 12 đối tác. Icon sẽ hiển thị khi không có logo.'
+        }),
+        ('📊 Số liệu tin cậy (Trust Indicators)', {
+            'fields': ['trust_stat1_number', 'trust_stat1_label', 'trust_stat2_number', 'trust_stat2_label',
+                      'trust_stat3_number', 'trust_stat3_label', 'trust_stat4_number', 'trust_stat4_label'],
+            'classes': ['collapse']
+        }),
+        ('⭐ Vì sao chọn chúng tôi', {
+            'fields': ['show_why_section', 'why_section_title', 'why_section_subtitle', 'why_bg_color'],
+            'classes': ['collapse']
+        }),
+        ('🏆 Tính năng nổi bật', {
+            'fields': ['feature1_title', 'feature1_description', 'feature1_icon',
+                      'feature2_title', 'feature2_description', 'feature2_icon',
+                      'feature3_title', 'feature3_description', 'feature3_icon',
+                      'feature4_title', 'feature4_description', 'feature4_icon'],
+            'classes': ['collapse']
+        }),
+        ('🔍 SEO Settings', {
+            'fields': ['meta_title', 'meta_description', 'meta_keywords'],
+            'classes': ['collapse']
+        }),
+        ('⚙️ Thông tin hệ thống', {
+            'fields': ['updated_by', 'created_at', 'updated_at'],
+            'classes': ['collapse']
+        })
+    ]
+    
+    readonly_fields = ('created_at', 'updated_at')
+    
+    def has_add_permission(self, request):
+        # Chỉ cho phép tạo nếu chưa có bản ghi nào
+        return not HomePageSettings.objects.exists()
+    
+    def has_delete_permission(self, request, obj=None):
+        # Không cho phép xóa cấu hình trang chủ
+        return False
+    
+    def save_model(self, request, obj, form, change):
+        # Tự động ghi nhận người cập nhật
+        obj.updated_by = request.user
+        super().save_model(request, obj, form, change)
+    
+    class Meta:
+        verbose_name = 'Cấu hình trang chủ'
+        verbose_name_plural = 'Cấu hình trang chủ'
+
+
 @admin.register(AboutPage)
 class AboutPageAdmin(admin.ModelAdmin):
+    def has_add_permission(self, request):
+        # Chỉ cho phép tạo nếu chưa có bản ghi nào
+        return not AboutPage.objects.exists()
+    
+    def has_delete_permission(self, request, obj=None):
+        # Không cho phép xóa trang giới thiệu
+        return False
+    
+    fieldsets = [
+        ('Cài đặt SEO', {
+            'fields': ['meta_title', 'meta_description'],
+            'classes': ['collapse']
+        }),
+        ('Header & Hero Section', {
+            'fields': [
+                'title', 'subtitle', 
+                'hero_bg_image', 'hero_bg_color', 'hero_text_color'
+            ]
+        }),
+        ('Nội dung chính', {
+            'fields': [
+                'main_title', 'main_content', 'main_image', 'main_bg_color'
+            ]
+        }),
+        ('Phần thống kê', {
+            'fields': [
+                'stats_title', 'stats_bg_color', 'stats_text_color',
+                ('stat1_number', 'stat1_label', 'stat1_icon'),
+                ('stat2_number', 'stat2_label', 'stat2_icon'),
+                ('stat3_number', 'stat3_label', 'stat3_icon'),
+                ('stat4_number', 'stat4_label', 'stat4_icon'),
+            ]
+        }),
+        ('Tầm nhìn - Sứ mệnh - Giá trị', {
+            'fields': [
+                'vmv_title', 'vmv_bg_color', 'vmv_bg_image',
+                ('vision_title', 'vision_icon', 'vision_color'),
+                'vision',
+                ('mission_title', 'mission_icon', 'mission_color'),
+                'mission',
+                ('values_title', 'values_icon', 'values_color'),
+                'core_values',
+            ]
+        }),
+        ('Phần Timeline/Cột mốc', {
+            'fields': [
+                'timeline_section_title', 'timeline_section_subtitle',
+                'timeline_bg_image', 'timeline_bg_color', 'timeline_text_color', 'timeline_accent_color',
+                ('timeline_overlay_color', 'timeline_overlay_opacity'),
+                'timeline'
+            ],
+            'description': 'Overlay chỉ áp dụng khi có ảnh nền Timeline. Độ mờ từ 0.0 (trong suốt) đến 1.0 (hoàn toàn mờ).'
+        }),
+        ('Phần đội ngũ', {
+            'fields': [
+                'team_section_title', 'team_section_description',
+                'team_bg_color', 'team_bg_image'
+            ]
+        }),
+        ('Phần dịch vụ', {
+            'fields': [
+                'services_title', 'services_subtitle', 'services_bg_color', 'services_content'
+            ]
+        }),
+        ('Phần thành tựu', {
+            'fields': [
+                'achievements_title', 'achievements', 'achievements_bg_color', 'achievements_image'
+            ]
+        }),
+        ('Phần chứng chỉ', {
+            'fields': [
+                'certificates_section_title', 'certificates_section_subtitle',
+                'certificates_bg_color', 'certificates'
+            ]
+        }),
+        ('Call to Action', {
+            'fields': [
+                'cta_title', 'cta_subtitle',
+                'cta_button_text', 'cta_button_url',
+                'cta_bg_color', 'cta_text_color', 'cta_button_color', 'cta_button_text_color'
+            ]
+        }),
+        ('Cài đặt Layout & Typography', {
+            'fields': [
+                'container_max_width', 'section_padding',
+                'heading_font_family', 'body_font_family',
+                'heading_color', 'body_color'
+            ],
+            'classes': ['collapse']
+        }),
+        ('Tương thích cũ', {
+            'fields': ['banner_image', 'content'],
+            'classes': ['collapse'],
+            'description': 'Các trường này để tương thích với template cũ. Khuyến khích sử dụng các trường mới ở trên.'
+        })
+    ]
+    
+    class Media:
+        css = {
+            'all': ('admin/css/about_page_admin.css',)
+        }
+        js = ('admin/js/about_page_admin.js',)
+
+@admin.register(Project)
+class ProjectAdmin(admin.ModelAdmin):
+    list_display = ('name', 'code', 'company', 'status', 'project_manager', 'created_at')
+    list_filter = ('status', 'created_at', 'methods')
+    search_fields = ('name', 'code', 'description')
+    date_hierarchy = 'created_at'
+    filter_horizontal = ('methods', 'equipment', 'staff')
+    readonly_fields = ('created_at', 'updated_at')
+    
     fieldsets = [
         ('Thông tin cơ bản', {
-            'fields': ['title', 'subtitle', 'banner_image', 'content']
+            'fields': ['name', 'code', 'company', 'project_manager']
         }),
-        ('Thông tin công ty', {
-            'fields': ['vision', 'mission', 'core_values'],
+        ('Chi tiết dự án', {
+            'fields': ['description', 'location', 'start_date', 'end_date', 'status', 'contract_value']
+        }),
+        ('Phân công', {
+            'fields': ['methods', 'equipment', 'staff']
+        }),
+        ('Thống kê', {
+            'fields': ['created_at', 'updated_at'],
             'classes': ['collapse']
         }),
-        ('Thành tựu', {
-            'fields': ['achievements'],
-            'classes': ['collapse']
+    ]
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('company', 'project_manager')
+
+@admin.register(PublicProject)
+class PublicProjectAdmin(admin.ModelAdmin):
+    list_display = ('title', 'client_name', 'project_type', 'status', 'is_featured', 'published', 'view_count', 'created_at')
+    list_filter = ('status', 'is_featured', 'published', 'project_type', 'created_at')
+    search_fields = ('title', 'summary', 'content', 'client_name', 'tags')
+    prepopulated_fields = {'slug': ('title',)}
+    date_hierarchy = 'created_at'
+    readonly_fields = ('view_count', 'created_at', 'updated_at')
+    
+    fieldsets = [
+        ('Thông tin cơ bản', {
+            'fields': ['title', 'slug', 'featured_image', 'author']
         }),
-        ('Cột mốc thời gian', {
-            'fields': ['timeline_section_title', 'timeline'],
-            'classes': ['collapse']
+        ('Nội dung', {
+            'fields': ['summary', 'content']
         }),
-        ('Đội ngũ', {
-            'fields': ['team_section_title', 'team_section_description'],
-            'classes': ['collapse']
+        ('Thông tin dự án', {
+            'fields': ['client_name', 'location', 'project_type', 'completion_date', 'project_value', 'tags']
         }),
-        ('Chứng chỉ & Giấy phép', {
-            'fields': ['certificates_section_title', 'certificates'],
-            'classes': ['collapse']
+        ('Trạng thái', {
+            'fields': ['status', 'is_featured', 'published']
         }),
         ('SEO', {
             'fields': ['meta_title', 'meta_description'],
             'classes': ['collapse']
         }),
+        ('Thống kê', {
+            'fields': ['view_count', 'created_at', 'updated_at'],
+            'classes': ['collapse']
+        }),
     ]
     
-    def has_add_permission(self, request):
-        return not AboutPage.objects.exists()
+    def save_model(self, request, obj, form, change):
+        if not change:  # Nếu tạo mới
+            obj.author = request.user
+        super().save_model(request, obj, form, change)
     
-    def has_delete_permission(self, request, obj=None):
-        return False
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('author')

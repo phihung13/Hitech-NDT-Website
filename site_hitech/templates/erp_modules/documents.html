@@ -1,0 +1,536 @@
+{% extends 'dashboard/dashboard_base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - Dashboard{% endblock %}
+
+{% block page_title %}
+<i class="fas fa-folder-open text-primary me-2"></i>{{ title }}
+{% endblock %}
+
+{% block header_controls %}
+<span class="badge bg-primary me-3">{{ total_documents }} tài liệu</span>
+
+<!-- Management buttons for admin/manager -->
+{% if user_role == 'admin' or user_role == 'manager' %}
+<div class="btn-group me-2" role="group">
+    <a href="{% url 'document_upload' %}" class="btn btn-success">
+        <i class="fas fa-upload me-1"></i>Upload tài liệu
+    </a>
+    <button type="button" class="btn btn-success dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown">
+        <span class="sr-only">Toggle Dropdown</span>
+    </button>
+    <ul class="dropdown-menu">
+        <li><a class="dropdown-item" href="{% url 'manage_tags' %}">
+            <i class="fas fa-tags me-2"></i>Quản lý Tags
+        </a></li>
+        {% if user_role == 'admin' %}
+        <li><a class="dropdown-item" href="{% url 'manage_categories' %}">
+            <i class="fas fa-folder me-2"></i>Quản lý danh mục
+        </a></li>
+        {% endif %}
+    </ul>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .documents-container {
+        margin-top: 10px;
+        padding-top: 10px;
+    }
+    
+    .document-card {
+        transition: all 0.3s ease;
+        border: none;
+        border-radius: 20px;
+        overflow: hidden;
+        background: white;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        position: relative;
+        height: 100%;
+    }
+    
+    .document-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 12px 35px rgba(0,0,0,0.15);
+    }
+    
+    .document-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #4e73df, #224abe);
+        border-radius: 20px 20px 0 0;
+    }
+    
+    .document-icon {
+        font-size: 2.2rem;
+        margin-bottom: 12px;
+        color: #4e73df;
+    }
+    
+    .document-title {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 8px;
+        line-height: 1.3;
+        height: 2.6em;
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+    }
+    
+    .document-meta {
+        font-size: 0.8rem;
+        color: #6c757d;
+    }
+    
+    .document-meta-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 6px;
+        padding: 4px 8px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        font-size: 0.75rem;
+    }
+    
+    .document-meta-item i {
+        width: 16px;
+        margin-right: 6px;
+        color: #4e73df;
+    }
+    
+    .document-description {
+        font-size: 0.8rem;
+        color: #6c757d;
+        line-height: 1.4;
+        height: 3.36em;
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        margin-bottom: 12px;
+    }
+    
+    .document-stats {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 12px;
+        background: #f8f9fa;
+        border-radius: 10px;
+        margin-bottom: 12px;
+    }
+    
+    .stat-item {
+        text-align: center;
+        font-size: 0.75rem;
+        color: #6c757d;
+    }
+    
+    .stat-number {
+        font-weight: 600;
+        color: #4e73df;
+        display: block;
+    }
+    
+    .document-actions {
+        opacity: 0;
+        transition: all 0.3s ease;
+        margin-top: auto;
+    }
+    
+    .document-card:hover .document-actions {
+        opacity: 1;
+    }
+    
+    .btn-compact {
+        padding: 6px 12px;
+        font-size: 0.8rem;
+        border-radius: 8px;
+        font-weight: 500;
+    }
+    
+    .update-info {
+        background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+        border-radius: 10px;
+        padding: 8px 12px;
+        margin-bottom: 12px;
+        border-left: 3px solid #2196f3;
+    }
+    
+    .update-info .update-date {
+        font-size: 0.75rem;
+        color: #1565c0;
+        font-weight: 600;
+    }
+    
+    .update-info .update-user {
+        font-size: 0.7rem;
+        color: #1976d2;
+    }
+    
+    .filter-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    
+    .stats-card {
+        background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 20px;
+        text-align: center;
+    }
+    
+    .stats-icon {
+        font-size: 2.5rem;
+        opacity: 0.8;
+        margin-bottom: 10px;
+    }
+    
+    .category-filter {
+        border: none;
+        background: rgba(255,255,255,0.9);
+        border-radius: 8px;
+        padding: 8px 12px;
+        margin: 5px;
+        transition: all 0.3s ease;
+    }
+    
+    .category-filter:hover {
+        background: white;
+        transform: translateY(-2px);
+    }
+    
+    .search-container {
+        position: relative;
+    }
+    
+    .search-input {
+        border-radius: 25px;
+        padding: 12px 20px 12px 45px;
+        border: none;
+        background: rgba(255,255,255,0.9);
+        backdrop-filter: blur(10px);
+    }
+    
+    .search-icon {
+        position: absolute;
+        left: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #6c757d;
+    }
+    
+    .tag-badge {
+        display: inline-block;
+        padding: 4px 8px;
+        margin: 2px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        text-decoration: none;
+        transition: all 0.3s ease;
+    }
+    
+    .tag-badge:hover {
+        transform: scale(1.05);
+        text-decoration: none;
+    }
+    
+    .no-documents {
+        text-align: center;
+        padding: 60px 20px;
+        color: #6c757d;
+    }
+    
+    .no-documents i {
+        font-size: 4rem;
+        margin-bottom: 20px;
+        opacity: 0.5;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid documents-container">
+    <!-- Stats Row -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="stats-card">
+                <div class="stats-icon">
+                    <i class="fas fa-file-alt"></i>
+                </div>
+                <div class="h4 mb-0">{{ total_documents }}</div>
+                <div class="small">Tổng tài liệu</div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="stats-card">
+                <div class="stats-icon">
+                    <i class="fas fa-download"></i>
+                </div>
+                <div class="h4 mb-0">{{ user_downloads }}</div>
+                <div class="small">Lượt tải của bạn</div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="stats-card">
+                <div class="stats-icon">
+                    <i class="fas fa-tags"></i>
+                </div>
+                <div class="h4 mb-0">{{ categories.count }}</div>
+                <div class="small">Danh mục</div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="stats-card">
+                <div class="stats-icon">
+                    <i class="fas fa-user-shield"></i>
+                </div>
+                <div class="h4 mb-0">{{ user_role|capfirst }}</div>
+                <div class="small">Vai trò của bạn</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Section -->
+    <div class="filter-card">
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <div class="search-container">
+                    <form method="get" id="searchForm">
+                        <i class="fas fa-search search-icon"></i>
+                        <input type="text" name="search" class="form-control search-input" 
+                               placeholder="Tìm kiếm tài liệu..." value="{{ search_query|default:'' }}">
+                        <input type="hidden" name="category" value="{{ current_category|default:'' }}">
+                        <input type="hidden" name="tag" value="{{ current_tag|default:'' }}">
+                    </form>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="d-flex flex-wrap align-items-center">
+                    <span class="me-2 small">Lọc theo:</span>
+                    <!-- Category Filters -->
+                    <a href="?{% if search_query %}search={{ search_query }}&{% endif %}{% if current_tag %}tag={{ current_tag }}&{% endif %}" 
+                       class="category-filter {% if not current_category %}bg-white text-dark{% endif %}">
+                        <i class="fas fa-list me-1"></i>Tất cả
+                    </a>
+                    {% for category in categories %}
+                    <a href="?category={{ category.slug }}{% if search_query %}&search={{ search_query }}{% endif %}{% if current_tag %}&tag={{ current_tag }}{% endif %}" 
+                       class="category-filter {% if current_category == category.slug %}bg-white text-dark{% endif %}">
+                        <i class="{{ category.icon }} me-1"></i>{{ category.name }}
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        
+
+    </div>
+
+    <!-- Documents Grid -->
+    {% if documents %}
+    <div class="row">
+        {% for document in documents %}
+        <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
+            <div class="document-card h-100">
+                <div class="card-body d-flex flex-column p-3">
+                    <div class="text-center mb-3">
+                        <div class="document-icon">
+                            <i class="{{ document.get_file_icon }}"></i>
+                        </div>
+                        <h6 class="document-title">{{ document.title }}</h6>
+                    </div>
+                    
+                    <!-- Update Info -->
+                    <div class="update-info">
+                        <div class="update-date">
+                            <i class="fas fa-clock me-1"></i>
+                            {{ document.updated_at|date:"d/m/Y H:i" }}
+                        </div>
+                        <div class="update-user">
+                            <i class="fas fa-user me-1"></i>
+                            {% if document.updated_by %}{{ document.updated_by.get_full_name|default:document.updated_by.username }}{% else %}{{ document.created_by.get_full_name|default:document.created_by.username }}{% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Compact Meta Info -->
+                    <div class="mb-3">
+                        <div class="document-meta-item">
+                            <i class="fas fa-folder"></i>
+                            <span>{{ document.category.name|truncatechars:15 }}</span>
+                        </div>
+                        <div class="document-meta-item">
+                            <i class="fas fa-file"></i>
+                            <span>{{ document.get_file_size_display }}</span>
+                        </div>
+                        <div class="document-meta-item">
+                            <i class="fas fa-code"></i>
+                            <span>{{ document.document_code }}</span>
+                        </div>
+                    </div>
+                    
+                    {% if document.description %}
+                    <div class="document-description">
+                        {{ document.description }}
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Tags -->
+                    {% if document.tags.all %}
+                    <div class="mb-3">
+                        {% for tag in document.tags.all|slice:":2" %}
+                        <a href="?tag={{ tag.slug }}{% if search_query %}&search={{ search_query }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}" 
+                           class="tag-badge me-1" style="background: {{ tag.color }}20; color: {{ tag.color }}; border: 1px solid {{ tag.color }}40; font-size: 0.7rem; padding: 2px 6px;">
+                            #{{ tag.name }}
+                        </a>
+                        {% endfor %}
+                        {% if document.tags.all.count > 2 %}
+                        <span class="text-muted" style="font-size: 0.7rem;">+{{ document.tags.all.count|add:"-2" }}</span>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Stats -->
+                    <div class="document-stats">
+                        <div class="stat-item">
+                            <span class="stat-number">{{ document.view_count }}</span>
+                            <div><i class="fas fa-eye"></i> lượt xem</div>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number">{{ document.download_count }}</span>
+                            <div><i class="fas fa-download"></i> tải</div>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number">v{{ document.version }}</span>
+                            <div><i class="fas fa-tag"></i> version</div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-auto">
+                        <div class="document-actions">
+                            <div class="d-grid gap-1">
+                                <a href="{% url 'document_detail' document.slug %}" class="btn btn-primary btn-compact">
+                                    <i class="fas fa-eye me-1"></i>Chi tiết
+                                </a>
+                                <a href="{% url 'document_download' document.slug %}" class="btn btn-success btn-compact">
+                                    <i class="fas fa-download me-1"></i>Tải xuống
+                                </a>
+                                
+                                <!-- Edit/Delete buttons for authorized users -->
+                                {% if user_role == 'admin' or user_role == 'manager' or document.created_by == user %}
+                                <div class="btn-group w-100" role="group">
+                                    <a href="{% url 'document_edit' document.slug %}" class="btn btn-outline-warning btn-compact">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    {% if user_role == 'admin' or document.created_by == user %}
+                                    <a href="{% url 'document_delete' document.slug %}" class="btn btn-outline-danger btn-compact" 
+                                       onclick="return confirm('Bạn có chắc muốn xóa tài liệu này?')">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="no-documents">
+        <i class="fas fa-folder-open"></i>
+        <h4>Không tìm thấy tài liệu</h4>
+        <p>{% if search_query %}Không có tài liệu nào phù hợp với từ khóa "{{ search_query }}"{% else %}Chưa có tài liệu nào trong hệ thống{% endif %}</p>
+        {% if search_query or current_category or current_tag %}
+        <a href="{% url 'documents_management' %}" class="btn btn-primary">
+            <i class="fas fa-list me-1"></i>Xem tất cả tài liệu
+        </a>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Recent Documents Section -->
+    {% if recent_docs and not search_query %}
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">
+                <i class="fas fa-clock me-2"></i>Tài liệu mới nhất
+            </h6>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                {% for doc in recent_docs|slice:":6" %}
+                <div class="col-md-4 mb-3">
+                    <div class="d-flex align-items-center">
+                        <div class="me-3">
+                            <i class="{{ doc.get_file_icon }}"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="font-weight-bold">
+                                <a href="{% url 'document_detail' doc.slug %}" class="text-decoration-none">
+                                    {{ doc.title|truncatechars:30 }}
+                                </a>
+                            </div>
+                            <div class="small text-muted">{{ doc.category.name }} • {{ doc.created_at|date:"d/m/Y" }}</div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Auto submit search form on input
+    let searchTimeout;
+    $('.search-input').on('input', function() {
+        clearTimeout(searchTimeout);
+        const form = $(this).closest('form');
+        searchTimeout = setTimeout(function() {
+            form.submit();
+        }, 500);
+    });
+    
+    // Smooth scroll to top when filters change
+    $('.category-filter').on('click', function() {
+        $('html, body').animate({
+            scrollTop: 0
+        }, 300);
+    });
+    
+    // Show loading state for downloads
+    $('a[href*="download"]').on('click', function() {
+        const btn = $(this);
+        const originalText = btn.html();
+        btn.html('<i class="fas fa-spinner fa-spin me-1"></i>Đang tải...');
+        btn.prop('disabled', true);
+        
+        setTimeout(function() {
+            btn.html(originalText);
+            btn.prop('disabled', false);
+        }, 2000);
+    });
+    
+    // Tooltips for access level badges
+    $('[data-bs-toggle="tooltip"]').tooltip();
+});
+</script>
+{% endblock %} 

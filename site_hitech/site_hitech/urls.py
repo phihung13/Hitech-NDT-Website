@@ -18,25 +18,22 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-# urlpatterns = [
-#     path('admin/', admin.site.urls),
-#     path('api/', include('api.urls')),
-#     path('', views.home, name='home'),
-#     path('courses/', views.course_list, name='course_list'),
-#     path('courses/<int:id>/', views.course_detail, name='course_detail'),
-#     path('posts/', views.post_list, name='post_list'),
-#     path('posts/<int:id>/', views.post_detail, name='post_detail'),
-#     path('about/', views.about, name='about'),  # 👈 Thêm trang giới thiệu
-#     path('contact/', views.contact, name='contact'),  # 👈 Thêm trang liên hệ
-# ]
-
+from django.conf.urls.i18n import i18n_patterns
+from django.views.i18n import set_language
 
 urlpatterns = [
+    path('set_language/', set_language, name='set_language'),
+]
+
+urlpatterns += i18n_patterns(
     path('admin/customization/', include('api.admin_urls', namespace='api_admin')),  # Thêm URLs cho trang tùy chỉnh admin
     path('admin/', admin.site.urls),
     path('', include('api.urls')),  # Thay thế 'api/' bằng '' để loại bỏ tiền tố
     path('blog/', include('blog.urls')),
-]
+    path('summernote/', include('django_summernote.urls')),  # Thêm URL cho Summernote
+    path('ckeditor/', include('ckeditor_uploader.urls')),  # Thêm URL cho CKEditor upload
+    prefix_default_language=False,
+)
 
 # Thêm URLs cho media files trong development
 if settings.DEBUG:

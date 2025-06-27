@@ -1,0 +1,448 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+    .tags-management {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 50px 0;
+    }
+    
+    .tags-card {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 20px 50px rgba(0,0,0,0.1);
+        padding: 40px;
+        margin-bottom: 30px;
+    }
+    
+    .tags-header {
+        text-align: center;
+        margin-bottom: 40px;
+    }
+    
+    .header-icon {
+        width: 80px;
+        height: 80px;
+        background: linear-gradient(135deg, #4e73df, #224abe);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px;
+        color: white;
+        font-size: 2rem;
+    }
+    
+    .create-tag-section {
+        background: #f8f9fc;
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 30px;
+    }
+    
+    .tag-item {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 15px;
+        border: 1px solid #e3e6f0;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .tag-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        border-color: #4e73df;
+    }
+    
+    .tag-preview {
+        display: inline-block;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-weight: 500;
+        font-size: 0.9rem;
+        margin-right: 15px;
+        border: 2px solid;
+    }
+    
+    .tag-stats {
+        background: #e3f2fd;
+        border-radius: 8px;
+        padding: 10px 15px;
+        margin: 10px 0;
+        font-size: 0.9rem;
+    }
+    
+    .color-picker-container {
+        position: relative;
+    }
+    
+    .color-preview {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        border: 3px solid #fff;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .color-preview:hover {
+        transform: scale(1.1);
+    }
+    
+    .quick-colors {
+        display: flex;
+        gap: 10px;
+        margin-top: 10px;
+        flex-wrap: wrap;
+    }
+    
+    .quick-color {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        cursor: pointer;
+        border: 2px solid #fff;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+    }
+    
+    .quick-color:hover {
+        transform: scale(1.2);
+        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+    
+    .btn-delete-tag {
+        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        border: none;
+        border-radius: 50px;
+        padding: 8px 20px;
+        color: white;
+        font-size: 0.875rem;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-delete-tag:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(220, 53, 69, 0.3);
+        color: white;
+    }
+    
+    .btn-create-tag {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        border: none;
+        border-radius: 50px;
+        padding: 12px 30px;
+        color: white;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-create-tag:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(40, 167, 69, 0.3);
+        color: white;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #6c757d;
+    }
+    
+    .empty-state i {
+        font-size: 4rem;
+        margin-bottom: 20px;
+        opacity: 0.5;
+    }
+    
+    .breadcrumb-custom {
+        background: rgba(255,255,255,0.1);
+        backdrop-filter: blur(10px);
+        border-radius: 15px;
+        padding: 15px 20px;
+        margin-bottom: 30px;
+    }
+    
+    .breadcrumb-custom .breadcrumb-item a {
+        color: white;
+        text-decoration: none;
+    }
+    
+    .breadcrumb-custom .breadcrumb-item.active {
+        color: rgba(255,255,255,0.8);
+    }
+    
+    .form-floating label {
+        color: #6c757d;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: #4e73df;
+        box-shadow: 0 0 0 0.2rem rgba(78, 115, 223, 0.25);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="tags-management">
+    <div class="container">
+        <!-- Breadcrumb -->
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb breadcrumb-custom">
+                <li class="breadcrumb-item"><a href="{% url 'home' %}">Trang chủ</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'documents_management' %}">Tài liệu</a></li>
+                <li class="breadcrumb-item active">{{ title }}</li>
+            </ol>
+        </nav>
+        
+        <div class="tags-card">
+            <div class="tags-header">
+                <div class="header-icon">
+                    <i class="fas fa-tags"></i>
+                </div>
+                <h2>{{ title }}</h2>
+                <p class="text-muted">Quản lý phân loại và gắn thẻ cho tài liệu</p>
+            </div>
+            
+            <!-- Create New Tag -->
+            <div class="create-tag-section">
+                <h5><i class="fas fa-plus-circle me-2 text-success"></i>Tạo Tag Mới</h5>
+                <form method="post" id="createTagForm">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="create">
+                    
+                    <div class="row align-items-end">
+                        <div class="col-md-4">
+                            <div class="form-floating">
+                                {{ form.name }}
+                                <label for="{{ form.name.id_for_label }}">Tên tag *</label>
+                                {% if form.name.errors %}
+                                    <div class="text-danger small mt-1">{{ form.name.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="color-picker-container">
+                                <label class="form-label">Màu tag</label>
+                                <div class="d-flex align-items-center">
+                                    <div class="color-preview me-3" id="colorPreview" style="background-color: #007bff;"></div>
+                                    {{ form.color }}
+                                </div>
+                                {% if form.color.errors %}
+                                    <div class="text-danger small mt-1">{{ form.color.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="tag-preview" id="tagPreview" style="background-color: #007bff20; color: #007bff; border-color: #007bff;">
+                                #New Tag
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-create-tag w-100">
+                                <i class="fas fa-plus me-1"></i>Tạo
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Quick Colors -->
+                    <div class="quick-colors mt-3">
+                        <div class="quick-color" data-color="#007bff" style="background-color: #007bff;" title="Blue"></div>
+                        <div class="quick-color" data-color="#28a745" style="background-color: #28a745;" title="Green"></div>
+                        <div class="quick-color" data-color="#dc3545" style="background-color: #dc3545;" title="Red"></div>
+                        <div class="quick-color" data-color="#ffc107" style="background-color: #ffc107;" title="Yellow"></div>
+                        <div class="quick-color" data-color="#17a2b8" style="background-color: #17a2b8;" title="Cyan"></div>
+                        <div class="quick-color" data-color="#6f42c1" style="background-color: #6f42c1;" title="Purple"></div>
+                        <div class="quick-color" data-color="#fd7e14" style="background-color: #fd7e14;" title="Orange"></div>
+                        <div class="quick-color" data-color="#e83e8c" style="background-color: #e83e8c;" title="Pink"></div>
+                        <div class="quick-color" data-color="#20c997" style="background-color: #20c997;" title="Teal"></div>
+                        <div class="quick-color" data-color="#6c757d" style="background-color: #6c757d;" title="Gray"></div>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Existing Tags -->
+            <div class="existing-tags-section">
+                <h5><i class="fas fa-list me-2 text-primary"></i>Tags Hiện Có ({{ tags_stats|length }})</h5>
+                
+                {% if tags_stats %}
+                <div class="row">
+                    {% for item in tags_stats %}
+                    <div class="col-md-6 col-lg-4">
+                        <div class="tag-item">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <div class="tag-preview" style="background-color: {{ item.tag.color }}20; color: {{ item.tag.color }}; border-color: {{ item.tag.color }};">
+                                    #{{ item.tag.name }}
+                                </div>
+                                <form method="post" style="margin: 0;" onsubmit="return confirm('Bạn có chắc muốn xóa tag này?')">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="delete">
+                                    <input type="hidden" name="tag_id" value="{{ item.tag.id }}">
+                                    <button type="submit" class="btn btn-delete-tag btn-sm">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </form>
+                            </div>
+                            
+                            <div class="tag-stats">
+                                <i class="fas fa-file-alt me-2"></i>
+                                <strong>{{ item.doc_count }}</strong> tài liệu sử dụng tag này
+                            </div>
+                            
+                            <div class="tag-info">
+                                <small class="text-muted">
+                                    <i class="fas fa-palette me-1"></i>Màu: {{ item.tag.color }}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-tags"></i>
+                    <h5>Chưa có tag nào</h5>
+                    <p>Tạo tag đầu tiên để phân loại tài liệu</p>
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Back Button -->
+            <div class="text-center mt-4">
+                <a href="{% url 'documents_management' %}" class="btn btn-outline-primary">
+                    <i class="fas fa-arrow-left me-2"></i>Quay lại quản lý tài liệu
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    const colorInput = $('#{{ form.color.id_for_label }}');
+    const colorPreview = $('#colorPreview');
+    const tagPreview = $('#tagPreview');
+    const nameInput = $('#{{ form.name.id_for_label }}');
+    
+    // Hide the default color input
+    colorInput.hide();
+    
+    // Update preview when color changes
+    function updatePreview() {
+        const color = colorInput.val();
+        const name = nameInput.val() || 'New Tag';
+        
+        colorPreview.css('background-color', color);
+        tagPreview.css({
+            'background-color': color + '20',
+            'color': color,
+            'border-color': color
+        }).text('#' + name);
+    }
+    
+    // Color input change
+    colorInput.on('input change', updatePreview);
+    nameInput.on('input', updatePreview);
+    
+    // Quick color selection
+    $('.quick-color').on('click', function() {
+        const color = $(this).data('color');
+        colorInput.val(color);
+        updatePreview();
+        
+        // Visual feedback
+        $('.quick-color').removeClass('selected');
+        $(this).addClass('selected');
+    });
+    
+    // Color preview click
+    colorPreview.on('click', function() {
+        colorInput.click();
+    });
+    
+    // Form validation
+    $('#createTagForm').on('submit', function(e) {
+        const name = nameInput.val().trim();
+        if (!name) {
+            e.preventDefault();
+            alert('Vui lòng nhập tên tag!');
+            nameInput.focus();
+            return false;
+        }
+        
+        // Check for duplicate names
+        const existingNames = [];
+        $('.tag-preview').each(function() {
+            const text = $(this).text().replace('#', '').trim();
+            if (text !== 'New Tag') {
+                existingNames.push(text.toLowerCase());
+            }
+        });
+        
+        if (existingNames.includes(name.toLowerCase())) {
+            e.preventDefault();
+            alert('Tag này đã tồn tại!');
+            nameInput.focus();
+            return false;
+        }
+        
+        // Loading state
+        const btn = $(this).find('.btn-create-tag');
+        btn.prop('disabled', true);
+        btn.html('<i class="fas fa-spinner fa-spin me-1"></i>Đang tạo...');
+    });
+    
+    // Initialize preview
+    updatePreview();
+    
+    // Add hover effects for tag items
+    $('.tag-item').hover(
+        function() {
+            $(this).find('.btn-delete-tag').fadeIn(200);
+        },
+        function() {
+            $(this).find('.btn-delete-tag').fadeOut(200);
+        }
+    );
+    
+    // Confirm delete
+    $('.btn-delete-tag').on('click', function(e) {
+        const tagName = $(this).closest('.tag-item').find('.tag-preview').text().replace('#', '');
+        if (!confirm(`Bạn có chắc muốn xóa tag "${tagName}"?`)) {
+            e.preventDefault();
+        }
+    });
+    
+    // Auto-generate slug from name
+    nameInput.on('input', function() {
+        let slug = $(this).val()
+            .toLowerCase()
+            .replace(/[^a-z0-9\s-]/g, '')
+            .replace(/\s+/g, '-')
+            .replace(/-+/g, '-')
+            .trim('-');
+        updatePreview();
+    });
+    
+    // Add CSS for selected quick color
+    $('<style>').prop('type', 'text/css').html(`
+        .quick-color.selected {
+            transform: scale(1.2);
+            box-shadow: 0 0 0 3px rgba(78, 115, 223, 0.3);
+        }
+    `).appendTo('head');
+});
+</script>
+{% endblock %} 

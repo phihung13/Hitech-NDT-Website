@@ -1,0 +1,45 @@
+{% extends "dashboard/dashboard_base.html" %}
+
+{% block title %}Quản lý Chất lượng - Dashboard{% endblock %}
+
+{% block page_title %}
+<i class="fas fa-shield-alt text-primary me-2"></i>Quản lý Chất lượng
+{% endblock %}
+
+{% block header_controls %}
+<div class="btn-group" role="group">
+    <a href="#" class="btn btn-success">
+        <i class="fas fa-clipboard-check me-1"></i>Kiểm tra mới
+    </a>
+    <a href="#" class="btn btn-outline-warning">
+        <i class="fas fa-exclamation-triangle me-1"></i>Sự cố
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-body">
+                    <h5 class="text-center text-muted">
+                        <i class="fas fa-shield-alt fa-3x mb-3 d-block"></i>
+                        Trang Quản lý Chất lượng đang được phát triển
+                    </h5>
+                    <p class="text-center text-muted">
+                        Chức năng này sẽ bao gồm:
+                    </p>
+                    <ul class="list-unstyled text-center">
+                        <li><i class="fas fa-check text-success me-2"></i>Quy trình kiểm tra chất lượng</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Tiêu chuẩn NDT</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Báo cáo không phù hợp</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Hành động khắc phục</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Audit chất lượng</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

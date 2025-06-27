@@ -1,0 +1,515 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+    .upload-container {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 50px 0;
+    }
+    
+    .upload-card {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 20px 50px rgba(0,0,0,0.1);
+        padding: 40px;
+        max-width: 800px;
+        margin: 0 auto;
+    }
+    
+    .upload-header {
+        text-align: center;
+        margin-bottom: 40px;
+    }
+    
+    .upload-icon {
+        width: 80px;
+        height: 80px;
+        background: linear-gradient(135deg, #4e73df, #224abe);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px;
+        color: white;
+        font-size: 2rem;
+    }
+    
+    .form-floating {
+        margin-bottom: 20px;
+    }
+    
+    .form-floating label {
+        color: #6c757d;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: #4e73df;
+        box-shadow: 0 0 0 0.2rem rgba(78, 115, 223, 0.25);
+    }
+    
+    .file-upload-area {
+        border: 3px dashed #e3e6f0;
+        border-radius: 15px;
+        padding: 40px 20px;
+        text-align: center;
+        transition: all 0.3s ease;
+        background: #f8f9fc;
+        margin: 20px 0;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .file-upload-area:hover {
+        border-color: #4e73df;
+        background: #e3f2fd;
+    }
+    
+    .file-upload-area.dragover {
+        border-color: #28a745;
+        background: #d4edda;
+        transform: scale(1.02);
+    }
+    
+    .file-upload-icon {
+        font-size: 3rem;
+        color: #4e73df;
+        margin-bottom: 15px;
+    }
+    
+    .file-info {
+        background: #e3f2fd;
+        border-radius: 10px;
+        padding: 15px;
+        margin-top: 15px;
+        display: none;
+    }
+    
+    .tag-selector {
+        background: #f8f9fc;
+        border-radius: 15px;
+        padding: 20px;
+        margin: 20px 0;
+    }
+    
+    .tag-item {
+        display: inline-block;
+        margin: 5px;
+    }
+    
+    .tag-checkbox {
+        display: none;
+    }
+    
+    .tag-label {
+        display: inline-block;
+        padding: 8px 15px;
+        border-radius: 20px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: 2px solid #e3e6f0;
+        background: white;
+        font-size: 0.9rem;
+    }
+    
+    .tag-checkbox:checked + .tag-label {
+        background: var(--tag-color, #4e73df);
+        color: white;
+        border-color: var(--tag-color, #4e73df);
+        transform: scale(1.05);
+    }
+    
+    .submit-section {
+        text-align: center;
+        margin-top: 40px;
+        padding-top: 30px;
+        border-top: 1px solid #e3e6f0;
+    }
+    
+    .btn-upload {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        border: none;
+        padding: 15px 40px;
+        border-radius: 50px;
+        color: white;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-upload:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(40, 167, 69, 0.3);
+        color: white;
+    }
+    
+    .breadcrumb-custom {
+        background: rgba(255,255,255,0.1);
+        backdrop-filter: blur(10px);
+        border-radius: 15px;
+        padding: 15px 20px;
+        margin-bottom: 30px;
+    }
+    
+    .breadcrumb-custom .breadcrumb-item a {
+        color: white;
+        text-decoration: none;
+    }
+    
+    .breadcrumb-custom .breadcrumb-item.active {
+        color: rgba(255,255,255,0.8);
+    }
+    
+    .form-help-text {
+        font-size: 0.875rem;
+        color: #6c757d;
+        margin-top: 5px;
+    }
+    
+    .access-level-info {
+        background: #fff3cd;
+        border: 1px solid #ffeaa7;
+        border-radius: 8px;
+        padding: 10px;
+        margin-top: 10px;
+        font-size: 0.875rem;
+    }
+    
+    .category-preview {
+        background: #e3f2fd;
+        border-radius: 8px;
+        padding: 10px;
+        margin-top: 10px;
+        display: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="upload-container">
+    <div class="container">
+        <!-- Breadcrumb -->
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb breadcrumb-custom">
+                <li class="breadcrumb-item"><a href="{% url 'home' %}">Trang chủ</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'documents_management' %}">Tài liệu</a></li>
+                <li class="breadcrumb-item active">{{ title }}</li>
+            </ol>
+        </nav>
+        
+        <div class="upload-card">
+            <div class="upload-header">
+                <div class="upload-icon">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                </div>
+                <h2>{{ title }}</h2>
+                <p class="text-muted">Tải lên tài liệu mới vào hệ thống quản lý</p>
+            </div>
+            
+            <form method="post" enctype="multipart/form-data" id="uploadForm">
+                {% csrf_token %}
+                
+                <!-- Basic Information -->
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="form-floating">
+                            {{ form.title }}
+                            <label for="{{ form.title.id_for_label }}">Tiêu đề tài liệu *</label>
+                            {% if form.title.errors %}
+                                <div class="text-danger small mt-1">{{ form.title.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-floating">
+                            {{ form.version }}
+                            <label for="{{ form.version.id_for_label }}">Phiên bản</label>
+                            {% if form.version.errors %}
+                                <div class="text-danger small mt-1">{{ form.version.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-floating">
+                    {{ form.description }}
+                    <label for="{{ form.description.id_for_label }}">Mô tả tài liệu</label>
+                    {% if form.description.errors %}
+                        <div class="text-danger small mt-1">{{ form.description.errors.0 }}</div>
+                    {% endif %}
+                </div>
+                
+                <!-- Category and Access Level -->
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-floating">
+                            {{ form.category }}
+                            <label for="{{ form.category.id_for_label }}">Danh mục *</label>
+                            {% if form.category.errors %}
+                                <div class="text-danger small mt-1">{{ form.category.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="category-preview" id="categoryPreview">
+                            <small class="text-muted">Mã tài liệu sẽ được tự động tạo dựa trên danh mục</small>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-floating">
+                            {{ form.access_level }}
+                            <label for="{{ form.access_level.id_for_label }}">Mức độ truy cập *</label>
+                            {% if form.access_level.errors %}
+                                <div class="text-danger small mt-1">{{ form.access_level.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="access-level-info" id="accessInfo">
+                            <strong>Nội bộ:</strong> Chỉ nhân viên công ty có thể truy cập
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Allowed Roles (conditional) -->
+                <div class="form-floating" id="allowedRolesField" style="display: none;">
+                    {{ form.allowed_roles }}
+                    <label for="{{ form.allowed_roles.id_for_label }}">Vai trò được phép</label>
+                    <div class="form-help-text">
+                        Để trống để cho phép tất cả vai trò. Phân cách bằng dấu phẩy: admin,manager,staff
+                    </div>
+                    {% if form.allowed_roles.errors %}
+                        <div class="text-danger small mt-1">{{ form.allowed_roles.errors.0 }}</div>
+                    {% endif %}
+                </div>
+                
+                <!-- File Upload Area -->
+                <div class="file-upload-area" id="fileUploadArea">
+                    <div class="file-upload-icon">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                    </div>
+                    <h5>Kéo thả file vào đây hoặc click để chọn</h5>
+                    <p class="text-muted">Hỗ trợ: PDF, Word, Excel, PowerPoint, hình ảnh, video, archive</p>
+                    <p class="text-muted"><small>Kích thước tối đa: 50MB</small></p>
+                    {{ form.file }}
+                    {% if form.file.errors %}
+                        <div class="text-danger small mt-2">{{ form.file.errors.0 }}</div>
+                    {% endif %}
+                </div>
+                
+                <!-- File Info (shown after selection) -->
+                <div class="file-info" id="fileInfo">
+                    <div class="row align-items-center">
+                        <div class="col-auto">
+                            <i class="fas fa-file fa-2x text-primary"></i>
+                        </div>
+                        <div class="col">
+                            <strong id="fileName"></strong><br>
+                            <small class="text-muted" id="fileSize"></small>
+                        </div>
+                        <div class="col-auto">
+                            <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeFile()">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Tags Selection -->
+                <div class="tag-selector">
+                    <h6><i class="fas fa-tags me-2"></i>Chọn Tags</h6>
+                    <div class="row">
+                        {% for tag in form.tags %}
+                        <div class="col-auto">
+                            <div class="tag-item">
+                                {{ tag.tag }}
+                                <label for="{{ tag.id_for_label }}" class="tag-label" 
+                                       style="--tag-color: {{ tag.choice_value.color|default:'#4e73df' }};">
+                                    {{ tag.choice_label }}
+                                </label>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% if form.tags.errors %}
+                        <div class="text-danger small mt-2">{{ form.tags.errors.0 }}</div>
+                    {% endif %}
+                </div>
+                
+                <!-- Submit Section -->
+                <div class="submit-section">
+                    <button type="submit" class="btn btn-upload">
+                        <i class="fas fa-upload me-2"></i>
+                        {% if form.instance.pk %}Cập nhật tài liệu{% else %}Upload tài liệu{% endif %}
+                    </button>
+                    <div class="mt-3">
+                        <a href="{% url 'documents_management' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-1"></i>Quay lại
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // File upload handling
+    const fileInput = $('#{{ form.file.id_for_label }}');
+    const uploadArea = $('#fileUploadArea');
+    const fileInfo = $('#fileInfo');
+    
+    // Hide actual file input
+    fileInput.hide();
+    
+    // Click to upload
+    uploadArea.on('click', function(e) {
+        if (e.target === this || $(e.target).closest('.file-upload-icon, h5').length) {
+            fileInput.click();
+        }
+    });
+    
+    // Drag and drop
+    uploadArea.on('dragover dragenter', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        $(this).addClass('dragover');
+    });
+    
+    uploadArea.on('dragleave dragend', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        $(this).removeClass('dragover');
+    });
+    
+    uploadArea.on('drop', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        $(this).removeClass('dragover');
+        
+        const files = e.originalEvent.dataTransfer.files;
+        if (files.length > 0) {
+            fileInput[0].files = files;
+            showFileInfo(files[0]);
+        }
+    });
+    
+    // File selection
+    fileInput.on('change', function() {
+        if (this.files && this.files[0]) {
+            showFileInfo(this.files[0]);
+        }
+    });
+    
+    function showFileInfo(file) {
+        const size = formatFileSize(file.size);
+        $('#fileName').text(file.name);
+        $('#fileSize').text(size);
+        fileInfo.show();
+        uploadArea.hide();
+    }
+    
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+    
+    window.removeFile = function() {
+        fileInput.val('');
+        fileInfo.hide();
+        uploadArea.show();
+    };
+    
+    // Access level info
+    const accessLevel = $('#{{ form.access_level.id_for_label }}');
+    const accessInfo = $('#accessInfo');
+    const allowedRolesField = $('#allowedRolesField');
+    
+    accessLevel.on('change', function() {
+        const level = $(this).val();
+        let info = '';
+        let showRoles = false;
+        
+        switch(level) {
+            case 'public':
+                info = '<strong>Công khai:</strong> Tất cả mọi người có thể truy cập';
+                break;
+            case 'internal':
+                info = '<strong>Nội bộ:</strong> Chỉ nhân viên công ty có thể truy cập';
+                break;
+            case 'restricted':
+                info = '<strong>Hạn chế:</strong> Chỉ Manager và Admin có thể truy cập';
+                showRoles = true;
+                break;
+            case 'confidential':
+                info = '<strong>Bí mật:</strong> Chỉ Admin có thể truy cập';
+                showRoles = true;
+                break;
+        }
+        
+        accessInfo.html(info);
+        if (showRoles) {
+            allowedRolesField.show();
+        } else {
+            allowedRolesField.hide();
+        }
+    });
+    
+    // Trigger on page load
+    accessLevel.trigger('change');
+    
+    // Category preview
+    const categorySelect = $('#{{ form.category.id_for_label }}');
+    const categoryPreview = $('#categoryPreview');
+    
+    categorySelect.on('change', function() {
+        if ($(this).val()) {
+            categoryPreview.show();
+        } else {
+            categoryPreview.hide();
+        }
+    });
+    
+    // Form validation
+    $('#uploadForm').on('submit', function(e) {
+        let isValid = true;
+        const requiredFields = ['{{ form.title.id_for_label }}', '{{ form.category.id_for_label }}'];
+        
+        requiredFields.forEach(function(fieldId) {
+            const field = $('#' + fieldId);
+            if (!field.val().trim()) {
+                field.addClass('is-invalid');
+                isValid = false;
+            } else {
+                field.removeClass('is-invalid');
+            }
+        });
+        
+        {% if not form.instance.pk %}
+        if (!fileInput[0].files || !fileInput[0].files[0]) {
+            alert('Vui lòng chọn file để upload!');
+            isValid = false;
+        }
+        {% endif %}
+        
+        if (!isValid) {
+            e.preventDefault();
+            alert('Vui lòng điền đầy đủ thông tin bắt buộc!');
+        }
+    });
+    
+    // Loading state for submit button
+    $('#uploadForm').on('submit', function() {
+        const btn = $('.btn-upload');
+        btn.prop('disabled', true);
+        btn.html('<i class="fas fa-spinner fa-spin me-2"></i>Đang xử lý...');
+    });
+});
+</script>
+{% endblock %} 

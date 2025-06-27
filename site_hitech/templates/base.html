@@ -7,6 +7,7 @@
     <title>{% block title %}Hitech NDT{% endblock %}</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
     <style>
         /* Optimized Modern Navbar - Compact Version */
@@ -23,7 +24,13 @@
             position: sticky;
             top: 0;
             z-index: 1000;
-            padding: 8px 0; /* Reduced padding */
+            padding: 16px 0;
+            min-height: 90px;
+            height: 90px;
+            padding-top: 0;
+            padding-bottom: 0;
+            display: flex;
+            align-items: center;
         }
         
         .modern-navbar.scrolled {
@@ -38,7 +45,7 @@
         
         /* Compact Brand Logo */
         .modern-navbar .navbar-brand {
-            font-size: 20px; /* Reduced from 26px */
+            font-size: 28px;
             font-weight: 700;
             background: linear-gradient(135deg, #00d4ff, #0099cc, #0066ff);
             -webkit-background-clip: text;
@@ -47,10 +54,13 @@
             transition: all 0.3s ease;
             padding: 8px 0; /* Compact padding */
             margin-right: 20px; /* Controlled spacing */
+            height: 60px;
+            display: flex;
+            align-items: center;
         }
         
         .modern-navbar .navbar-brand img {
-            height: 32px; /* Reduced from 40px */
+            height: 48px;
             margin-right: 8px; /* Reduced spacing */
             filter: drop-shadow(0 2px 8px rgba(0,0,0,0.2));
             transition: all 0.3s ease;
@@ -64,19 +74,23 @@
             transform: rotate(3deg) scale(1.1); /* Reduced rotation */
         }
         
-        /* Compact Nav Links */
-        .modern-navbar .nav-link {
+        /* Compact Nav Links - ĐỒNG BỘ TOÀN BỘ TRANG */
+        .modern-navbar .nav-link,
+        .modern-navbar .dropdown-toggle {
             position: relative;
-            font-weight: 600;
+            font-weight: 500;
             text-transform: uppercase;
-            letter-spacing: 0.5px; /* Reduced letter spacing */
-            padding: 8px 12px !important; /* Much more compact */
-            border-radius: 20px; /* Smaller radius */
+            letter-spacing: 1.2px;
+            padding: 0 16px !important;
+            border-radius: 20px;
             transition: all 0.3s ease;
             overflow: hidden;
             color: rgba(255,255,255,0.9) !important;
-            font-size: 13px; /* Slightly smaller font */
-            margin: 0 2px; /* Minimal margin */
+            font-size: 1.08rem;
+            margin: 0 2px;
+            height: 40px;
+            display: flex;
+            align-items: center;
         }
         
         .modern-navbar .nav-link::after {
@@ -128,7 +142,9 @@
             transition: all 0.2s ease;
             border-radius: 8px; /* Smaller radius */
             margin: 2px 8px; /* Minimal margin */
-            font-size: 13px; /* Smaller font */
+            font-size: 0.98rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
         
         .modern-navbar .dropdown-item:hover {
@@ -169,38 +185,71 @@
         }
         
         .modern-search .search-dropdown {
-            background: rgba(255,255,255,0.95);
+            background: rgba(255,255,255,0.98);
             backdrop-filter: blur(20px);
-            border: 1px solid rgba(0, 212, 255, 0.2);
-            border-radius: 15px;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
-            padding: 15px; /* Reduced padding */
-            width: 280px; /* Reduced width */
+            border: 2px solid rgba(0, 212, 255, 0.3);
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+            padding: 20px;
+            width: 320px;
             position: absolute;
             top: 100%;
             right: 0;
             z-index: 1000;
             display: none;
+            animation: searchDropdownFadeIn 0.3s ease-out;
+            margin-top: 10px;
+        }
+        
+        .modern-search .search-dropdown::before {
+            content: '';
+            position: absolute;
+            top: -8px;
+            right: 20px;
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-bottom: 8px solid rgba(255,255,255,0.98);
         }
         
         .modern-search .search-dropdown.show {
             display: block;
         }
         
-        @keyframes searchDropdownFadeIn {
-            from { opacity: 0; transform: translateY(-20px) scale(0.9); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
+        .search-dropdown .input-group {
+            position: relative;
         }
         
         .search-dropdown .input-group .form-control {
-            border-radius: 4px 0 0 4px;
-            border: 1px solid #ced4da;
-            padding: 0.5rem 1rem;
+            border-radius: 15px 0 0 15px;
+            border: 2px solid #e9ecef;
+            padding: 12px 16px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            background: #f8f9fa;
+        }
+        
+        .search-dropdown .input-group .form-control:focus {
+            border-color: #00d4ff;
+            box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
+            background: white;
         }
         
         .search-dropdown .input-group .btn {
-            border-radius: 0 4px 4px 0;
-            padding: 0.5rem 1rem;
+            border-radius: 0 15px 15px 0;
+            padding: 12px 16px;
+            background: linear-gradient(135deg, #00d4ff, #0066ff);
+            border: 2px solid #00d4ff;
+            color: white;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .search-dropdown .input-group .btn:hover {
+            background: linear-gradient(135deg, #00b8e6, #0056cc);
+            transform: scale(1.05);
+            box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);
         }
         
         /* Search icon styles */
@@ -208,22 +257,6 @@
             font-size: 1.0rem;
         }
         
-        /* Tùy chỉnh navbar */
-        .navbar-brand {
-            font-size: {% if site_settings %}{{ site_settings.navbar_brand_size }}{% else %}18px{% endif %};
-            font-weight: bold;
-            letter-spacing: 1px;
-        }
-        .navbar-nav .nav-link {
-            font-size: {% if site_settings %}{{ site_settings.navbar_link_size }}{% else %}14px{% endif %};
-            font-weight: 500;
-            margin: 0 10px;
-            transition: color 0.3s;
-            text-transform: uppercase;
-        }
-        .navbar-nav .nav-link:hover {
-            color:rgb(223, 223, 223) !important;
-        }
         /* Compact Staff Button */
         .staff-button {
             margin-left: 8px;
@@ -233,125 +266,121 @@
         .staff-button .nav-link,
         .staff-dropdown .nav-link {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border: 1px solid rgba(255,255,255,0.2);
-            border-radius: 20px; /* Smaller radius */
-            padding: 6px 16px !important; /* Much more compact */
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 25px;
+            padding: 8px 20px !important;
             color: white !important;
             font-weight: 600;
-            font-size: 12px; /* Smaller font */
-            text-transform: uppercase;
+            font-size: 14px;
+            text-transform: none;
             letter-spacing: 0.5px;
             transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(102,126,234,0.2); /* Smaller shadow */
+            box-shadow: 0 4px 15px rgba(102,126,234,0.3);
             display: flex;
             align-items: center;
             text-decoration: none;
-            margin: 0 4px; /* Minimal margin */
-            white-space: nowrap; /* Prevent text wrapping */
+            margin: 0 4px;
+            white-space: nowrap;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .staff-button .nav-link::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+        
+        .staff-button .nav-link:hover::before {
+            left: 100%;
         }
         
         .staff-button .nav-link i,
         .staff-dropdown .nav-link i {
-            font-size: 12px; /* Smaller icon */
-            margin-right: 4px; /* Reduced spacing */
+            font-size: 14px;
+            margin-right: 6px;
         }
         
         .staff-button .nav-link:hover,
         .staff-dropdown .nav-link:hover {
-            transform: translateY(-2px) scale(1.05); /* Reduced movement */
-            box-shadow: 0 8px 20px rgba(102,126,234,0.3);
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 0 8px 25px rgba(102,126,234,0.4);
             background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+            border-color: rgba(255,255,255,0.5);
         }
         
-        /* Dropdown for authenticated staff */
-        .staff-dropdown {
-            margin-left: 8px;
-            margin-right: 6px;
+        /* Enhanced Search Dropdown */
+        .modern-search .search-dropdown {
+            background: rgba(255,255,255,0.98);
+            backdrop-filter: blur(20px);
+            border: 2px solid rgba(0, 212, 255, 0.3);
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+            padding: 20px;
+            width: 320px;
+            position: absolute;
+            top: 100%;
+            right: 0;
+            z-index: 1000;
+            display: none;
+            animation: searchDropdownFadeIn 0.3s ease-out;
+            margin-top: 10px;
         }
         
-        .staff-dropdown .dropdown-menu {
-            min-width: 180px;
-            padding: 0.5rem 0;
-            border: none;
-            border-radius: 12px;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-            margin-top: 8px;
+        .modern-search .search-dropdown::before {
+            content: '';
+            position: absolute;
+            top: -8px;
+            right: 20px;
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-bottom: 8px solid rgba(255,255,255,0.98);
+        }
+        
+        .modern-search .search-dropdown.show {
+            display: block;
+        }
+        
+        .search-dropdown .input-group {
+            position: relative;
+        }
+        
+        .search-dropdown .input-group .form-control {
+            border-radius: 15px 0 0 15px;
+            border: 2px solid #e9ecef;
+            padding: 12px 16px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            background: #f8f9fa;
+        }
+        
+        .search-dropdown .input-group .form-control:focus {
+            border-color: #00d4ff;
+            box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
             background: white;
         }
         
-        .staff-dropdown .dropdown-item {
-            padding: 10px 16px;
-            font-weight: 500;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 13px;
+        .search-dropdown .input-group .btn {
+            border-radius: 0 15px 15px 0;
+            padding: 12px 16px;
+            background: linear-gradient(135deg, #00d4ff, #0066ff);
+            border: 2px solid #00d4ff;
+            color: white;
+            font-weight: 600;
+            transition: all 0.3s ease;
         }
         
-        .staff-dropdown .dropdown-item:hover {
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            color: #495057;
-            padding-left: 20px;
-        }
-        
-        .staff-dropdown .dropdown-item i {
-            width: 14px;
-            text-align: center;
-        }
-        
-        /* Navbar Container Optimization */
-        .modern-navbar .container {
-            padding: 0 15px; /* Controlled container padding */
-        }
-        
-        .modern-navbar .navbar-nav {
-            align-items: center;
-            gap: 4px; /* Minimal gap between items */
-        }
-        
-        .modern-navbar .nav-item {
-            margin: 0; /* Remove default margins */
-        }
-        
-        /* Mobile Responsive - Extra Compact */
-        @media (max-width: 991px) {
-            .modern-navbar {
-                padding: 8px 0;
-            }
-            
-            .modern-navbar .navbar-brand {
-                font-size: 18px;
-                margin-right: 10px;
-            }
-            
-            .modern-navbar .navbar-brand img {
-                height: 28px;
-            }
-            
-            .modern-navbar .nav-link {
-                padding: 8px 16px !important;
-                margin: 2px 0;
-                text-align: center;
-                border-radius: 15px;
-            }
-            
-            .staff-button .nav-link,
-            .staff-dropdown .nav-link {
-                justify-content: center;
-                margin: 8px 0;
-                padding: 8px 20px !important;
-            }
-            
-            .modern-search .search-dropdown {
-                width: 250px;
-                right: -30px;
-            }
-            
-            .language-selector .nav-link {
-                justify-content: center;
-                padding: 8px 16px !important;
-            }
+        .search-dropdown .input-group .btn:hover {
+            background: linear-gradient(135deg, #00b8e6, #0056cc);
+            transform: scale(1.05);
+            box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);
         }
         
         @media (max-width: 576px) {
@@ -456,7 +485,7 @@
             background: white;
             padding: 1rem 0;
             border-bottom: 1px solid #e2e8f0;
-            margin-bottom: 2rem;
+            /* margin-bottom: 2rem; */
         }
         
         .breadcrumb {
@@ -550,8 +579,172 @@
                 transform: translateX(0);
             }
         }
+        
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(300px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        /* Messages */
+        .messages-container {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            z-index: 1055;
+            max-width: 400px;
+            pointer-events: none;
+        }
+        
+        .messages-container .alert {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            backdrop-filter: blur(10px);
+            margin-bottom: 10px;
+            padding: 15px 20px;
+            font-weight: 500;
+            animation: slideInRight 0.3s ease;
+            pointer-events: auto;
+            position: relative;
+            z-index: 1056;
+        }
+        
+        .messages-container .alert-success {
+            background: linear-gradient(135deg, rgba(40, 167, 69, 0.95), rgba(28, 200, 138, 0.95));
+            color: white;
+        }
+        
+        .messages-container .alert-error {
+            background: linear-gradient(135deg, rgba(220, 53, 69, 0.95), rgba(231, 76, 60, 0.95));
+            color: white;
+        }
+        
+        .messages-container .alert-warning {
+            background: linear-gradient(135deg, rgba(255, 193, 7, 0.95), rgba(255, 152, 0, 0.95));
+            color: white;
+        }
+        
+        .messages-container .alert-info {
+            background: linear-gradient(135deg, rgba(23, 162, 184, 0.95), rgba(0, 123, 255, 0.95));
+            color: white;
+        }
+        
+        .messages-container .alert i {
+            margin-right: 8px;
+        }
+        
+        .messages-container .btn-close {
+            filter: invert(1);
+            opacity: 0.8;
+            z-index: 1060;
+            position: relative;
+            background: none !important;
+            border: none !important;
+            font-size: 18px !important;
+            line-height: 1 !important;
+            padding: 4px 8px !important;
+            margin: 0 !important;
+        }
+        
+        .messages-container .btn-close:hover {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+        
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .scroll-to-top {
+            position: fixed;
+            bottom: 145px;
+            right: 50px;
+            width: 40px;
+            height: 40px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            z-index: 1000;
+        }
+        .scroll-to-top.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+        .scroll-to-top:hover {
+            background-color: #0056b3;
+            transform: translateY(-3px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        .scroll-to-top i {
+            font-size: 20px;
+        }
+
+        /* Dropdown for authenticated staff */
+        .staff-dropdown {
+            margin-left: 8px;
+            margin-right: 6px;
+        }
+        
+        .staff-dropdown .dropdown-menu {
+            min-width: 180px;
+            padding: 0.5rem 0;
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            margin-top: 8px;
+            background: white;
+        }
+        
+        .staff-dropdown .dropdown-item {
+            padding: 10px 16px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+        }
+        
+        .staff-dropdown .dropdown-item:hover {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            color: #495057;
+            padding-left: 20px;
+        }
+        
+        .staff-dropdown .dropdown-item i {
+            width: 14px;
+            text-align: center;
+        }
+        
+        @keyframes searchDropdownFadeIn {
+            from { opacity: 0; transform: translateY(-20px) scale(0.9); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
     </style>
     {% block extra_head %}{% endblock %}
+    {% block extra_css %}{% endblock %}
 </head>
 <body>
     <!-- Toast Notifications Container -->
@@ -559,19 +752,19 @@
         <!-- Toasts will be added here dynamically -->
     </div>
     
- <!-- Modern Navbar -->
+    <!-- Modern Navbar -->
     <nav class="navbar navbar-expand-lg navbar-dark modern-navbar" id="mainNavbar">
         <div class="container">
             <a class="navbar-brand" href="{% url "home" %}">
                 {% if site_settings and site_settings.logo %}
                     <img src="{{ site_settings.logo.url }}" alt="{{ site_settings.company_name }} Logo" class="d-inline-block align-text-center me-2">
                 {% else %}
-                    <img src="https://i.imgur.com/QMfyRXg.png" alt="Hitech NDT Logo" class="d-inline-block align-text-center me-2">
+                    <img src="https://i.imgur.com/QMfyRXg.png" alt="HITECH NDT Logo" class="d-inline-block align-text-center me-2">
                 {% endif %}
-                {% if site_settings %}{{ site_settings.company_name }}{% else %}Hitech NDT{% endif %}
+                {% if site_settings %}{{ site_settings.company_name }}{% else %}HITECH NDT{% endif %}
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
+                <span class="navbar-toggler-icon"><span></span></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
@@ -586,13 +779,10 @@
                         </ul>
                     </li>
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="{% url "course_list" %}" id="courseDropdown" role="button" data-bs-hover="dropdown" aria-expanded="false" data-vi="Chứng chỉ" data-en="Certificates">Chứng chỉ</a>
-                        <ul class="dropdown-menu" aria-labelledby="courseDropdown">
+                        <a class="nav-link dropdown-toggle" href="{% url 'service_list' %}" id="serviceDropdown" role="button" data-bs-hover="dropdown" aria-expanded="false" data-vi="Dịch vụ" data-en="Services">Dịch vụ</a>
+                        <ul class="dropdown-menu" aria-labelledby="serviceDropdown">
                             {% for category in course_categories %}
-                                <li><a class="dropdown-item" href="/khoa-hoc/{{ category.slug }}">
-                                    {% if category.icon %}<i class="{{ category.icon }} me-2"></i>{% endif %}
-                                    {{ category.name }}
-                                </a></li>
+                                <li><a class="dropdown-item" href="/dich-vu/{{ category.slug }}/">{{ category.name }}</a></li>
                             {% endfor %}
                         </ul>
                     </li>
@@ -651,43 +841,25 @@
         </div>
     </nav>
     
-    <!-- Main Content -->
-    <div class="container mt-4">
-    <style>
-        .scroll-to-top {
-            width: 48px;
-            height: 48px;
-            position: fixed;
-            right: 50px;
-            bottom: 20%;  /* Adjust this value to lower the button */
-            visibility: hidden;
-            background-color: #5e5e5e;
-            color: #fff;
-            border: none;
-            border-radius: 5px;
-            padding: 10px;
-            cursor: pointer;
-            z-index: 1000;
-        }
-        
-        .scroll-to-top.visible {
-            opacity: 1;
-            visibility: visible;
-        }
-        
-        .scroll-to-top:hover {
-            background-color: #0056b3;
-            transform: translateY(-3px);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        }
-        
-        .scroll-to-top i {
-            font-size: 20px;
-        }
-        </style>
-        {% block content %}{% endblock %}
+    <!-- Messages -->
+    {% if messages %}
+    <div class="messages-container">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            <i class="fas fa-{% if message.tags == 'success' %}check-circle{% elif message.tags == 'error' %}exclamation-circle{% elif message.tags == 'warning' %}exclamation-triangle{% else %}info-circle{% endif %}"></i>
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
     </div>
+    {% endif %}
     
+    <!-- Main Content -->
+    {% block content %}{% endblock %}
+
+    {% csrf_token %}
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="{% static 'js/translations.js' %}"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Navbar scroll effect
@@ -770,6 +942,9 @@
                             }
                         });
                         
+                        // Update language selector
+                        updateLanguageDisplay(lang);
+                        
                         // Update page language
                         document.documentElement.lang = lang;
                         
@@ -778,6 +953,18 @@
                     }, 150);
                 });
             });
+            
+            // Function to update language display
+            function updateLanguageDisplay(lang) {
+                const languageDropdown = document.querySelector('#languageDropdown');
+                if (languageDropdown) {
+                    if (lang === 'en') {
+                        languageDropdown.innerHTML = '<img src="/static/images/flags/usa.svg" alt="EN" class="flag-icon"> EN';
+                    } else {
+                        languageDropdown.innerHTML = '<img src="/static/images/flags/vietnam.svg" alt="VI" class="flag-icon"> VI';
+                    }
+                }
+            }
             
             // Set initial language
             const preferredLanguage = localStorage.getItem('preferredLanguage') || 'vi';
@@ -788,7 +975,23 @@
                         el.textContent = el.dataset.en;
                     }
                 });
+                // Update language selector to show EN
+                updateLanguageDisplay('en');
+            } else {
+                // Update language selector to show VI
+                updateLanguageDisplay('vi');
             }
+            
+            // Auto-hide messages after 5 seconds
+            const messages = document.querySelectorAll('.alert');
+            messages.forEach(message => {
+                setTimeout(() => {
+                    message.classList.remove('show');
+                    setTimeout(() => {
+                        message.remove();
+                    }, 300);
+                }, 5000);
+            });
         });
     </script>
 
@@ -804,7 +1007,7 @@
                         {% else %}
                             <img src="https://i.imgur.com/QMfyRXg.png" alt="Hitech NDT Logo" height="50" class="mb-3 footer-logo floating">
                         {% endif %}
-                        <p class="mb-3" style="color: rgba(255,255,255,0.9); line-height: 1.6;" data-vi="{% if site_settings %}{{ site_settings.company_description }}{% else %}Hitech NDT tự hào là đơn vị hàng đầu trong lĩnh vực kiểm tra không phá hủy và đào tạo chứng chỉ NDT tại Việt Nam{% endif %}" data-en="{% if site_settings %}{{ site_settings.company_description }}{% else %}Hitech NDT is proud to be the leading unit in non-destructive testing and NDT certification training in Vietnam{% endif %}">{% if site_settings %}{{ site_settings.company_description }}{% else %}Hitech NDT tự hào là đơn vị hàng đầu trong lĩnh vực kiểm tra không phá hủy và đào tạo chứng chỉ NDT tại Việt Nam{% endif %}</p>
+                        <p class="mb-3" style="color: rgba(255,255,255,0.9); line-height: 1.6;" data-vi="{% if site_settings %}{{ site_settings.company_description }}{% else %}Hitech NDT tự hào là đơn vị hàng đầu trong lĩnh vực kiểm tra không phá hủy và đào tạo chứng chỉ NDT tại Việt Nam{% endif %}" data-en="{% if site_settings %}{{ site_settings.company_description }}{% else %}Hitech NDT is proud to be the leading unit in non-destructive testing and NDT certification training in Vietnam{% endif %}">&copy; 2025 {% if site_settings %}{{ site_settings.company_name }} - {{ site_settings.company_slogan }}{% else %}Hitech NDT - Giải pháp công nghệ hàng đầu{% endif %}</p>
                     </div>
                 </div>
                 
@@ -815,7 +1018,7 @@
                         <li><a href="{% url 'home' %}" data-vi="Trang chủ" data-en="Home">Trang chủ</a></li>
                         <li><a href="{% url 'about' %}" data-vi="Giới thiệu" data-en="About">Giới thiệu</a></li>
                         <li><a href="{% url 'blog_list' %}" data-vi="Bài viết" data-en="Blog">Bài viết</a></li>
-                        <li><a href="{% url 'course_list' %}" data-vi="Chứng chỉ" data-en="Certificates">Chứng chỉ</a></li>
+                        <li><a href="{% url 'service_list' %}" data-vi="Dịch vụ" data-en="Services">Dịch vụ</a></li>
                         <li><a href="{% url 'contact' %}" data-vi="Liên hệ" data-en="Contact">Liên hệ</a></li>
                     </ul>
                 </div>
@@ -1298,6 +1501,7 @@
     </style>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         // Script để ẩn/hiện navbar khi cuộn
         let prevScrollpos = window.pageYOffset;
@@ -1338,27 +1542,23 @@
     </button>
 
     <script>
-        // Script to control the scroll-to-top button
-        const scrollToTopBtn = document.querySelector('.scroll-to-top');
-
-        window.addEventListener('scroll', () => {
-            if (window.pageYOffset > 300) {
-                scrollToTopBtn.classList.add('visible');
-            } else {
-                scrollToTopBtn.classList.remove('visible');
-            }
-        });
-
-        scrollToTopBtn.addEventListener('click', () => {
-            window.scrollTo({
-                top: 0,
-                behavior: 'smooth'
+        document.addEventListener('DOMContentLoaded', function() {
+            const scrollToTopBtn = document.querySelector('.scroll-to-top');
+            window.addEventListener('scroll', () => {
+                if (window.pageYOffset > 300) {
+                    scrollToTopBtn.classList.add('visible');
+                } else {
+                    scrollToTopBtn.classList.remove('visible');
+                }
+            });
+            scrollToTopBtn.addEventListener('click', () => {
+                window.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                });
             });
         });
     </script>
-</body>
-</body>
-</html>
 <!-- Zalo Logo và Menu Chat -->
 <div id="zalo-chat-widget" style="display: none; position: fixed; bottom: 10%; right: 120px; width: 300px; background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 1000;">
     <div style="padding: 15px; background: #0068ff; color: white; border-radius: 10px 10px 0 0; display: flex; justify-content: space-between; align-items: center;">
@@ -1509,29 +1709,7 @@ function closeToast(button) {
     }, 500);
 }
 
-// Kiểm tra khi click vào Dashboard link
-document.addEventListener('DOMContentLoaded', function() {
-    const dashboardLink = document.querySelector('a[href*="staff_dashboard"]');
-    if (dashboardLink) {
-        dashboardLink.addEventListener('click', function(e) {
-            // Kiểm tra nếu user chưa có quyền truy cập
-            {% if not user.is_authenticated or not user.is_staff %}
-                e.preventDefault();
-                showToast('Tài khoản chưa được cấu hình đầy đủ hoặc không có quyền truy cập Dashboard!', 'error');
-            {% elif user.is_authenticated and not user.userprofile %}
-                e.preventDefault();
-                showToast('Tài khoản chưa có profile. Vui lòng liên hệ admin để được cấu hình!', 'error');
-            {% endif %}
-        });
-    }
-    
-    // Hiển thị thông báo từ Django messages framework
-    {% if messages %}
-        {% for message in messages %}
-            showToast('{{ message }}', '{% if message.tags == "error" %}error{% else %}success{% endif %}');
-        {% endfor %}
-    {% endif %}
-});
+// Dashboard access is handled by backend authentication
 
 // CSS animation cho fadeOutRight
 const style = document.createElement('style');
@@ -1549,833 +1727,3 @@ document.head.appendChild(style);
 </script>
 </body>
 </html>
-<!-- Zalo Logo và Menu Chat -->
-<div id="zalo-chat-widget" style="display: none; position: fixed; bottom: 10%; right: 120px; width: 300px; background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 1000;">
-    <div style="padding: 15px; background: #0068ff; color: white; border-radius: 10px 10px 0 0; display: flex; justify-content: space-between; align-items: center;">
-        <span style="font-weight: bold;">Chat với chúng tôi</span>
-        <span onclick="closeZaloChat()" style="cursor: pointer;">✕</span>
-    </div>
-    <div style="padding: 20px;">
-        <div style="text-align: center; margin-bottom: 20px;">
-            <img src="/static/image/Icon_of_Zalo.png" alt="Zalo Logo" style="width: 50px; height: 50px; margin-bottom: 10px;">
-            <p style="margin: 0;">Chào bạn!</p>
-            <p style="margin: 5px 0;">Chọn phương thức chat:</p>
-        </div>
-        
-        <!-- Hai nút chat -->
-        <div style="display: flex; flex-direction: column; gap: 10px;">
-            <a href="https://zalo.me/0369617913" target="_blank" style="display: block; background: #0068ff; color: white; text-decoration: none; padding: 12px; border-radius: 5px; text-align: center;">
-                <i class="fab fa-facebook-messenger" style="margin-right: 8px;"></i>
-                Chat qua Zalo
-            </a>
-            
-            <button onclick="openQuickChat()" style="background: #28a745; color: white; border: none; padding: 12px; border-radius: 5px; cursor: pointer;">
-                <i class="fas fa-comments" style="margin-right: 8px;"></i>
-                Chat với Admin
-            </button>
-        </div>
-    </div>
-</div>
-
-<!-- Cửa sổ Quick Chat -->
-<div id="quick-chat-window" style="display: none; position: fixed; bottom: 10%; right: 120px; width: 300px; background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 1000;">
-    <div style="padding: 15px; background: #28a745; color: white; border-radius: 10px 10px 0 0; display: flex; justify-content: space-between; align-items: center;">
-        <span style="font-weight: bold;">Chat với Admin</span>
-        <span onclick="closeQuickChat()" style="cursor: pointer;">✕</span>
-    </div>
-    <div style="padding: 20px; height: 300px; display: flex; flex-direction: column;">
-        <div id="chat-messages" style="flex-grow: 1; overflow-y: auto; margin-bottom: 10px;">
-            <!-- Tin nhắn sẽ được thêm vào đây -->
-            <div style="text-align: center; color: #666; margin: 10px 0;">Bắt đầu cuộc trò chuyện</div>
-        </div>
-        <div style="display: flex; gap: 10px;">
-            <input type="text" id="quick-chat-input" placeholder="Nhập tin nhắn..." style="flex-grow: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
-            <button onclick="sendQuickMessage()" style="background: #28a745; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer;">
-                Gửi
-            </button>
-        </div>
-    </div>
-</div>
-
-<div id="zalo-logo" onclick="toggleZaloChat()" style="cursor: pointer;">
-    <img src="/static/image/Icon_of_Zalo.png" alt="Zalo Logo" style="width: 50px; height: 50px; position: fixed; bottom: 10%; right: 50px;">
-</div>
-
-<script>
-function toggleZaloChat() {
-    var widget = document.getElementById('zalo-chat-widget');
-    var quickChat = document.getElementById('quick-chat-window');
-    if (widget.style.display === 'none') {
-        widget.style.display = 'block';
-        quickChat.style.display = 'none';
-    } else {
-        widget.style.display = 'none';
-    }
-}
-
-function closeZaloChat() {
-    document.getElementById('zalo-chat-widget').style.display = 'none';
-}
-
-function openQuickChat() {
-    document.getElementById('zalo-chat-widget').style.display = 'none';
-    document.getElementById('quick-chat-window').style.display = 'block';
-}
-
-function closeQuickChat() {
-    document.getElementById('quick-chat-window').style.display = 'none';
-}
-
-function sendQuickMessage() {
-    var input = document.getElementById('quick-chat-input');
-    var message = input.value.trim();
-    
-    if (message) {
-        var messagesDiv = document.getElementById('chat-messages');
-        var messageElement = document.createElement('div');
-        messageElement.style.cssText = 'background: #e9ecef; padding: 8px; border-radius: 4px; margin: 5px 0; align-self: flex-end;';
-        messageElement.textContent = message;
-        
-        messagesDiv.appendChild(messageElement);
-        messagesDiv.scrollTop = messagesDiv.scrollHeight;
-        input.value = '';
-        
-        // Thêm phản hồi tự động từ admin (có thể thay thế bằng logic backend thực tế)
-        setTimeout(() => {
-            var adminResponse = document.createElement('div');
-            adminResponse.style.cssText = 'background: #28a745; color: white; padding: 8px; border-radius: 4px; margin: 5px 0; align-self: flex-start;';
-            adminResponse.textContent = 'Cảm ơn bạn đã liên hệ. Chúng tôi sẽ phản hồi sớm nhất có thể!';
-            messagesDiv.appendChild(adminResponse);
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
-        }, 1000);
-    }
-}
-</script>
-
-<script>
-// Function để hiển thị toast notification
-function showToast(message, type = 'error') {
-    const toastContainer = document.getElementById('toastContainer');
-    
-    const toast = document.createElement('div');
-    toast.className = 'toast';
-    
-    const toastHeader = document.createElement('div');
-    toastHeader.className = 'toast-header';
-    
-    const icon = type === 'error' ? '❌' : '✅';
-    const title = type === 'error' ? 'Lỗi' : 'Thành công';
-    
-    toastHeader.innerHTML = `
-        <span style="margin-right: 10px;">${icon}</span>
-        <strong>${title}</strong>
-        <button type="button" class="btn-close" onclick="closeToast(this)" style="background: none; border: none; font-size: 18px; margin-left: auto; cursor: pointer;">×</button>
-    `;
-    
-    const toastBody = document.createElement('div');
-    toastBody.className = 'toast-body';
-    toastBody.textContent = message;
-    
-    toast.appendChild(toastHeader);
-    toast.appendChild(toastBody);
-    toastContainer.appendChild(toast);
-    
-    // Hiển thị toast
-    setTimeout(() => {
-        toast.classList.add('show');
-    }, 100);
-    
-    // Tự động ẩn sau 5 giây
-    setTimeout(() => {
-        closeToast(toast.querySelector('.btn-close'));
-    }, 5000);
-}
-
-function closeToast(button) {
-    const toast = button.closest('.toast');
-    toast.style.animation = 'fadeOutRight 0.5s';
-    setTimeout(() => {
-        toast.remove();
-    }, 500);
-}
-
-// Kiểm tra khi click vào Dashboard link
-document.addEventListener('DOMContentLoaded', function() {
-    const dashboardLink = document.querySelector('a[href*="staff_dashboard"]');
-    if (dashboardLink) {
-        dashboardLink.addEventListener('click', function(e) {
-            // Kiểm tra nếu user chưa có quyền truy cập
-            {% if not user.is_authenticated or not user.is_staff %}
-                e.preventDefault();
-                showToast('Tài khoản chưa được cấu hình đầy đủ hoặc không có quyền truy cập Dashboard!', 'error');
-            {% elif user.is_authenticated and not user.userprofile %}
-                e.preventDefault();
-                showToast('Tài khoản chưa có profile. Vui lòng liên hệ admin để được cấu hình!', 'error');
-            {% endif %}
-        });
-    }
-    
-    // Hiển thị thông báo từ Django messages framework
-    {% if messages %}
-        {% for message in messages %}
-            showToast('{{ message }}', '{% if message.tags == "error" %}error{% else %}success{% endif %}');
-        {% endfor %}
-    {% endif %}
-});
-
-// CSS animation cho fadeOutRight
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes fadeOutRight {
-        from { opacity: 1; transform: translateX(0); }
-        to { opacity: 0; transform: translateX(100%); }
-    }
-    @keyframes fadeInRight {
-        from { opacity: 0; transform: translateX(100%); }
-        to { opacity: 1; transform: translateX(0); }
-    }
-`;
-document.head.appendChild(style);
-</script>
-</body>
-</html>
-<!-- Zalo Logo và Menu Chat -->
-<div id="zalo-chat-widget" style="display: none; position: fixed; bottom: 10%; right: 120px; width: 300px; background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 1000;">
-    <div style="padding: 15px; background: #0068ff; color: white; border-radius: 10px 10px 0 0; display: flex; justify-content: space-between; align-items: center;">
-        <span style="font-weight: bold;">Chat với chúng tôi</span>
-        <span onclick="closeZaloChat()" style="cursor: pointer;">✕</span>
-    </div>
-    <div style="padding: 20px;">
-        <div style="text-align: center; margin-bottom: 20px;">
-            <img src="/static/image/Icon_of_Zalo.png" alt="Zalo Logo" style="width: 50px; height: 50px; margin-bottom: 10px;">
-            <p style="margin: 0;">Chào bạn!</p>
-            <p style="margin: 5px 0;">Chọn phương thức chat:</p>
-        </div>
-        
-        <!-- Hai nút chat -->
-        <div style="display: flex; flex-direction: column; gap: 10px;">
-            <a href="https://zalo.me/0369617913" target="_blank" style="display: block; background: #0068ff; color: white; text-decoration: none; padding: 12px; border-radius: 5px; text-align: center;">
-                <i class="fab fa-facebook-messenger" style="margin-right: 8px;"></i>
-                Chat qua Zalo
-            </a>
-            
-            <button onclick="openQuickChat()" style="background: #28a745; color: white; border: none; padding: 12px; border-radius: 5px; cursor: pointer;">
-                <i class="fas fa-comments" style="margin-right: 8px;"></i>
-                Chat với Admin
-            </button>
-        </div>
-    </div>
-</div>
-
-<!-- Cửa sổ Quick Chat -->
-<div id="quick-chat-window" style="display: none; position: fixed; bottom: 10%; right: 120px; width: 300px; background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 1000;">
-    <div style="padding: 15px; background: #28a745; color: white; border-radius: 10px 10px 0 0; display: flex; justify-content: space-between; align-items: center;">
-        <span style="font-weight: bold;">Chat với Admin</span>
-        <span onclick="closeQuickChat()" style="cursor: pointer;">✕</span>
-    </div>
-    <div style="padding: 20px; height: 300px; display: flex; flex-direction: column;">
-        <div id="chat-messages" style="flex-grow: 1; overflow-y: auto; margin-bottom: 10px;">
-            <!-- Tin nhắn sẽ được thêm vào đây -->
-            <div style="text-align: center; color: #666; margin: 10px 0;">Bắt đầu cuộc trò chuyện</div>
-        </div>
-        <div style="display: flex; gap: 10px;">
-            <input type="text" id="quick-chat-input" placeholder="Nhập tin nhắn..." style="flex-grow: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
-            <button onclick="sendQuickMessage()" style="background: #28a745; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer;">
-                Gửi
-            </button>
-        </div>
-    </div>
-</div>
-
-<div id="zalo-logo" onclick="toggleZaloChat()" style="cursor: pointer;">
-    <img src="/static/image/Icon_of_Zalo.png" alt="Zalo Logo" style="width: 50px; height: 50px; position: fixed; bottom: 10%; right: 50px;">
-</div>
-
-<script>
-function toggleZaloChat() {
-    var widget = document.getElementById('zalo-chat-widget');
-    var quickChat = document.getElementById('quick-chat-window');
-    if (widget.style.display === 'none') {
-        widget.style.display = 'block';
-        quickChat.style.display = 'none';
-    } else {
-        widget.style.display = 'none';
-    }
-}
-
-function closeZaloChat() {
-    document.getElementById('zalo-chat-widget').style.display = 'none';
-}
-
-function openQuickChat() {
-    document.getElementById('zalo-chat-widget').style.display = 'none';
-    document.getElementById('quick-chat-window').style.display = 'block';
-}
-
-function closeQuickChat() {
-    document.getElementById('quick-chat-window').style.display = 'none';
-}
-
-function sendQuickMessage() {
-    var input = document.getElementById('quick-chat-input');
-    var message = input.value.trim();
-    
-    if (message) {
-        var messagesDiv = document.getElementById('chat-messages');
-        var messageElement = document.createElement('div');
-        messageElement.style.cssText = 'background: #e9ecef; padding: 8px; border-radius: 4px; margin: 5px 0; align-self: flex-end;';
-        messageElement.textContent = message;
-        
-        messagesDiv.appendChild(messageElement);
-        messagesDiv.scrollTop = messagesDiv.scrollHeight;
-        input.value = '';
-        
-        // Thêm phản hồi tự động từ admin (có thể thay thế bằng logic backend thực tế)
-        setTimeout(() => {
-            var adminResponse = document.createElement('div');
-            adminResponse.style.cssText = 'background: #28a745; color: white; padding: 8px; border-radius: 4px; margin: 5px 0; align-self: flex-start;';
-            adminResponse.textContent = 'Cảm ơn bạn đã liên hệ. Chúng tôi sẽ phản hồi sớm nhất có thể!';
-            messagesDiv.appendChild(adminResponse);
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
-        }, 1000);
-    }
-}
-</script>
-
-<script>
-// Function để hiển thị toast notification
-function showToast(message, type = 'error') {
-    const toastContainer = document.getElementById('toastContainer');
-    
-    const toast = document.createElement('div');
-    toast.className = 'toast';
-    
-    const toastHeader = document.createElement('div');
-    toastHeader.className = 'toast-header';
-    
-    const icon = type === 'error' ? '❌' : '✅';
-    const title = type === 'error' ? 'Lỗi' : 'Thành công';
-    
-    toastHeader.innerHTML = `
-        <span style="margin-right: 10px;">${icon}</span>
-        <strong>${title}</strong>
-        <button type="button" class="btn-close" onclick="closeToast(this)" style="background: none; border: none; font-size: 18px; margin-left: auto; cursor: pointer;">×</button>
-    `;
-    
-    const toastBody = document.createElement('div');
-    toastBody.className = 'toast-body';
-    toastBody.textContent = message;
-    
-    toast.appendChild(toastHeader);
-    toast.appendChild(toastBody);
-    toastContainer.appendChild(toast);
-    
-    // Hiển thị toast
-    setTimeout(() => {
-        toast.classList.add('show');
-    }, 100);
-    
-    // Tự động ẩn sau 5 giây
-    setTimeout(() => {
-        closeToast(toast.querySelector('.btn-close'));
-    }, 5000);
-}
-
-function closeToast(button) {
-    const toast = button.closest('.toast');
-    toast.style.animation = 'fadeOutRight 0.5s';
-    setTimeout(() => {
-        toast.remove();
-    }, 500);
-}
-
-// Kiểm tra khi click vào Dashboard link
-document.addEventListener('DOMContentLoaded', function() {
-    const dashboardLink = document.querySelector('a[href*="staff_dashboard"]');
-    if (dashboardLink) {
-        dashboardLink.addEventListener('click', function(e) {
-            // Kiểm tra nếu user chưa có quyền truy cập
-            {% if not user.is_authenticated or not user.is_staff %}
-                e.preventDefault();
-                showToast('Tài khoản chưa được cấu hình đầy đủ hoặc không có quyền truy cập Dashboard!', 'error');
-            {% elif user.is_authenticated and not user.userprofile %}
-                e.preventDefault();
-                showToast('Tài khoản chưa có profile. Vui lòng liên hệ admin để được cấu hình!', 'error');
-            {% endif %}
-        });
-    }
-    
-    // Hiển thị thông báo từ Django messages framework
-    {% if messages %}
-        {% for message in messages %}
-            showToast('{{ message }}', '{% if message.tags == "error" %}error{% else %}success{% endif %}');
-        {% endfor %}
-    {% endif %}
-});
-
-// CSS animation cho fadeOutRight
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes fadeOutRight {
-        from { opacity: 1; transform: translateX(0); }
-        to { opacity: 0; transform: translateX(100%); }
-    }
-    @keyframes fadeInRight {
-        from { opacity: 0; transform: translateX(100%); }
-        to { opacity: 1; transform: translateX(0); }
-    }
-`;
-document.head.appendChild(style);
-</script>
-</body>
-</html>
-<!-- Zalo Logo và Menu Chat -->
-<div id="zalo-chat-widget" style="display: none; position: fixed; bottom: 10%; right: 120px; width: 300px; background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 1000;">
-    <div style="padding: 15px; background: #0068ff; color: white; border-radius: 10px 10px 0 0; display: flex; justify-content: space-between; align-items: center;">
-        <span style="font-weight: bold;">Chat với chúng tôi</span>
-        <span onclick="closeZaloChat()" style="cursor: pointer;">✕</span>
-    </div>
-    <div style="padding: 20px;">
-        <div style="text-align: center; margin-bottom: 20px;">
-            <img src="/static/image/Icon_of_Zalo.png" alt="Zalo Logo" style="width: 50px; height: 50px; margin-bottom: 10px;">
-            <p style="margin: 0;">Chào bạn!</p>
-            <p style="margin: 5px 0;">Chọn phương thức chat:</p>
-        </div>
-        
-        <!-- Hai nút chat -->
-        <div style="display: flex; flex-direction: column; gap: 10px;">
-            <a href="https://zalo.me/0369617913" target="_blank" style="display: block; background: #0068ff; color: white; text-decoration: none; padding: 12px; border-radius: 5px; text-align: center;">
-                <i class="fab fa-facebook-messenger" style="margin-right: 8px;"></i>
-                Chat qua Zalo
-            </a>
-            
-            <button onclick="openQuickChat()" style="background: #28a745; color: white; border: none; padding: 12px; border-radius: 5px; cursor: pointer;">
-                <i class="fas fa-comments" style="margin-right: 8px;"></i>
-                Chat với Admin
-            </button>
-        </div>
-    </div>
-</div>
-
-<!-- Cửa sổ Quick Chat -->
-<div id="quick-chat-window" style="display: none; position: fixed; bottom: 10%; right: 120px; width: 300px; background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 1000;">
-    <div style="padding: 15px; background: #28a745; color: white; border-radius: 10px 10px 0 0; display: flex; justify-content: space-between; align-items: center;">
-        <span style="font-weight: bold;">Chat với Admin</span>
-        <span onclick="closeQuickChat()" style="cursor: pointer;">✕</span>
-    </div>
-    <div style="padding: 20px; height: 300px; display: flex; flex-direction: column;">
-        <div id="chat-messages" style="flex-grow: 1; overflow-y: auto; margin-bottom: 10px;">
-            <!-- Tin nhắn sẽ được thêm vào đây -->
-            <div style="text-align: center; color: #666; margin: 10px 0;">Bắt đầu cuộc trò chuyện</div>
-        </div>
-        <div style="display: flex; gap: 10px;">
-            <input type="text" id="quick-chat-input" placeholder="Nhập tin nhắn..." style="flex-grow: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
-            <button onclick="sendQuickMessage()" style="background: #28a745; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer;">
-                Gửi
-            </button>
-        </div>
-    </div>
-</div>
-
-<div id="zalo-logo" onclick="toggleZaloChat()" style="cursor: pointer;">
-    <img src="/static/image/Icon_of_Zalo.png" alt="Zalo Logo" style="width: 50px; height: 50px; position: fixed; bottom: 10%; right: 50px;">
-</div>
-
-<script>
-function toggleZaloChat() {
-    var widget = document.getElementById('zalo-chat-widget');
-    var quickChat = document.getElementById('quick-chat-window');
-    if (widget.style.display === 'none') {
-        widget.style.display = 'block';
-        quickChat.style.display = 'none';
-    } else {
-        widget.style.display = 'none';
-    }
-}
-
-function closeZaloChat() {
-    document.getElementById('zalo-chat-widget').style.display = 'none';
-}
-
-function openQuickChat() {
-    document.getElementById('zalo-chat-widget').style.display = 'none';
-    document.getElementById('quick-chat-window').style.display = 'block';
-}
-
-function closeQuickChat() {
-    document.getElementById('quick-chat-window').style.display = 'none';
-}
-
-function sendQuickMessage() {
-    var input = document.getElementById('quick-chat-input');
-    var message = input.value.trim();
-    
-    if (message) {
-        var messagesDiv = document.getElementById('chat-messages');
-        var messageElement = document.createElement('div');
-        messageElement.style.cssText = 'background: #e9ecef; padding: 8px; border-radius: 4px; margin: 5px 0; align-self: flex-end;';
-        messageElement.textContent = message;
-        
-        messagesDiv.appendChild(messageElement);
-        messagesDiv.scrollTop = messagesDiv.scrollHeight;
-        input.value = '';
-        
-        // Thêm phản hồi tự động từ admin (có thể thay thế bằng logic backend thực tế)
-        setTimeout(() => {
-            var adminResponse = document.createElement('div');
-            adminResponse.style.cssText = 'background: #28a745; color: white; padding: 8px; border-radius: 4px; margin: 5px 0; align-self: flex-start;';
-            adminResponse.textContent = 'Cảm ơn bạn đã liên hệ. Chúng tôi sẽ phản hồi sớm nhất có thể!';
-            messagesDiv.appendChild(adminResponse);
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
-        }, 1000);
-    }
-}
-</script>
-
-<script>
-// Function để hiển thị toast notification
-function showToast(message, type = 'error') {
-    const toastContainer = document.getElementById('toastContainer');
-    
-    const toast = document.createElement('div');
-    toast.className = 'toast';
-    
-    const toastHeader = document.createElement('div');
-    toastHeader.className = 'toast-header';
-    
-    const icon = type === 'error' ? '❌' : '✅';
-    const title = type === 'error' ? 'Lỗi' : 'Thành công';
-    
-    toastHeader.innerHTML = `
-        <span style="margin-right: 10px;">${icon}</span>
-        <strong>${title}</strong>
-        <button type="button" class="btn-close" onclick="closeToast(this)" style="background: none; border: none; font-size: 18px; margin-left: auto; cursor: pointer;">×</button>
-    `;
-    
-    const toastBody = document.createElement('div');
-    toastBody.className = 'toast-body';
-    toastBody.textContent = message;
-    
-    toast.appendChild(toastHeader);
-    toast.appendChild(toastBody);
-    toastContainer.appendChild(toast);
-    
-    // Hiển thị toast
-    setTimeout(() => {
-        toast.classList.add('show');
-    }, 100);
-    
-    // Tự động ẩn sau 5 giây
-    setTimeout(() => {
-        closeToast(toast.querySelector('.btn-close'));
-    }, 5000);
-}
-
-function closeToast(button) {
-    const toast = button.closest('.toast');
-    toast.style.animation = 'fadeOutRight 0.5s';
-    setTimeout(() => {
-        toast.remove();
-    }, 500);
-}
-
-// Kiểm tra khi click vào Dashboard link
-document.addEventListener('DOMContentLoaded', function() {
-    const dashboardLink = document.querySelector('a[href*="staff_dashboard"]');
-    if (dashboardLink) {
-        dashboardLink.addEventListener('click', function(e) {
-            // Kiểm tra nếu user chưa có quyền truy cập
-            {% if not user.is_authenticated or not user.is_staff %}
-                e.preventDefault();
-                showToast('Tài khoản chưa được cấu hình đầy đủ hoặc không có quyền truy cập Dashboard!', 'error');
-            {% elif user.is_authenticated and not user.userprofile %}
-                e.preventDefault();
-                showToast('Tài khoản chưa có profile. Vui lòng liên hệ admin để được cấu hình!', 'error');
-            {% endif %}
-        });
-    }
-    
-    // Hiển thị thông báo từ Django messages framework
-    {% if messages %}
-        {% for message in messages %}
-            showToast('{{ message }}', '{% if message.tags == "error" %}error{% else %}success{% endif %}');
-        {% endfor %}
-    {% endif %}
-});
-
-// CSS animation cho fadeOutRight
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes fadeOutRight {
-        from { opacity: 1; transform: translateX(0); }
-        to { opacity: 0; transform: translateX(100%); }
-    }
-    @keyframes fadeInRight {
-        from { opacity: 0; transform: translateX(100%); }
-        to { opacity: 1; transform: translateX(0); }
-    }
-`;
-document.head.appendChild(style);
-</script>
-</body>
-</html>
-<!-- Zalo Logo và Menu Chat -->
-<div id="zalo-chat-widget" style="display: none; position: fixed; bottom: 10%; right: 120px; width: 300px; background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 1000;">
-    <div style="padding: 15px; background: #0068ff; color: white; border-radius: 10px 10px 0 0; display: flex; justify-content: space-between; align-items: center;">
-        <span style="font-weight: bold;">Chat với chúng tôi</span>
-        <span onclick="closeZaloChat()" style="cursor: pointer;">✕</span>
-    </div>
-    <div style="padding: 20px;">
-        <div style="text-align: center; margin-bottom: 20px;">
-            <img src="/static/image/Icon_of_Zalo.png" alt="Zalo Logo" style="width: 50px; height: 50px; margin-bottom: 10px;">
-            <p style="margin: 0;">Chào bạn!</p>
-            <p style="margin: 5px 0;">Chọn phương thức chat:</p>
-        </div>
-        
-        <!-- Hai nút chat -->
-        <div style="display: flex; flex-direction: column; gap: 10px;">
-            <a href="https://zalo.me/0369617913" target="_blank" style="display: block; background: #0068ff; color: white; text-decoration: none; padding: 12px; border-radius: 5px; text-align: center;">
-                <i class="fab fa-facebook-messenger" style="margin-right: 8px;"></i>
-                Chat qua Zalo
-            </a>
-            
-            <button onclick="openQuickChat()" style="background: #28a745; color: white; border: none; padding: 12px; border-radius: 5px; cursor: pointer;">
-                <i class="fas fa-comments" style="margin-right: 8px;"></i>
-                Chat với Admin
-            </button>
-        </div>
-    </div>
-</div>
-
-<!-- Cửa sổ Quick Chat -->
-<div id="quick-chat-window" style="display: none; position: fixed; bottom: 10%; right: 120px; width: 300px; background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 1000;">
-    <div style="padding: 15px; background: #28a745; color: white; border-radius: 10px 10px 0 0; display: flex; justify-content: space-between; align-items: center;">
-        <span style="font-weight: bold;">Chat với Admin</span>
-        <span onclick="closeQuickChat()" style="cursor: pointer;">✕</span>
-    </div>
-    <div style="padding: 20px; height: 300px; display: flex; flex-direction: column;">
-        <div id="chat-messages" style="flex-grow: 1; overflow-y: auto; margin-bottom: 10px;">
-            <!-- Tin nhắn sẽ được thêm vào đây -->
-            <div style="text-align: center; color: #666; margin: 10px 0;">Bắt đầu cuộc trò chuyện</div>
-        </div>
-        <div style="display: flex; gap: 10px;">
-            <input type="text" id="quick-chat-input" placeholder="Nhập tin nhắn..." style="flex-grow: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
-            <button onclick="sendQuickMessage()" style="background: #28a745; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer;">
-                Gửi
-            </button>
-        </div>
-    </div>
-</div>
-
-<div id="zalo-logo" onclick="toggleZaloChat()" style="cursor: pointer;">
-    <img src="/static/image/Icon_of_Zalo.png" alt="Zalo Logo" style="width: 50px; height: 50px; position: fixed; bottom: 10%; right: 50px;">
-</div>
-
-<script>
-function toggleZaloChat() {
-    var widget = document.getElementById('zalo-chat-widget');
-    var quickChat = document.getElementById('quick-chat-window');
-    if (widget.style.display === 'none') {
-        widget.style.display = 'block';
-        quickChat.style.display = 'none';
-    } else {
-        widget.style.display = 'none';
-    }
-}
-
-function closeZaloChat() {
-    document.getElementById('zalo-chat-widget').style.display = 'none';
-}
-
-function openQuickChat() {
-    document.getElementById('zalo-chat-widget').style.display = 'none';
-    document.getElementById('quick-chat-window').style.display = 'block';
-}
-
-function closeQuickChat() {
-    document.getElementById('quick-chat-window').style.display = 'none';
-}
-
-function sendQuickMessage() {
-    var input = document.getElementById('quick-chat-input');
-    var message = input.value.trim();
-    
-    if (message) {
-        var messagesDiv = document.getElementById('chat-messages');
-        var messageElement = document.createElement('div');
-        messageElement.style.cssText = 'background: #e9ecef; padding: 8px; border-radius: 4px; margin: 5px 0; align-self: flex-end;';
-        messageElement.textContent = message;
-        
-        messagesDiv.appendChild(messageElement);
-        messagesDiv.scrollTop = messagesDiv.scrollHeight;
-        input.value = '';
-        
-        // Thêm phản hồi tự động từ admin (có thể thay thế bằng logic backend thực tế)
-        setTimeout(() => {
-            var adminResponse = document.createElement('div');
-            adminResponse.style.cssText = 'background: #28a745; color: white; padding: 8px; border-radius: 4px; margin: 5px 0; align-self: flex-start;';
-            adminResponse.textContent = 'Cảm ơn bạn đã liên hệ. Chúng tôi sẽ phản hồi sớm nhất có thể!';
-            messagesDiv.appendChild(adminResponse);
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
-        }, 1000);
-    }
-}
-</script>
-
-<script>
-// Function để hiển thị toast notification
-function showToast(message, type = 'error') {
-    const toastContainer = document.getElementById('toastContainer');
-    
-    const toast = document.createElement('div');
-    toast.className = 'toast';
-    
-    const toastHeader = document.createElement('div');
-    toastHeader.className = 'toast-header';
-    
-    const icon = type === 'error' ? '❌' : '✅';
-    const title = type === 'error' ? 'Lỗi' : 'Thành công';
-    
-    toastHeader.innerHTML = `
-        <span style="margin-right: 10px;">${icon}</span>
-        <strong>${title}</strong>
-        <button type="button" class="btn-close" onclick="closeToast(this)" style="background: none; border: none; font-size: 18px; margin-left: auto; cursor: pointer;">×</button>
-    `;
-    
-    const toastBody = document.createElement('div');
-    toastBody.className = 'toast-body';
-    toastBody.textContent = message;
-    
-    toast.appendChild(toastHeader);
-    toast.appendChild(toastBody);
-    toastContainer.appendChild(toast);
-    
-    // Hiển thị toast
-    setTimeout(() => {
-        toast.classList.add('show');
-    }, 100);
-    
-    // Tự động ẩn sau 5 giây
-    setTimeout(() => {
-        closeToast(toast.querySelector('.btn-close'));
-    }, 5000);
-}
-
-function closeToast(button) {
-    const toast = button.closest('.toast');
-    toast.style.animation = 'fadeOutRight 0.5s';
-    setTimeout(() => {
-        toast.remove();
-    }, 500);
-}
-
-// Kiểm tra khi click vào Dashboard link
-document.addEventListener('DOMContentLoaded', function() {
-    const dashboardLink = document.querySelector('a[href*="staff_dashboard"]');
-    if (dashboardLink) {
-        dashboardLink.addEventListener('click', function(e) {
-            // Kiểm tra nếu user chưa có quyền truy cập
-            {% if not user.is_authenticated or not user.is_staff %}
-                e.preventDefault();
-                showToast('Tài khoản chưa được cấu hình đầy đủ hoặc không có quyền truy cập Dashboard!', 'error');
-            {% elif user.is_authenticated and not user.userprofile %}
-                e.preventDefault();
-                showToast('Tài khoản chưa có profile. Vui lòng liên hệ admin để được cấu hình!', 'error');
-            {% endif %}
-        });
-    }
-    
-    // Hiển thị thông báo từ Django messages framework
-    {% if messages %}
-        {% for message in messages %}
-            showToast('{{ message }}', '{% if message.tags == "error" %}error{% else %}success{% endif %}');
-        {% endfor %}
-    {% endif %}
-});
-
-// CSS animation cho fadeOutRight
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes fadeOutRight {
-        from { opacity: 1; transform: translateX(0); }
-        to { opacity: 0; transform: translateX(100%); }
-    }
-    @keyframes fadeInRight {
-        from { opacity: 0; transform: translateX(100%); }
-        to { opacity: 1; transform: translateX(0); }
-    }
-`;
-document.head.appendChild(style);
-</script>
-</body>
-</html>
-<!-- Zalo Logo và Menu Chat -->
-<div id="zalo-chat-widget" style="display: none; position: fixed; bottom: 10%; right: 120px; width: 300px; background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 1000;">
-    <div style="padding: 15px; background: #0068ff; color: white; border-radius: 10px 10px 0 0; display: flex; justify-content: space-between; align-items: center;">
-        <span style="font-weight: bold;">Chat với chúng tôi</span>
-        <span onclick="closeZaloChat()" style="cursor: pointer;">✕</span>
-    </div>
-    <div style="padding: 20px;">
-        <div style="text-align: center; margin-bottom: 20px;">
-            <img src="/static/image/Icon_of_Zalo.png" alt="Zalo Logo" style="width: 50px; height: 50px; margin-bottom: 10px;">
-            <p style="margin: 0;">Chào bạn!</p>
-            <p style="margin: 5px 0;">Chọn phương thức chat:</p>
-        </div>
-        
-        <!-- Hai nút chat -->
-        <div style="display: flex; flex-direction: column; gap: 10px;">
-            <a href="https://zalo.me/0369617913" target="_blank" style="display: block; background: #0068ff; color: white; text-decoration: none; padding: 12px; border-radius: 5px; text-align: center;">
-                <i class="fab fa-facebook-messenger" style="margin-right: 8px;"></i>
-                Chat qua Zalo
-            </a>
-            
-            <button onclick="openQuickChat()" style="background: #28a745; color: white; border: none; padding: 12px; border-radius: 5px; cursor: pointer;">
-                <i class="fas fa-comments" style="margin-right: 8px;"></i>
-                Chat với Admin
-            </button>
-        </div>
-    </div>
-</div>
-
-<!-- Cửa sổ Quick Chat -->
-<div id="quick-chat-window" style="display: none; position: fixed; bottom: 10%; right: 120px; width: 300px; background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 1000;">
-    <div style="padding: 15px; background: #28a745; color: white; border-radius: 10px 10px 0 0; display: flex; justify-content: space-between; align-items: center;">
-        <span style="font-weight: bold;">Chat với Admin</span>
-        <span onclick="closeQuickChat()" style="cursor: pointer;">✕</span>
-    </div>
-    <div style="padding: 20px; height: 300px; display: flex; flex-direction: column;">
-        <div id="chat-messages" style="flex-grow: 1; overflow-y: auto; margin-bottom: 10px;">
-            <!-- Tin nhắn sẽ được thêm vào đây -->
-            <div style="text-align: center; color: #666; margin: 10px 0;">Bắt đầu cuộc trò chuyện</div>
-        </div>
-        <div style="display: flex; gap: 10px;">
-            <input type="text" id="quick-chat-input" placeholder="Nhập tin nhắn..." style="flex-grow: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
-            <button onclick="sendQuickMessage()" style="background: #28a745; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer;">
-                Gửi
-            </button>
-        </div>
-    </div>
-</div>
-
-<div id="zalo-logo" onclick="toggleZaloChat()" style="cursor: pointer;">
-    <img src="/static/image/Icon_of_Zalo.png" alt="Zalo Logo" style="width: 50px; height: 50px; position: fixed; bottom: 10%; right: 50px;">
-</div>
-
-<script>
-function toggleZaloChat() {
-    var widget = document.getElementById('zalo-chat-widget');
-    var quickChat = document.getElementById('quick-chat-window');
-    if (widget.style.display === 'none') {
-        widget.style.display = 'block';
-        quickChat.style.display = 'none';
-    } else {
-        widget.style.display = 'none';
-    }
-}
-
-function closeZaloChat() {
-    document.getElementById('zalo-chat-widget').style.display = 'none';
-}
-
-function openQuickChat() {
-    document.getElementById('zalo-chat-

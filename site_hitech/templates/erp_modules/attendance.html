@@ -1,0 +1,45 @@
+{% extends "dashboard/dashboard_base.html" %}
+
+{% block title %}Chấm công - Dashboard{% endblock %}
+
+{% block page_title %}
+<i class="fas fa-clock text-primary me-2"></i>Chấm công
+{% endblock %}
+
+{% block header_controls %}
+<div class="btn-group" role="group">
+    <a href="#" class="btn btn-success">
+        <i class="fas fa-user-clock me-1"></i>Chấm công ngay
+    </a>
+    <a href="#" class="btn btn-outline-info">
+        <i class="fas fa-calendar-week me-1"></i>Xem lịch
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-body">
+                    <h5 class="text-center text-muted">
+                        <i class="fas fa-clock fa-3x mb-3 d-block"></i>
+                        Trang Chấm công đang được phát triển
+                    </h5>
+                    <p class="text-center text-muted">
+                        Chức năng này sẽ bao gồm:
+                    </p>
+                    <ul class="list-unstyled text-center">
+                        <li><i class="fas fa-check text-success me-2"></i>Chấm công vào/ra</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Theo dõi giờ làm việc</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Đăng ký nghỉ phép</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Báo cáo chấm công</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Quản lý ca làm việc</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
