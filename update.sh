@@ -2,7 +2,7 @@
 
 # ========================================
 # HITECH NDT - UPDATE SCRIPT
-# Script update code nhanh cho website hiện có
+# Script cập nhật code mới nhất
 # ========================================
 
 # Colors
@@ -12,10 +12,11 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
-# Configuration - Cập nhật theo thực tế hiện tại
-PROJECT_DIR="/var/www/hitech_ndt"
+# Configuration
+PROJECT_NAME="hitech_ndt"
+PROJECT_DIR="/var/www/$PROJECT_NAME"
 SERVICE_NAME="hitech-ndt"
-BACKUP_DIR="/backup/update_$(date +%Y%m%d_%H%M%S)"
+GITHUB_REPO="https://github.com/phihung13/Hitech-NDT-Website.git"  # Thay đổi URL này
 
 # Functions
 print_status() { echo -e "${BLUE}[INFO]${NC} $1"; }
@@ -30,210 +31,134 @@ check_root() {
     fi
 }
 
-check_source() {
-    if [ ! -d "site_hitech" ]; then
-        print_error "Không tìm thấy thư mục site_hitech"
-        print_error "Hãy chạy script từ thư mục chứa source code mới"
-        exit 1
-    fi
+backup_current() {
+    print_status "Backup version hiện tại..."
     
-    if [ ! -f "site_hitech/manage.py" ]; then
-        print_error "Không tìm thấy manage.py trong site_hitech"
-        exit 1
-    fi
-}
-
-check_production() {
-    if [ ! -d "$PROJECT_DIR" ]; then
-        print_error "Không tìm thấy website production tại $PROJECT_DIR"
-        print_error "Sử dụng deploy.sh để deploy lần đầu"
+    if [ -d "$PROJECT_DIR" ]; then
+        cp -r $PROJECT_DIR $PROJECT_DIR.backup.$(date +%Y%m%d_%H%M%S)
+        print_success "Backup hoàn thành"
+    else
+        print_error "Thư mục project không tồn tại: $PROJECT_DIR"
         exit 1
     fi
 }
 
-create_backup() {
-    print_status "Tạo backup..."
+check_git_access() {
+    print_status "Kiểm tra Git access..."
     
-    mkdir -p "$BACKUP_DIR"
-    cp -r "$PROJECT_DIR" "$BACKUP_DIR/site_backup"
+    # Check if git credentials are configured
+    if [ ! -f "/root/.git-credentials" ] && [ ! -f "/root/.ssh/config" ]; then
+        print_error "Git credentials chưa được cấu hình!"
+        print_status "Chạy: sudo bash setup_git.sh"
+        exit 1
+    fi
     
-    print_success "Backup tại: $BACKUP_DIR"
-}
-
-stop_services() {
-    print_status "Dừng services..."
+    # Test access to repository
+    if ! git ls-remote $GITHUB_REPO >/dev/null 2>&1; then
+        print_error "Không thể truy cập repository: $GITHUB_REPO"
+        print_status "Kiểm tra lại Git credentials hoặc chạy: sudo bash setup_git.sh"
+        exit 1
+    fi
     
-    systemctl stop "$SERVICE_NAME" 2>/dev/null || print_warning "Django service không chạy"
-    
-    print_success "Services đã dừng"
+    print_success "✓ Git access OK"
 }
 
 update_code() {
-    print_status "Update source code..."
+    print_status "Cập nhật code mới nhất..."
     
-    # Backup old code
-    if [ -d "$PROJECT_DIR.old" ]; then
-        rm -rf "$PROJECT_DIR.old"
-    fi
+    # Check Git access first
+    check_git_access
     
-    cp -r "$PROJECT_DIR" "$PROJECT_DIR.old"
+    cd $PROJECT_DIR
     
-    # Copy new code (preserve venv, staticfiles, media, logs)
-    rsync -av --exclude 'venv' --exclude 'staticfiles' --exclude 'media' --exclude '*.log' \
-          --exclude '__pycache__' --exclude '*.pyc' \
-          site_hitech/ "$PROJECT_DIR/"
-    
-    print_success "Code đã được update"
-}
-
-restore_production_settings() {
-    print_status "Khôi phục production settings..."
-    
-    if [ -f "$PROJECT_DIR.old/site_hitech/settings_production.py" ]; then
-        cp "$PROJECT_DIR.old/site_hitech/settings_production.py" "$PROJECT_DIR/site_hitech/"
-        print_success "Production settings đã được khôi phục"
+    # Stash any local changes
+    if [ -d ".git" ]; then
+        print_status "Pull từ Git repository..."
+        git stash
+        
+        if git pull origin main; then
+            print_success "✓ Git pull thành công"
+        else
+            print_error "✗ Git pull thất bại"
+            exit 1
+        fi
+        
+        # Nếu trong subfolder site_hitech
+        if [ -d "site_hitech" ]; then
+            cd site_hitech
+        fi
     else
-        print_warning "Không tìm thấy settings_production.py cũ"
-        # Tạo settings_production.py mới nếu không có
-        create_production_settings
+        print_warning "Không phải Git repository, copy từ source..."
+        # Backup important files
+        cp site_hitech/settings_production.py /tmp/settings_production_backup.py 2>/dev/null
+        
+        # Copy new code (assuming source is in current directory)
+        SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+        if [ -d "$SCRIPT_DIR/site_hitech" ]; then
+            cp -r "$SCRIPT_DIR/site_hitech"/* .
+            
+            # Restore settings
+            if [ -f "/tmp/settings_production_backup.py" ]; then
+                cp /tmp/settings_production_backup.py site_hitech/settings_production.py
+            fi
+        else
+            print_error "Không tìm thấy source code để update"
+            exit 1
+        fi
     fi
-}
-
-create_production_settings() {
-    print_status "Tạo production settings mới..."
     
-    cat > "$PROJECT_DIR/site_hitech/settings_production.py" << 'EOF'
-from .settings import *
-
-DEBUG = False
-ALLOWED_HOSTS = ['hitechndt.vn', 'www.hitechndt.vn', 'localhost', '127.0.0.1']
-
-SECRET_KEY = 'TYEwHbr9Vhm2zXlk2zX4VhfY7LCf0MmK2zX5d8w7RoNJPzWVKJwQ3zN4mK9CrL'
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'hitech_ndt_db',
-        'USER': 'hitech_ndt_user',
-        'PASSWORD': 'hitech2024',
-        'HOST': 'localhost',
-        'PORT': '5432',
-    }
+    print_success "Code đã được cập nhật"
 }
 
-STATIC_ROOT = '/var/www/hitech_ndt/staticfiles'
-MEDIA_ROOT = '/var/www/hitech_ndt/media'
-
-# Security settings
-SECURE_SSL_REDIRECT = True
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
-SECURE_HSTS_SECONDS = 31536000
-SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-SECURE_HSTS_PRELOAD = True
-SECURE_BROWSER_XSS_FILTER = True
-SECURE_CONTENT_TYPE_NOSNIFF = True
-X_FRAME_OPTIONS = 'DENY'
-
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'handlers': {
-        'file': {
-            'level': 'INFO',
-            'class': 'logging.FileHandler',
-            'filename': '/var/log/django.log',
-        },
-    },
-    'loggers': {
-        'django': {
-            'handlers': ['file'],
-            'level': 'INFO',
-            'propagate': True,
-        },
-    },
-}
-
-# CKEditor settings
-CKEDITOR_UPLOAD_PATH = "uploads/"
-CKEDITOR_IMAGE_BACKEND = "pillow"
-CKEDITOR_BROWSE_SHOW_DIRS = True
-CKEDITOR_RESTRICT_BY_USER = True
-
-CKEDITOR_CONFIGS = {
-    'default': {
-        'toolbar': 'full',
-        'height': 300,
-        'width': '100%',
-    },
-}
-
-# Summernote settings
-SUMMERNOTE_CONFIG = {
-    'summernote': {
-        'width': '100%',
-        'height': '400',
-    },
-}
-EOF
+update_dependencies() {
+    print_status "Cập nhật dependencies..."
     
-    print_success "Production settings đã được tạo"
-}
-
-run_django_tasks() {
-    print_status "Chạy Django tasks..."
-    
-    cd "$PROJECT_DIR"
+    cd $PROJECT_DIR
     source venv/bin/activate
     
+    pip install --upgrade pip
+    pip install -r requirements.txt --upgrade
+    
+    print_success "Dependencies đã được cập nhật"
+}
+
+run_migrations() {
+    print_status "Chạy database migrations..."
+    
+    cd $PROJECT_DIR
+    source venv/bin/activate
     export DJANGO_SETTINGS_MODULE=site_hitech.settings_production
     
-    # Install any new dependencies
-    pip install -r requirements.txt
-    
-    # Run migrations
     python manage.py migrate
-    
-    # Collect static files
     python manage.py collectstatic --noinput
     
-    # Update homepage settings if script exists
-    [ -f "create_homepage_settings.py" ] && python create_homepage_settings.py 2>/dev/null || true
-    
-    print_success "Django tasks hoàn thành"
+    print_success "Migrations hoàn thành"
 }
 
-set_permissions() {
-    print_status "Thiết lập permissions..."
+restart_services() {
+    print_status "Restart services..."
     
-    chown -R www-data:www-data "$PROJECT_DIR"
-    chmod -R 755 "$PROJECT_DIR"
+    # Stop services
+    systemctl stop $SERVICE_NAME
+    systemctl stop nginx
     
-    print_success "Permissions đã được thiết lập"
-}
-
-start_services() {
-    print_status "Khởi động services..."
+    # Set permissions
+    chown -R www-data:www-data $PROJECT_DIR
+    chmod -R 755 $PROJECT_DIR
     
-    systemctl start "$SERVICE_NAME"
-    systemctl restart nginx
+    # Start services
+    systemctl start $SERVICE_NAME
+    systemctl start nginx
     
-    print_success "Services đã khởi động"
-}
-
-run_health_check() {
-    print_status "Kiểm tra website..."
+    # Check status
+    sleep 3
     
-    sleep 5
-    
-    # Check services
-    if systemctl is-active --quiet "$SERVICE_NAME"; then
+    if systemctl is-active --quiet $SERVICE_NAME; then
         print_success "✓ Django service đang chạy"
     else
         print_error "✗ Django service lỗi"
-        print_error "Rollback bằng cách: mv $PROJECT_DIR.old $PROJECT_DIR && systemctl restart $SERVICE_NAME"
-        return 1
+        print_status "Checking logs..."
+        journalctl -u $SERVICE_NAME --no-pager -n 10
     fi
     
     if systemctl is-active --quiet nginx; then
@@ -242,63 +167,65 @@ run_health_check() {
         print_error "✗ Nginx lỗi"
     fi
     
-    # Check website response
-    if curl -s -o /dev/null -w "%{http_code}" http://localhost | grep -q "200\|301\|302"; then
-        print_success "✓ Website đang hoạt động"
+    print_success "Services đã được restart"
+}
+
+test_website() {
+    print_status "Kiểm tra website..."
+    
+    sleep 2
+    
+    HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost)
+    
+    if [[ "$HTTP_STATUS" =~ ^(200|301|302)$ ]]; then
+        print_success "✓ Website hoạt động bình thường (HTTP $HTTP_STATUS)"
     else
-        print_warning "⚠ Website có thể cần kiểm tra"
+        print_error "✗ Website có vấn đề (HTTP $HTTP_STATUS)"
+        
+        # Try to rollback if there's a recent backup
+        LATEST_BACKUP=$(ls -t $PROJECT_DIR.backup.* 2>/dev/null | head -1)
+        if [ -n "$LATEST_BACKUP" ]; then
+            print_status "Rolling back to latest backup..."
+            systemctl stop $SERVICE_NAME
+            rm -rf $PROJECT_DIR
+            mv "$LATEST_BACKUP" $PROJECT_DIR
+            restart_services
+        fi
     fi
+}
+
+cleanup_old_backups() {
+    print_status "Dọn dẹp backup cũ..."
+    
+    # Keep only 5 most recent backups
+    ls -t $PROJECT_DIR.backup.* 2>/dev/null | tail -n +6 | xargs rm -rf 2>/dev/null
+    
+    print_success "Cleanup hoàn thành"
 }
 
 main() {
     print_status "========================================="
     print_status "HITECH NDT - UPDATE CODE"
     print_status "========================================="
-    print_status "Thư mục hiện tại: $(pwd)"
-    print_status "Target: $PROJECT_DIR"
-    print_status "Service: $SERVICE_NAME"
     echo
     
-    # Confirmations and checks
-    print_warning "⚠️  Website sẽ tạm dừng 2-3 phút trong quá trình update"
-    print_warning "Tiếp tục? (y/N)"
-    read -r CONFIRM
-    if [[ ! $CONFIRM =~ ^[Yy]$ ]]; then
-        print_status "Update đã hủy"
-        exit 0
-    fi
-    
     check_root
-    check_source
-    check_production
-    
-    # Main update process
-    create_backup
-    stop_services
+    backup_current
     update_code
-    restore_production_settings
-    run_django_tasks
-    set_permissions
-    start_services
+    update_dependencies
+    run_migrations
+    restart_services
+    test_website
+    cleanup_old_backups
     
-    # Health check
-    if run_health_check; then
-        echo
-        print_success "========================================="
-        print_success "UPDATE HOÀN THÀNH!"
-        print_success "========================================="
-        print_success "Website: https://hitechndt.vn"
-        print_success "Backup: $BACKUP_DIR"
-        echo
-        print_status "Để xem logs: sudo journalctl -u $SERVICE_NAME -f"
-        print_status "Để rollback: mv $PROJECT_DIR.old $PROJECT_DIR && sudo systemctl restart $SERVICE_NAME"
-    else
-        print_error "========================================="
-        print_error "UPDATE CÓ LỖI!"
-        print_error "========================================="
-        print_error "Kiểm tra logs: sudo journalctl -u $SERVICE_NAME -f"
-        print_error "Rollback: mv $PROJECT_DIR.old $PROJECT_DIR && sudo systemctl restart $SERVICE_NAME"
-    fi
+    echo
+    print_success "========================================="
+    print_success "UPDATE HOÀN THÀNH!"
+    print_success "========================================="
+    print_status "Website: https://hitechndt.vn"
+    print_status "Để xem logs: sudo journalctl -u $SERVICE_NAME -f"
+    print_status "Để rollback: sudo bash rollback.sh"
+    echo
 }
 
 # Run main function

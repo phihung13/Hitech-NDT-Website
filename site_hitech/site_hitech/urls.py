@@ -32,6 +32,7 @@ urlpatterns += i18n_patterns(
     path('blog/', include('blog.urls')),
     path('summernote/', include('django_summernote.urls')),  # Thêm URL cho Summernote
     path('ckeditor/', include('ckeditor_uploader.urls')),  # Thêm URL cho CKEditor upload
+    path('ckeditor5/', include('django_ckeditor_5.urls')),  # Thêm URL cho CKEditor5
     prefix_default_language=False,
 )
 

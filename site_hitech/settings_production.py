@@ -15,7 +15,8 @@ ALLOWED_HOSTS = [
     'hitechndt.vn',
     'www.hitechndt.vn',
     'localhost',
-    '127.0.0.1'
+    '127.0.0.1',
+    'testserver'  # For Django tests
 ]
 
 # Application definition
@@ -32,6 +33,7 @@ INSTALLED_APPS = [
     # Third party apps
     'colorfield',
     'channels',
+    'django_ckeditor_5',
     
     # Local apps
     'api',
@@ -294,3 +296,48 @@ REST_FRAMEWORK = {
 # CELERY_TASK_SERIALIZER = 'json'
 # CELERY_RESULT_SERIALIZER = 'json'
 # CELERY_TIMEZONE = TIME_ZONE 
+
+# CKEditor 5 Configuration
+CKEDITOR_5_CONFIGS = {
+    'default': {
+        'toolbar': [
+            'heading', '|', 'bold', 'italic', 'link', 'bulletedList', 'numberedList', 'blockQuote',
+            '|', 'outdent', 'indent', '|', 'imageUpload', 'mediaEmbed', 'insertTable',
+            '|', 'fontSize', 'fontFamily', 'fontColor', 'fontBackgroundColor', '|',
+            'horizontalLine', 'specialCharacters', '|', 'undo', 'redo'
+        ],
+        'height': 400,
+        'width': '100%',
+        'language': 'vi',
+        'image': {
+            'toolbar': [
+                'imageTextAlternative', '|', 'imageStyle:alignLeft', 'imageStyle:alignRight',
+                'imageStyle:alignCenter', 'imageStyle:side', '|', 'toggleImageCaption'
+            ],
+            'styles': [
+                'full', 'side', 'alignLeft', 'alignRight', 'alignCenter'
+            ]
+        },
+        'table': {
+            'contentToolbar': [
+                'tableColumn', 'tableRow', 'mergeTableCells', 'tableProperties', 'tableCellProperties'
+            ]
+        },
+        'link': {
+            'decorators': {
+                'addTargetToExternalLinks': True,
+                'defaultProtocol': 'https://'
+            }
+        }
+    },
+    'simple': {
+        'toolbar': ['heading', '|', 'bold', 'italic', 'link', 'bulletedList', 'numberedList', 'blockQuote'],
+        'height': 300,
+        'width': '100%',
+        'language': 'vi'
+    }
+}
+
+# CKEditor 5 Upload Settings
+CKEDITOR_5_UPLOAD_PATH = "uploads/ckeditor5/"
+CKEDITOR_5_FILE_STORAGE = "django.core.files.storage.FileSystemStorage" 

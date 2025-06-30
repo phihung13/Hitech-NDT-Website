@@ -4,732 +4,206 @@
 {% block title %}Tạo bài viết mới - Hitech NDT{% endblock %}
 
 {% block extra_css %}
+{{ form.media.css }}
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 <style>
-.breadcrumb-section {
-    background: #f8f9fa;
-    padding: 15px 0;
-    border-bottom: 1px solid #dee2e6;
-}
-
-.breadcrumb-item a {
-    color: #667eea;
-    text-decoration: none;
-}
-
-.breadcrumb-item.active {
-    color: #6c757d;
-}
-
 .create-post-container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 20px;
+    max-width: 900px;
+    margin: 30px auto;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+    padding: 32px 24px;
 }
-
-.create-post-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 25px;
-    border-radius: 15px;
-    margin-bottom: 25px;
-    text-align: center;
-}
-
-.create-post-title {
-    font-size: 2rem;
-    font-weight: bold;
-    margin-bottom: 10px;
-}
-
-.create-post-subtitle {
-    font-size: 1rem;
-    opacity: 0.9;
-}
-
-.form-section {
-    background: white;
-    border-radius: 15px;
-    padding: 25px;
-    margin-bottom: 25px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-}
-
 .section-title {
-    font-size: 1.3rem;
-    font-weight: 600;
+    font-size: 1.5rem;
+    font-weight: 700;
     color: #2c5364;
     margin-bottom: 20px;
-    border-bottom: 2px solid #e9ecef;
-    padding-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
-
 .form-group {
     margin-bottom: 20px;
 }
-
 .form-label {
     font-weight: 600;
     color: #495057;
     margin-bottom: 8px;
     display: block;
 }
-
-.form-control {
+.form-control, .form-select {
     border: 2px solid #e9ecef;
     border-radius: 8px;
     padding: 12px 15px;
     font-size: 1rem;
+    width: 100%;
     transition: all 0.3s ease;
 }
-
-.form-control:focus {
+.form-control:focus, .form-select:focus {
     border-color: #667eea;
-    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.15);
 }
-
-.help-text {
-    font-size: 0.9rem;
-    color: #6c757d;
-    margin-top: 5px;
-}
-
-.char-count {
-    font-size: 0.85rem;
-    color: #6c757d;
-    margin-top: 5px;
-}
-
-.char-count.warning {
-    color: #ffc107;
-}
-
-.char-count.danger {
-    color: #dc3545;
-}
-
-.real-time-seo {
-    background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
-    border: 2px solid #bbdefb;
-    border-radius: 15px;
-    padding: 20px;
-    margin-bottom: 25px;
-    position: sticky;
-    top: 20px;
-    z-index: 100;
-}
-
-.real-time-seo-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 15px;
-    gap: 15px;
-}
-
-.real-time-seo-title {
-    font-size: 1.2rem;
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    color: #fff;
     font-weight: 600;
-    color: #1976d2;
-    margin: 0;
-    flex: 1;
+    padding: 12px 32px;
+    border-radius: 8px;
+    transition: background 0.3s;
 }
-
-.real-time-seo-header .btn {
-    flex-shrink: 0;
-    white-space: nowrap;
+.btn-primary:hover {
+    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
 }
-
+.seo-box {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 24px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
 .seo-score-circle {
-    width: 80px;
-    height: 80px;
+    width: 60px;
+    height: 60px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     margin: 0 auto 10px;
-    font-size: 1.5rem;
+    font-size: 1.2rem;
     font-weight: bold;
     color: white;
-    position: relative;
-}
-
-.seo-score-circle.success {
     background: linear-gradient(135deg, #28a745, #20c997);
-}
-
-.seo-score-circle.warning {
-    background: linear-gradient(135deg, #ffc107, #fd7e14);
-}
-
-.seo-score-circle.danger {
-    background: linear-gradient(135deg, #dc3545, #e83e8c);
-}
-
-.seo-score-number {
-    font-size: 1.8rem;
-    font-weight: bold;
-}
-
-.seo-details {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 15px;
-    margin-bottom: 20px;
-}
-
-.seo-detail-item {
-    background: white;
-    border-radius: 8px;
-    padding: 15px;
-    border-left: 3px solid #667eea;
-}
-
-.seo-detail-title {
-    font-weight: 600;
-    color: #495057;
-    margin-bottom: 8px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 0.9rem;
-}
-
-.seo-detail-score {
-    font-size: 1rem;
-    font-weight: bold;
-    color: #667eea;
-    margin-bottom: 8px;
-}
-
-.seo-strengths {
-    margin-bottom: 10px;
-}
-
-.seo-strengths h6 {
-    color: #28a745;
-    font-weight: 600;
-    margin-bottom: 5px;
-    font-size: 0.85rem;
-}
-
-.seo-issues {
-    margin-bottom: 10px;
-}
-
-.seo-issues h6 {
-    color: #dc3545;
-    font-weight: 600;
-    margin-bottom: 5px;
-    font-size: 0.85rem;
-}
-
-.seo-suggestions {
-    background: #fff3cd;
-    border: 1px solid #ffeaa7;
-    border-radius: 6px;
-    padding: 12px;
-}
-
-.seo-suggestions h6 {
-    color: #856404;
-    font-weight: 600;
-    margin-bottom: 8px;
-    font-size: 0.85rem;
-}
-
-.seo-suggestions ul {
-    margin: 0;
-    padding-left: 18px;
-    font-size: 0.8rem;
-}
-
-.seo-suggestions li {
-    color: #856404;
-    margin-bottom: 3px;
-}
-
-.form-actions {
-    display: flex;
-    gap: 15px;
-    justify-content: center;
-    margin-top: 30px;
-    flex-wrap: wrap;
-}
-
-.form-actions .btn {
-    min-width: 140px;
-}
-
-.btn {
-    padding: 12px 30px;
-    border-radius: 25px;
-    font-weight: 600;
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    transition: all 0.3s ease;
-    border: none;
-    cursor: pointer;
-}
-
-.btn-primary {
-    background: linear-gradient(135deg, #667eea, #764ba2);
-    color: white;
-}
-
-.btn-primary:hover {
-    background: linear-gradient(135deg, #5a6fd8, #6a4190);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-}
-
-.btn-secondary {
-    background: #6c757d;
-    color: white;
-}
-
-.btn-secondary:hover {
-    background: #5a6268;
-    transform: translateY(-2px);
-}
-
-.btn-success {
-    background: linear-gradient(135deg, #28a745, #20c997);
-    color: white;
-}
-
-.btn-success:hover {
-    background: linear-gradient(135deg, #218838, #1ea085);
-    transform: translateY(-2px);
-}
-
-.btn-info {
-    background: linear-gradient(135deg, #17a2b8, #20c997);
-    color: white;
-}
-
-.btn-info:hover {
-    background: linear-gradient(135deg, #138496, #1ea085);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(23, 162, 184, 0.4);
-}
-
-.btn-warning {
-    background: linear-gradient(135deg, #ffc107, #fd7e14);
-    color: white;
-}
-
-.btn-warning:hover {
-    background: linear-gradient(135deg, #e0a800, #e8590c);
-    color: white;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(255, 193, 7, 0.4);
-}
-
-@media (max-width: 768px) {
-    .create-post-container {
-        padding: 10px;
-    }
-    
-    .form-actions {
-        flex-direction: column;
-    }
-    
-    .seo-details {
-        grid-template-columns: 1fr;
-    }
-    
-    .real-time-seo {
-        position: static;
-    }
 }
 </style>
 {% endblock %}
 
 {% block content %}
-{{ form.media }}
-<!-- Breadcrumb -->
-<div class="breadcrumb-section">
-    <div class="container">
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb mb-0">
-                <li class="breadcrumb-item"><a href="{% url 'home' %}"><i class="fas fa-home"></i> Trang chủ</a></li>
-                <li class="breadcrumb-item"><a href="{% url 'blog_list' %}">Blog</a></li>
-                <li class="breadcrumb-item active" aria-current="page">Tạo bài viết mới</li>
-            </ol>
-        </nav>
-    </div>
-</div>
-
 <div class="create-post-container">
-    <!-- Header -->
-    <div class="create-post-header">
-        <h1 class="create-post-title">
-            {% if post %}
-                <i class="fas fa-edit me-3"></i>Chỉnh sửa bài viết
-            {% else %}
-                <i class="fas fa-plus-circle me-3"></i>Tạo bài viết mới
-            {% endif %}
-        </h1>
-        <p class="create-post-subtitle">
-            {% if post %}
-                Cập nhật nội dung, hình ảnh, SEO cho bài viết của bạn
-            {% else %}
-                Viết bài viết chuẩn SEO với công cụ phân tích thông minh
-            {% endif %}
-        </p>
-    </div>
-
-    <form method="post" enctype="multipart/form-data" id="createPostForm">
+    <h1 class="section-title"><i class="fas fa-plus-circle"></i> Tạo bài viết mới</h1>
+    <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
-        
-        <div class="row">
-            <!-- Form Content -->
-            <div class="col-lg-8">
-                <!-- Basic Information -->
-                <div class="form-section">
-                    <h2 class="section-title">
-                        <i class="fas fa-info-circle me-2"></i>Thông tin cơ bản
-                    </h2>
-                    
-                    <div class="form-group">
-                        <label for="{{ form.title.id_for_label }}" class="form-label">
-                            <i class="fas fa-heading me-2"></i>Tiêu đề bài viết *
-                        </label>
-                        {{ form.title }}
-                        {% if form.title.help_text %}
-                            <div class="help-text">{{ form.title.help_text }}</div>
-                        {% endif %}
-                        {% if form.title.errors %}
-                            <div class="text-danger">{{ form.title.errors }}</div>
-                        {% endif %}
-                    </div>
-
-                    <div class="form-group">
-                        <label for="{{ form.summary.id_for_label }}" class="form-label">
-                            <i class="fas fa-align-left me-2"></i>Tóm tắt bài viết
-                        </label>
-                        {{ form.summary }}
-                        {% if form.summary.help_text %}
-                            <div class="help-text">{{ form.summary.help_text }}</div>
-                        {% endif %}
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="{{ form.category.id_for_label }}" class="form-label">
-                                    <i class="fas fa-folder me-2"></i>Chuyên mục
-                                </label>
-                                {{ form.category }}
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="{{ form.featured_image.id_for_label }}" class="form-label">
-                                    <i class="fas fa-image me-2"></i>Ảnh đại diện
-                                </label>
-                                {{ form.featured_image }}
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="{{ form.tags.id_for_label }}" class="form-label">
-                            <i class="fas fa-tags me-2"></i>Thẻ (Tags)
-                        </label>
-                        {{ form.tags }}
-                        <div class="help-text">Chọn nhiều thẻ bằng Ctrl+Click</div>
-                    </div>
-                </div>
-
-                <!-- SEO Section -->
-                <div class="form-section">
-                    <h2 class="section-title">
-                        <i class="fas fa-search me-2"></i>Tối ưu SEO
-                    </h2>
-                    
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="{{ form.meta_title.id_for_label }}" class="form-label">
-                                    <i class="fas fa-globe me-2"></i>Meta Title
-                                </label>
-                                {{ form.meta_title }}
-                                <div class="help-text">{{ form.meta_title.help_text }}</div>
-                                <div class="char-count" id="meta-title-count">0/60</div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="{{ form.keywords.id_for_label }}" class="form-label">
-                                    <i class="fas fa-key me-2"></i>Từ khóa
-                                </label>
-                                {{ form.keywords }}
-                                <div class="help-text">{{ form.keywords.help_text }}</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="{{ form.meta_description.id_for_label }}" class="form-label">
-                            <i class="fas fa-align-justify me-2"></i>Meta Description
-                        </label>
-                        {{ form.meta_description }}
-                        <div class="help-text">{{ form.meta_description.help_text }}</div>
-                        <div class="char-count" id="meta-desc-count">0/160</div>
-                    </div>
-                </div>
-
-                <!-- Content Section -->
-                <div class="form-section">
-                    <h2 class="section-title">
-                        <i class="fas fa-edit me-2"></i>Nội dung bài viết
-                    </h2>
-                    
-                    <div class="form-group">
-                        <label for="{{ form.content.id_for_label }}" class="form-label">
-                            <i class="fas fa-file-alt me-2"></i>Nội dung *
-                        </label>
-                        {{ form.content }}
-                        <div class="help-text">Sử dụng editor bên dưới để tạo nội dung phong phú</div>
-                    </div>
-                </div>
-
-                <!-- Publishing Options -->
-                <div class="form-section">
-                    <h2 class="section-title">
-                        <i class="fas fa-publish me-2"></i>Tùy chọn xuất bản
-                    </h2>
-                    
-                    <div class="form-group">
-                        <div class="form-check">
-                            {{ form.published }}
-                            <label class="form-check-label" for="{{ form.published.id_for_label }}">
-                                <i class="fas fa-eye me-2"></i>Xuất bản ngay
-                            </label>
-                        </div>
-                        <div class="help-text">Bỏ chọn để lưu bản nháp</div>
-                    </div>
-                </div>
-
-                <!-- Form Actions -->
-                <div class="form-actions">
-                    <button type="submit" class="btn btn-primary">
-                        {% if post %}
-                            <i class="fas fa-save me-2"></i> Cập nhật
-                        {% else %}
-                            <i class="fas fa-paper-plane me-2"></i> Đăng bài viết
-                        {% endif %}
-                    </button>
-                    <a href="{% url 'my_posts' %}" class="btn btn-secondary"><i class="fas fa-arrow-left me-2"></i> Quay lại</a>
-                </div>
-            </div>
-
-            <!-- Real-time SEO Analysis -->
-            <div class="col-lg-4">
-                <div class="real-time-seo">
-                    <div class="real-time-seo-header">
-                        <h3 class="real-time-seo-title">
-                            <i class="fas fa-chart-line me-2"></i>Phân tích SEO
-                        </h3>
-                        <button type="button" class="btn btn-info btn-sm" onclick="analyzeSEO()">
-                            <i class="fas fa-sync-alt"></i>Tính điểm
-                        </button>
-                    </div>
-                    
-                    <div class="seo-score">
-                        <div class="seo-score-circle" id="seo-score-circle">
-                            <div class="seo-score-number" id="seo-score-number">--</div>
-                        </div>
-                        <h4 id="seo-score-text">Chưa có dữ liệu</h4>
-                    </div>
-
-                    <div class="seo-details" id="seo-details">
-                        <div class="text-center text-muted">
-                            <i class="fas fa-info-circle"></i>
-                            <p>Nhập nội dung để phân tích SEO</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        <div class="form-group">
+            <label for="{{ form.title.id_for_label }}" class="form-label">Tiêu đề *</label>
+            {{ form.title }}
         </div>
+        <div class="form-group">
+            <label for="{{ form.summary.id_for_label }}" class="form-label">Tóm tắt</label>
+            {{ form.summary }}
+        </div>
+        <div class="form-group">
+            <label for="{{ form.category.id_for_label }}" class="form-label">Chuyên mục</label>
+            {{ form.category }}
+        </div>
+        <div class="form-group">
+            <label for="{{ form.tags.id_for_label }}" class="form-label">Tags</label>
+            {{ form.tags }}
+        </div>
+        <div class="form-group">
+            <label for="{{ form.featured_image.id_for_label }}" class="form-label">Ảnh đại diện</label>
+            {{ form.featured_image }}
+        </div>
+        <div class="form-group">
+            <label for="{{ form.meta_title.id_for_label }}" class="form-label">Meta Title</label>
+            {{ form.meta_title }}
+        </div>
+        <div class="form-group">
+            <label for="{{ form.meta_description.id_for_label }}" class="form-label">Meta Description</label>
+            {{ form.meta_description }}
+        </div>
+        <div class="form-group">
+            <label for="{{ form.keywords.id_for_label }}" class="form-label">Từ khóa</label>
+            {{ form.keywords }}
+        </div>
+        <div class="form-group">
+            <label for="{{ form.content.id_for_label }}" class="form-label">Nội dung *</label>
+            {{ form.content }}
+        </div>
+        <div class="form-group">
+            <label class="form-label">Xuất bản</label>
+            {{ form.published }}
+        </div>
+        <button type="submit" class="btn btn-primary"><i class="fas fa-paper-plane me-2"></i> Đăng bài viết</button>
     </form>
+    <div class="seo-box mt-4">
+        <h3 class="section-title"><i class="fas fa-search"></i> Phân tích SEO</h3>
+        <div class="seo-score-circle" id="seo-score-circle">
+            <span id="seo-score-number">--</span>
+        </div>
+        <div id="seo-score-text">Chưa có dữ liệu</div>
+        <div id="seo-details" style="margin-top: 16px;"></div>
+        <button type="button" class="btn btn-primary mt-2" onclick="analyzeSEO()">Tính điểm</button>
+    </div>
 </div>
+{% endblock %}
 
+{% block extra_js %}
+{{ form.media.js }}
 <script>
-// Character counter for meta fields
+// Character counter & SEO analysis (giữ lại logic cũ)
 document.addEventListener('DOMContentLoaded', function() {
     const metaTitle = document.getElementById('id_meta_title');
     const metaDesc = document.getElementById('id_meta_description');
     const titleCount = document.getElementById('meta-title-count');
     const descCount = document.getElementById('meta-desc-count');
-    
-    if (metaTitle) {
+    if (metaTitle && titleCount) {
         metaTitle.addEventListener('input', function() {
             const length = this.value.length;
             titleCount.textContent = length + '/60';
             titleCount.className = 'char-count' + (length > 60 ? ' danger' : length > 50 ? ' warning' : '');
         });
     }
-    
-    if (metaDesc) {
+    if (metaDesc && descCount) {
         metaDesc.addEventListener('input', function() {
             const length = this.value.length;
             descCount.textContent = length + '/160';
             descCount.className = 'char-count' + (length > 160 ? ' danger' : length > 140 ? ' warning' : '');
         });
     }
-    
-    // Auto analyze SEO when content changes
-    const titleField = document.getElementById('id_title');
-    const contentField = document.getElementById('id_content');
-    
-    if (titleField) titleField.addEventListener('input', debounce(analyzeSEO, 1000));
-    if (contentField) contentField.addEventListener('input', debounce(analyzeSEO, 1000));
 });
-
-// Debounce function
-function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
-}
-
-// Analyze SEO function
 function analyzeSEO() {
     const title = document.getElementById('id_title')?.value || '';
     const content = document.getElementById('id_content')?.value || '';
     const metaTitle = document.getElementById('id_meta_title')?.value || '';
     const metaDesc = document.getElementById('id_meta_description')?.value || '';
     const keywords = document.getElementById('id_keywords')?.value || '';
-    
-    if (!title && !content) {
-        document.getElementById('seo-score-number').textContent = '--';
-        document.getElementById('seo-score-text').textContent = 'Chưa có dữ liệu';
-        document.getElementById('seo-score-circle').className = 'seo-score-circle';
-        document.getElementById('seo-details').innerHTML = `
-            <div class="text-center text-muted">
-                <i class="fas fa-info-circle"></i>
-                <p>Nhập nội dung để phân tích SEO</p>
-            </div>
-        `;
-        return;
-    }
-    
-    // Simple SEO scoring
     let totalScore = 0;
     let maxScore = 100;
     let details = {};
-    
-    // Title analysis
+    // Title
     const titleScore = Math.min(20, title.length * 0.5);
     totalScore += titleScore;
-    details.title = {
-        score: Math.round(titleScore),
-        max_score: 20,
-        strengths: title.length > 10 ? ['Tiêu đề có độ dài phù hợp'] : [],
-        issues: title.length < 10 ? ['Tiêu đề quá ngắn'] : []
-    };
-    
-    // Content analysis
+    details.title = { score: Math.round(titleScore), max_score: 20, strengths: title.length > 10 ? ['Tiêu đề có độ dài phù hợp'] : [], issues: title.length < 10 ? ['Tiêu đề quá ngắn'] : [] };
+    // Content
     const contentScore = Math.min(30, content.length * 0.1);
     totalScore += contentScore;
-    details.content = {
-        score: Math.round(contentScore),
-        max_score: 30,
-        strengths: content.length > 100 ? ['Nội dung đủ dài'] : [],
-        issues: content.length < 100 ? ['Nội dung quá ngắn'] : []
-    };
-    
-    // Meta title analysis
+    details.content = { score: Math.round(contentScore), max_score: 30, strengths: content.length > 100 ? ['Nội dung đủ dài'] : [], issues: content.length < 100 ? ['Nội dung quá ngắn'] : [] };
+    // Meta title
     const metaTitleScore = Math.min(15, metaTitle.length * 0.3);
     totalScore += metaTitleScore;
-    details.meta_title = {
-        score: Math.round(metaTitleScore),
-        max_score: 15,
-        strengths: metaTitle.length > 30 ? ['Meta title đủ dài'] : [],
-        issues: metaTitle.length < 30 ? ['Meta title quá ngắn'] : []
-    };
-    
-    // Meta description analysis
+    details.meta_title = { score: Math.round(metaTitleScore), max_score: 15, strengths: metaTitle.length > 30 ? ['Meta title đủ dài'] : [], issues: metaTitle.length < 30 ? ['Meta title quá ngắn'] : [] };
+    // Meta desc
     const metaDescScore = Math.min(15, metaDesc.length * 0.2);
     totalScore += metaDescScore;
-    details.meta_description = {
-        score: Math.round(metaDescScore),
-        max_score: 15,
-        strengths: metaDesc.length > 50 ? ['Meta description đủ dài'] : [],
-        issues: metaDesc.length < 50 ? ['Meta description quá ngắn'] : []
-    };
-    
-    // Keywords analysis
+    details.meta_description = { score: Math.round(metaDescScore), max_score: 15, strengths: metaDesc.length > 50 ? ['Meta description đủ dài'] : [], issues: metaDesc.length < 50 ? ['Meta description quá ngắn'] : [] };
+    // Keywords
     const keywordsScore = keywords ? 10 : 0;
     totalScore += keywordsScore;
-    details.keywords = {
-        score: keywordsScore,
-        max_score: 10,
-        strengths: keywords ? ['Có từ khóa'] : [],
-        issues: !keywords ? ['Chưa có từ khóa'] : []
-    };
-    
+    details.keywords = { score: keywordsScore, max_score: 10, strengths: keywords ? ['Có từ khóa'] : [], issues: !keywords ? ['Chưa có từ khóa'] : [] };
     // Update UI
     const finalScore = Math.round(totalScore);
     document.getElementById('seo-score-number').textContent = finalScore;
     document.getElementById('seo-score-text').textContent = `Điểm SEO: ${finalScore}/100`;
-    
-    // Update score circle color
-    const scoreCircle = document.getElementById('seo-score-circle');
-    scoreCircle.className = 'seo-score-circle ' + 
-        (finalScore >= 80 ? 'success' : finalScore >= 60 ? 'warning' : 'danger');
-    
     // Update details
     let detailsHTML = '';
     for (const [section, detail] of Object.entries(details)) {
-        const sectionNames = {
-            title: 'Tiêu đề',
-            content: 'Nội dung',
-            meta_title: 'Meta Title',
-            meta_description: 'Meta Description',
-            keywords: 'Từ khóa'
-        };
-        
-        detailsHTML += `
-            <div class="seo-detail-item">
-                <div class="seo-detail-title">
-                    <i class="fas fa-${section === 'title' ? 'heading' : section === 'content' ? 'file-alt' : section === 'meta_title' ? 'globe' : section === 'meta_description' ? 'align-justify' : 'key'}"></i>
-                    ${sectionNames[section]}
-                </div>
-                <div class="seo-detail-score">${detail.score}/${detail.max_score}</div>
-                
-                ${detail.strengths.length > 0 ? `
-                    <div class="seo-strengths">
-                        <h6><i class="fas fa-check text-success"></i> Điểm mạnh:</h6>
-                        <ul class="mb-0">
-                            ${detail.strengths.map(strength => `<li>${strength}</li>`).join('')}
-                        </ul>
-                    </div>
-                ` : ''}
-                
-                ${detail.issues.length > 0 ? `
-                    <div class="seo-issues">
-                        <h6><i class="fas fa-exclamation-triangle text-danger"></i> Cần cải thiện:</h6>
-                        <ul class="mb-0">
-                            ${detail.issues.map(issue => `<li>${issue}</li>`).join('')}
-                        </ul>
-                    </div>
-                ` : ''}
-            </div>
-        `;
+        detailsHTML += `<div><b>${section}</b>: ${detail.score}/${detail.max_score}`;
+        if (detail.strengths.length) detailsHTML += `<br><span style='color:green'>${detail.strengths.join(', ')}</span>`;
+        if (detail.issues.length) detailsHTML += `<br><span style='color:red'>${detail.issues.join(', ')}</span>`;
+        detailsHTML += '</div>';
     }
-    
     document.getElementById('seo-details').innerHTML = detailsHTML;
 }
 </script>

@@ -21,6 +21,7 @@ PROJECT_DIR="/var/www/$PROJECT_NAME"
 SERVICE_NAME="hitech-ndt"
 ADMIN_EMAIL="admin@hitechndt.vn"
 DB_PASSWORD="hitech2024"
+GITHUB_REPO="https://github.com/phihung13/Hitech-NDT-Website.git"  # Thay đổi URL này
 
 # Functions
 print_status() { echo -e "${BLUE}[INFO]${NC} $1"; }
@@ -98,15 +99,60 @@ EOF
     print_success "Database đã được tạo"
 }
 
-deploy_application() {
-    print_status "Deploy ứng dụng Django..."
+check_git_access() {
+    print_status "Kiểm tra Git access..."
     
-    # Create project directory
+    # Check if git credentials are configured
+    if [ ! -f "/root/.git-credentials" ] && [ ! -f "/root/.ssh/config" ]; then
+        print_error "Git credentials chưa được cấu hình!"
+        print_status "Chạy: sudo bash setup_git.sh"
+        exit 1
+    fi
+    
+    # Test access to repository
+    if ! git ls-remote $GITHUB_REPO >/dev/null 2>&1; then
+        print_error "Không thể truy cập repository: $GITHUB_REPO"
+        print_status "Kiểm tra lại Git credentials hoặc chạy: sudo bash setup_git.sh"
+        exit 1
+    fi
+    
+    print_success "✓ Git access OK"
+}
+
+deploy_application() {
+    print_status "Deploy ứng dụng Django từ Git..."
+    
+    # Check Git access first
+    check_git_access
+    
+    # Backup current version if exists
+    if [ -d "$PROJECT_DIR" ]; then
+        print_status "Backup version hiện tại..."
+        mv $PROJECT_DIR $PROJECT_DIR.backup.$(date +%Y%m%d_%H%M%S)
+    fi
+    
+    # Create new project directory
     mkdir -p $PROJECT_DIR
     cd $PROJECT_DIR
     
-    # Copy source code
-    cp -r "$(dirname "$0")/site_hitech"/* .
+    # Clone latest code from Git
+    print_status "Pulling code mới nhất từ Git..."
+    if git clone $GITHUB_REPO .; then
+        print_success "✓ Git clone thành công"
+        
+        # Pull latest changes
+        git pull origin main
+        
+        # Navigate to Django project if in subfolder
+        if [ -d "site_hitech" ]; then
+            cd site_hitech
+        fi
+    else
+        print_error "Git clone thất bại!"
+        print_warning "Fallback: copy từ thư mục local..."
+        rm -rf $PROJECT_DIR/*
+        cp -r "$(dirname "$0")/site_hitech"/* .
+    fi
     
     # Create virtual environment
     python3 -m venv venv
@@ -207,7 +253,7 @@ EOF
     # Create homepage settings if script exists
     [ -f "create_homepage_settings.py" ] && python create_homepage_settings.py 2>/dev/null
     
-    print_success "Django application deployed"
+    print_success "Django application deployed với code mới nhất"
 }
 
 create_gunicorn_service() {
