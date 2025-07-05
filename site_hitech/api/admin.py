@@ -5,44 +5,60 @@ from .models import ChatSettings, ChatMessage
 from .models import AboutPage, HomePageSettings
 from .models import DocumentCategory, Document, DocumentTag, DocumentVersion, DocumentAccess
 from .models import Project, PublicProject
+from .seo_analyzer import SEOAnalyzer
+from django.utils.html import format_html
+from django.urls import path
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+import json
 
 @admin.register(SiteSettings)
 class SiteSettingsAdmin(admin.ModelAdmin):
+    list_display = ['company_name', 'footer_phone', 'footer_email']
     fieldsets = [
-        ('Cài đặt Navbar', {
-            'fields': ['navbar_bg_color', 'navbar_text_color', 'navbar_brand_size', 'navbar_link_size']
+        ('🏢 Thông tin công ty & Logo', {
+            'fields': ['logo', 'company_name', 'company_slogan', 'company_description'],
+            'classes': ['wide'],
+            'description': 'Logo sẽ hiển thị trên navbar. Thông tin công ty dùng cho SEO và giới thiệu chung.'
         }),
-        ('Cài đặt Footer', {
-            'fields': ['footer_bg_color', 'footer_text_color', 'footer_link_color']
+        ('🧭 Cài đặt Navbar (Menu điều hướng)', {
+            'fields': ['navbar_bg_color', 'navbar_text_color', 'navbar_brand_size', 'navbar_link_size', 'navbar_sticky'],
+            'classes': ['collapse']
         }),
-        ('Cài đặt Hero Section', {
-            'fields': ['hero_bg_image', 'hero_bg_color', 'hero_title', 'hero_subtitle', 'hero_image', 
-                      'hero_btn_primary_text', 'hero_btn_primary_url', 'hero_btn_secondary_text', 'hero_btn_secondary_url']
+        ('🦶 Cài đặt Footer (Chân trang)', {
+            'fields': ['footer_bg_color', 'footer_text_color', 'footer_link_color', 'footer_copyright'],
+            'classes': ['collapse']
         }),
-        ('Cài đặt Services Section', {
-            'fields': ['services_title', 'services_subtitle', 'services_bg_color']
+        ('📍 Thông tin liên hệ Footer', {
+            'fields': ['footer_address', 'footer_phone', 'footer_email'],
+            'classes': ['wide']
         }),
-        ('Cài đặt About Section', {
-            'fields': ['about_title', 'about_content', 'about_image', 'about_bg_color']
+        ('🌐 Liên kết mạng xã hội', {
+            'fields': ['facebook_url', 'linkedin_url', 'youtube_url', 'twitter_url', 'zalo_phone'],
+            'classes': ['collapse']
         }),
-        ('Cài đặt Projects Section', {
-            'fields': ['projects_title', 'projects_subtitle', 'projects_bg_color']
+        ('🎨 Màu sắc chung website', {
+            'fields': ['primary_color', 'secondary_color', 'success_color', 'warning_color', 'danger_color'],
+            'classes': ['collapse'],
+            'description': 'Màu sắc mặc định cho các trang chưa có cấu hình riêng.'
         }),
-        ('Cài đặt Testimonials Section', {
-            'fields': ['testimonials_title', 'testimonials_bg_color']
+        ('✍️ Typography (Font chữ)', {
+            'fields': ['font_family', 'heading_font_family'],
+            'classes': ['collapse']
         }),
-        ('Cài đặt Clients Section', {
-            'fields': ['clients_title', 'clients_bg_color', 'client_logo1', 'client_logo2', 'client_logo3', 
-                      'client_logo4', 'client_logo5', 'client_logo6']
+        ('🔍 SEO chung cho website', {
+            'fields': ['site_title', 'site_description', 'site_keywords'],
+            'classes': ['wide'],
+            'description': 'Meta tags mặc định cho toàn website. Các trang riêng có thể ghi đè.'
         }),
-        ('Logo và thông tin công ty', {
-            'fields': ['logo', 'company_name', 'company_slogan', 'company_description']
+        ('⚙️ Cài đặt hiển thị', {
+            'fields': ['show_breadcrumb', 'show_scroll_top'],
+            'classes': ['collapse']
         }),
-        ('Thông tin liên hệ Footer', {
-            'fields': ['footer_address', 'footer_phone', 'footer_email']
-        }),
-        ('Liên kết mạng xã hội', {
-            'fields': ['facebook_url', 'linkedin_url', 'youtube_url', 'twitter_url']
+        ('📞 Liên hệ nhanh (Floating)', {
+            'fields': ['enable_floating_contact', 'floating_phone', 'floating_zalo'],
+            'classes': ['collapse'],
+            'description': 'Nút liên hệ nhanh hiển thị cố định ở góc màn hình.'
         }),
     ]
     
@@ -53,11 +69,6 @@ class SiteSettingsAdmin(admin.ModelAdmin):
     def has_delete_permission(self, request, obj=None):
         # Không cho phép xóa bản ghi cấu hình
         return False
-        
-    def change_view(self, request, object_id, form_url='', extra_context=None):
-        extra_context = extra_context or {}
-        extra_context['show_home_customization_link'] = True
-        return super().change_view(request, object_id, form_url, extra_context=extra_context)
 
 @admin.register(ContactSettings)
 class ContactSettingsAdmin(admin.ModelAdmin):
@@ -86,12 +97,145 @@ class CategoryAdmin(admin.ModelAdmin):
 
 @admin.register(Post)
 class PostAdmin(admin.ModelAdmin):
-    list_display = ('title', 'author', 'category', 'created_at', 'published', 'view_count')
+    list_display = ('title', 'author', 'category', 'created_at', 'published', 'view_count', 'seo_score_display')
     list_filter = ('published', 'category', 'created_at', 'tags')
-    search_fields = ('title', 'content')
+    search_fields = ('title', 'content', 'meta_title', 'meta_description', 'meta_keywords')
     prepopulated_fields = {'slug': ('title',)}
     date_hierarchy = 'created_at'
     filter_horizontal = ('tags',)
+    
+    # Thêm custom template với SEO analyzer
+    change_form_template = 'admin/api/post/change_form.html'
+    add_form_template = 'admin/api/post/change_form.html'
+    
+    fieldsets = [
+        ('📝 Thông tin cơ bản', {
+            'fields': ['title', 'slug', 'author', 'category', 'featured_image']
+        }),
+        ('📖 Nội dung', {
+            'fields': ['summary', 'content'],
+            'classes': ['wide']
+        }),
+        ('🔍 SEO & Meta Tags', {
+            'fields': ['meta_title', 'meta_description', 'meta_keywords'],
+            'classes': ['wide'],
+            'description': 'Tối ưu hóa cho công cụ tìm kiếm. Để trống sẽ sử dụng giá trị mặc định.'
+        }),
+        ('🏷️ Phân loại', {
+            'fields': ['tags'],
+            'classes': ['collapse']
+        }),
+        ('⚙️ Cài đặt xuất bản', {
+            'fields': ['published'],
+            'classes': ['collapse']
+        }),
+    ]
+    
+    def seo_score_display(self, obj):
+        """Hiển thị điểm SEO trong list view"""
+        if obj.title and obj.content:
+            # Khởi tạo SEOAnalyzer với tham số bắt buộc
+            analyzer = SEOAnalyzer(
+                title=obj.meta_title or obj.title,
+                description=obj.meta_description or '',
+                content=obj.content,
+                keywords=obj.meta_keywords or ''
+            )
+            analysis = analyzer.analyze_seo(
+                title=obj.meta_title or obj.title,
+                meta_description=obj.meta_description or '',
+                content=obj.content,
+                keywords=obj.meta_keywords or '',
+                slug=obj.slug,
+                featured_image=obj.featured_image.url if obj.featured_image else None
+            )
+            score = analysis['percentage']
+            
+            if score >= 80:
+                color = '#28a745'  # Xanh lá
+                icon = '✅'
+            elif score >= 60:
+                color = '#ffc107'  # Vàng
+                icon = '⚠️'
+            else:
+                color = '#dc3545'  # Đỏ
+                icon = '❌'
+                
+            return format_html(
+                '<span style="color: {}; font-weight: bold;">{} {}%</span>',
+                color, icon, score
+            )
+        return format_html('<span style="color: #6c757d;">—</span>')
+    
+    seo_score_display.short_description = 'Điểm SEO'
+    seo_score_display.admin_order_field = 'title'
+    
+    def get_urls(self):
+        """Thêm URL cho AJAX SEO analysis"""
+        urls = super().get_urls()
+        custom_urls = [
+            path('seo-analysis/', self.admin_site.admin_view(self.seo_analysis_view), name='post_seo_analysis'),
+        ]
+        return custom_urls + urls
+    
+    @csrf_exempt
+    def seo_analysis_view(self, request):
+        """API endpoint để phân tích SEO real-time"""
+        if request.method == 'POST':
+            try:
+                data = json.loads(request.body)
+                
+                title = data.get('title', '')
+                meta_title = data.get('meta_title', '')
+                meta_description = data.get('meta_description', '')
+                content = data.get('content', '')
+                keywords = data.get('meta_keywords', '')
+                slug = data.get('slug', '')
+                
+                # Khởi tạo SEOAnalyzer với tham số bắt buộc
+                analyzer = SEOAnalyzer(
+                    title=meta_title or title,
+                    description=meta_description,
+                    content=content,
+                    keywords=keywords
+                )
+                analysis = analyzer.analyze_seo(
+                    title=meta_title or title,
+                    meta_description=meta_description,
+                    content=content,
+                    keywords=keywords,
+                    slug=slug,
+                    featured_image=None  # Không thể analyze file upload real-time
+                )
+                
+                return JsonResponse({
+                    'success': True,
+                    'analysis': analysis
+                })
+                
+            except Exception as e:
+                return JsonResponse({
+                    'success': False,
+                    'error': str(e)
+                })
+        
+        return JsonResponse({'success': False, 'error': 'Method not allowed'})
+    
+    def save_model(self, request, obj, form, change):
+        """Tự động set author và tạo meta fields nếu trống"""
+        if not change:  # Tạo mới
+            if not obj.author:
+                obj.author = request.user
+        
+        # Tự động tạo meta_title nếu trống
+        if not obj.meta_title and obj.title:
+            obj.meta_title = obj.title[:60]  # Giới hạn 60 ký tự
+            
+        # Tự động tạo meta_description nếu trống
+        if not obj.meta_description and obj.summary:
+            obj.meta_description = obj.summary[:160]  # Giới hạn 160 ký tự
+        
+        super().save_model(request, obj, form, change)
 
 @admin.register(CourseCategory)
 class CourseCategoryAdmin(admin.ModelAdmin):

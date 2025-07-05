@@ -1,5 +1,5 @@
 from django.http import JsonResponse
-from .models import Course, Post, Category, Comment, ContactSettings, Tag, SiteSettings, AboutPage, HomePageSettings, UserProfile, Project, ProjectFile, ProjectProgress, CourseCategory, Equipment, PublicProject
+from .models import Course, Post, Category, Comment, ContactSettings, Tag, SiteSettings, AboutPage, HomePageSettings, UserProfile, Project, ProjectFile, ProjectProgress, CourseCategory, Equipment, PublicProject, Company, NDTMethod
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
@@ -23,6 +23,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from django.utils import translation
 import json
+from datetime import timedelta
 
 def home(request):
     # Lấy cấu hình trang chủ
@@ -448,31 +449,70 @@ def staff_logout(request):
 
 @login_required
 def project_management_detail(request, project_id):
+    """Chi tiết dự án cho quản lý nội bộ"""
     project = get_object_or_404(Project, id=project_id)
+    
+    # Kiểm tra quyền xem dự án
+    if not (request.user.user_profile.role in ['admin', 'manager'] or 
+            request.user in project.staff.all() or 
+            request.user == project.project_manager):
+        messages.error(request, 'Bạn không có quyền xem dự án này.')
+        return redirect('projects_management')
+    
     project_files = ProjectFile.objects.filter(project=project).order_by('-uploaded_at')
-    progress_records = ProjectProgress.objects.filter(project=project).order_by('-last_updated')
     
     context = {
         'project': project,
         'project_files': project_files,
-        'progress_records': progress_records,
-        'file_form': ProjectFileForm(),
-        'update_form': ProjectUpdateForm(instance=project),
     }
     return render(request, 'projects/project_detail.html', context)
 
 @login_required
 def upload_file(request, project_id):
+    """Upload file với auto-detect loại file"""
     project = get_object_or_404(Project, id=project_id)
     
+    # Kiểm tra quyền upload
+    if not (request.user.user_profile.role in ['admin', 'manager'] or 
+            request.user in project.staff.all() or 
+            request.user == project.project_manager):
+        messages.error(request, 'Bạn không có quyền upload file cho dự án này.')
+        return redirect('project_detail', project_id=project.id)
+    
     if request.method == 'POST':
-        form = ProjectFileForm(request.POST, request.FILES)
-        if form.is_valid():
-            project_file = form.save(commit=False)
-            project_file.project = project
-            project_file.uploaded_by = request.user
-            project_file.save()
+        file = request.FILES.get('file')
+        description = request.POST.get('description', '').strip()
+        
+        if not file:
+            messages.error(request, 'Vui lòng chọn file để upload.')
             return redirect('project_detail', project_id=project.id)
+        
+        # Tự động phát hiện loại file từ extension
+        file_ext = file.name.split('.')[-1].lower() if '.' in file.name else ''
+        
+        if file_ext in ['xlsx', 'xls']:
+            file_type = 'excel'
+        elif file_ext == 'pdf':
+            file_type = 'pdf'
+        elif file_ext in ['docx', 'doc']:
+            file_type = 'word'
+        elif file_ext in ['jpg', 'jpeg', 'png', 'gif']:
+            file_type = 'image'
+        else:
+            file_type = 'other'
+        
+        # Tạo project file
+        project_file = ProjectFile.objects.create(
+            project=project,
+            name=file.name,
+            file=file,
+            file_type=file_type,
+            description=description,
+            uploaded_by=request.user
+        )
+        
+        messages.success(request, f'Đã upload file "{file.name}" thành công!')
+        return redirect('project_detail', project_id=project.id)
     
     return redirect('project_detail', project_id=project.id)
 
@@ -492,14 +532,47 @@ def download_file(request, project_id, file_id):
 
 @login_required
 def update_project(request, project_id):
+    """Cập nhật thông tin dự án"""
     project = get_object_or_404(Project, id=project_id)
     
-    if request.method == 'POST':
-        form = ProjectUpdateForm(request.POST, instance=project)
-        if form.is_valid():
-            form.save()
-            return redirect('project_detail', project_id=project.id)
+    # Kiểm tra quyền sửa
+    if not (request.user.user_profile.role in ['admin', 'manager'] or 
+            request.user == project.project_manager):
+        if request.headers.get('Content-Type') == 'application/x-www-form-urlencoded':
+            return JsonResponse({'success': False, 'error': 'Bạn không có quyền sửa dự án này.'})
+        messages.error(request, 'Bạn không có quyền sửa dự án này.')
+        return redirect('project_detail', project_id=project.id)
     
+    if request.method == 'POST':
+        try:
+            # Cập nhật các trường được phép
+            project.name = request.POST.get('name', project.name)
+            project.location = request.POST.get('location', project.location) 
+            project.status = request.POST.get('status', project.status)
+            project.description = request.POST.get('description', project.description)
+            
+            # Cập nhật completion_percentage nếu có
+            completion = request.POST.get('completion_percentage')
+            if completion:
+                try:
+                    completion_value = max(0, min(100, int(completion)))
+                    project.completion_percentage = completion_value
+                except ValueError:
+                    return JsonResponse({'success': False, 'error': 'Tiến độ không hợp lệ'})
+            
+            project.save()
+            
+            # Kiểm tra nếu request là AJAX
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': True, 'message': 'Cập nhật dự án thành công!'})
+            
+            messages.success(request, 'Cập nhật dự án thành công!')
+            
+        except Exception as e:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': str(e)})
+            messages.error(request, f'Có lỗi xảy ra: {str(e)}')
+        
     return redirect('project_detail', project_id=project.id)
 
 @login_required
@@ -663,19 +736,85 @@ def dashboard_overview(request):
 
 @login_required
 def projects_management(request):
-    """Trang quản lý dự án"""
+    """Trang quản lý dự án hiện đại"""
+    profile = getattr(request.user, 'user_profile', None)
+    if not profile:
+        messages.error(request, 'Bạn cần có hồ sơ người dùng để truy cập trang này.')
+        return redirect('home')
+    
+    # Lấy dữ liệu dự án dựa trên quyền
+    if profile.role == 'staff':
+        projects = Project.objects.filter(staff=request.user).select_related('company', 'project_manager')
+    else:
+        projects = Project.objects.all().select_related('company', 'project_manager')
+    
+    # Bộ lọc và tìm kiếm
+    search = request.GET.get('search', '')
+    status_filter = request.GET.get('status', '')
+    sort_by = request.GET.get('sort', '-created_at')
+    
+    if search:
+        projects = projects.filter(
+            Q(name__icontains=search) |
+            Q(code__icontains=search) |
+            Q(company__name__icontains=search) |
+            Q(description__icontains=search)
+        )
+    
+    if status_filter:
+        projects = projects.filter(status=status_filter)
+    
+    # Sắp xếp
+    if sort_by in ['-created_at', 'created_at', 'name', '-name', 'start_date', '-start_date', 'end_date', '-end_date']:
+        projects = projects.order_by(sort_by)
+    
+    # Thống kê tổng quan
+    total_projects = projects.count()
+    active_projects = projects.filter(status='active').count()
+    completed_projects = projects.filter(status='completed').count()
+    planning_projects = projects.filter(status='planning').count()
+    pending_projects = projects.filter(status='pending').count()
+    
+    # Pagination
+    paginator = Paginator(projects, 12)  # 12 projects per page - 4x3 grid
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    # Dữ liệu bổ sung
+    companies = Company.objects.all()
+    ndt_methods = NDTMethod.objects.all()
+    staff_list = User.objects.filter(user_profile__role='staff').select_related('user_profile')
+    equipment_list = Equipment.objects.filter(status='active')
+    
+    # Dự án gần đây
+    recent_projects = projects.order_by('-created_at')[:5]
+    
+    # Dự án sắp đến hạn (trong 7 ngày tới)
+    upcoming_deadline = timezone.now().date() + timedelta(days=7)
+    upcoming_projects = projects.filter(
+        end_date__lte=upcoming_deadline,
+        end_date__gte=timezone.now().date(),
+        status__in=['active', 'planning']
+    ).order_by('end_date')
+    
     context = {
-        'title': 'Quản lý dự án',
-        'module_name': 'Quản lý dự án',
-        'description': 'Quản lý tất cả dự án NDT, theo dõi tiến độ, phân công nhân viên và quản lý tài liệu dự án.',
-        'features': [
-            'Tạo và chỉnh sửa dự án',
-            'Theo dõi tiến độ thời gian thực',
-            'Phân công nhân viên vào dự án',
-            'Quản lý tài liệu và báo cáo',
-            'Thống kê hiệu suất dự án'
-        ],
-        'coming_soon': True
+        'projects': page_obj,
+        'search': search,
+        'status_filter': status_filter,
+        'sort_by': sort_by,
+        'total_projects': total_projects,
+        'active_projects': active_projects,
+        'completed_projects': completed_projects,
+        'planning_projects': planning_projects,
+        'pending_projects': pending_projects,
+        'companies': companies,
+        'ndt_methods': ndt_methods,
+        'staff_list': staff_list,
+        'equipment_list': equipment_list,
+        'recent_projects': recent_projects,
+        'upcoming_projects': upcoming_projects,
+        'profile': profile,
+        'status_choices': Project.STATUS_CHOICES,
     }
     return render(request, 'erp_modules/projects.html', context)
 
@@ -1275,3 +1414,159 @@ def change_language(request):
         translation.activate(language)
         request.session[translation.LANGUAGE_SESSION_KEY] = language
     return JsonResponse({'success': True})
+
+@login_required
+def ndt_methods_management(request):
+    """View quản lý phương pháp NDT"""
+    if not hasattr(request.user, 'user_profile') or request.user.user_profile.role not in ['admin', 'manager']:
+        messages.error(request, 'Bạn không có quyền truy cập trang này.')
+        return redirect('staff_dashboard')
+    
+    methods = NDTMethod.objects.all().order_by('code')
+    
+    context = {
+        'methods': methods,
+        'title': 'Quản lý Phương pháp NDT'
+    }
+    return render(request, 'management/ndt_methods.html', context)
+
+@login_required
+def create_ndt_method(request):
+    """Tạo phương pháp NDT mới"""
+    if not hasattr(request.user, 'user_profile') or request.user.user_profile.role not in ['admin', 'manager']:
+        messages.error(request, 'Bạn không có quyền tạo phương pháp NDT.')
+        return redirect('staff_dashboard')
+    
+    if request.method == 'POST':
+        code = request.POST.get('code', '').strip().upper()
+        name = request.POST.get('name', '').strip()
+        description = request.POST.get('description', '').strip()
+        
+        if not code or not name:
+            messages.error(request, 'Mã và tên phương pháp không được để trống.')
+            return redirect('ndt_methods_management')
+        
+        if NDTMethod.objects.filter(code=code).exists():
+            messages.error(request, f'Mã phương pháp "{code}" đã tồn tại.')
+            return redirect('ndt_methods_management')
+        
+        NDTMethod.objects.create(
+            code=code,
+            name=name,
+            description=description
+        )
+        messages.success(request, f'Đã tạo phương pháp NDT "{code} - {name}" thành công.')
+        return redirect('ndt_methods_management')
+    
+    return redirect('ndt_methods_management')
+
+@login_required 
+def delete_ndt_method(request, method_id):
+    """Xóa phương pháp NDT"""
+    if not hasattr(request.user, 'user_profile') or request.user.user_profile.role not in ['admin', 'manager']:
+        messages.error(request, 'Bạn không có quyền xóa phương pháp NDT.')
+        return redirect('staff_dashboard')
+    
+    try:
+        method = NDTMethod.objects.get(id=method_id)
+        method_name = f"{method.code} - {method.name}"
+        method.delete()
+        messages.success(request, f'Đã xóa phương pháp NDT "{method_name}" thành công.')
+    except NDTMethod.DoesNotExist:
+        messages.error(request, 'Phương pháp NDT không tồn tại.')
+    
+    return redirect('ndt_methods_management')
+
+@login_required
+def create_default_ndt_methods(request):
+    """Tạo các phương pháp NDT mặc định"""
+    if not hasattr(request.user, 'user_profile') or request.user.user_profile.role not in ['admin', 'manager']:
+        messages.error(request, 'Bạn không có quyền thực hiện chức năng này.')
+        return redirect('staff_dashboard')
+    
+    default_methods = [
+        {'code': 'UT', 'name': 'Ultrasonic Testing (Siêu âm)', 'description': 'Kiểm tra bằng sóng siêu âm để phát hiện khuyết tật bên trong vật liệu'},
+        {'code': 'RT', 'name': 'Radiographic Testing (X-quang)', 'description': 'Kiểm tra bằng tia X hoặc gamma để tạo ảnh bên trong vật liệu'},
+        {'code': 'MT', 'name': 'Magnetic Particle Testing (Từ tính)', 'description': 'Kiểm tra khuyết tật bề mặt và cận bề mặt bằng từ trường'},
+        {'code': 'PT', 'name': 'Liquid Penetrant Testing (Chất thấm)', 'description': 'Kiểm tra khuyết tật bề mặt bằng chất thấm màu hoặc huỳnh quang'},
+        {'code': 'VT', 'name': 'Visual Testing (Quan sát)', 'description': 'Kiểm tra trực quan bằng mắt thường hoặc dụng cụ hỗ trợ'},
+        {'code': 'ET', 'name': 'Eddy Current Testing (Dòng xoáy)', 'description': 'Kiểm tra bằng dòng điện xoáy để phát hiện khuyết tật và đo độ dày'},
+        {'code': 'TOFD', 'name': 'Time of Flight Diffraction', 'description': 'Kỹ thuật siêu âm tiên tiến để định vị và định kích thước khuyết tật'},
+        {'code': 'PA', 'name': 'Phased Array Ultrasonic', 'description': 'Siêu âm mảng pha cho hình ảnh chi tiết hơn'},
+        {'code': 'TT', 'name': 'Thickness Testing (Đo độ dày)', 'description': 'Đo độ dày vật liệu bằng siêu âm'},
+        {'code': 'HT', 'name': 'Hardness Testing (Đo độ cứng)', 'description': 'Kiểm tra độ cứng bề mặt vật liệu'}
+    ]
+    
+    created_count = 0
+    for method_data in default_methods:
+        method, created = NDTMethod.objects.get_or_create(
+            code=method_data['code'],
+            defaults={
+                'name': method_data['name'],
+                'description': method_data['description']
+            }
+        )
+        if created:
+            created_count += 1
+    
+    if created_count > 0:
+        messages.success(request, f'Đã tạo {created_count} phương pháp NDT mặc định.')
+    else:
+        messages.info(request, 'Tất cả phương pháp NDT mặc định đã tồn tại.')
+    
+    return redirect('ndt_methods_management')
+
+# ============ PROJECT FILE MANAGEMENT VIEWS ============
+
+@login_required
+def edit_project_file(request, project_id, file_id):
+    """Sửa thông tin file dự án"""
+    project = get_object_or_404(Project, id=project_id)
+    project_file = get_object_or_404(ProjectFile, id=file_id, project=project)
+    
+    # Kiểm tra quyền
+    if not (request.user.user_profile.role in ['admin', 'manager'] or 
+            request.user == project.project_manager or
+            request.user == project_file.uploaded_by):
+        return JsonResponse({'success': False, 'error': 'Không có quyền sửa file này'})
+    
+    if request.method == 'POST':
+        name = request.POST.get('name', '').strip()
+        description = request.POST.get('description', '').strip()
+        
+        if not name:
+            return JsonResponse({'success': False, 'error': 'Tên file không được để trống'})
+        
+        project_file.name = name
+        project_file.description = description
+        project_file.save()
+        
+        return JsonResponse({'success': True, 'message': 'Cập nhật file thành công'})
+    
+    return JsonResponse({'success': False, 'error': 'Phương thức không hợp lệ'})
+
+@login_required  
+def delete_project_file(request, project_id, file_id):
+    """Xóa file dự án"""
+    project = get_object_or_404(Project, id=project_id)
+    project_file = get_object_or_404(ProjectFile, id=file_id, project=project)
+    
+    # Kiểm tra quyền
+    if not (request.user.user_profile.role in ['admin', 'manager'] or 
+            request.user == project.project_manager or
+            request.user == project_file.uploaded_by):
+        messages.error(request, 'Bạn không có quyền xóa file này.')
+        return redirect('project_detail', project_id=project.id)
+    
+    if request.method == 'POST':
+        file_name = project_file.name
+        
+        # Xóa file thực tế nếu tồn tại
+        if project_file.file and default_storage.exists(project_file.file.name):
+            default_storage.delete(project_file.file.name)
+        
+        # Xóa record từ database
+        project_file.delete()
+        messages.success(request, f'Đã xóa file "{file_name}" thành công.')
+    
+    return redirect('project_detail', project_id=project.id)

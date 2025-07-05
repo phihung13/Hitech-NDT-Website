@@ -7,74 +7,61 @@ from colorfield.fields import ColorField
 
 
 class SiteSettings(models.Model):
-    # Cài đặt Navbar
-    navbar_bg_color = ColorField(default='#212529', verbose_name='Màu nền Navbar')
-    navbar_text_color = ColorField(default='#ffffff', verbose_name='Màu chữ Navbar')
-    navbar_brand_size = models.CharField(max_length=10, default='18px', verbose_name='Kích thước chữ thương hiệu (px)')
-    navbar_link_size = models.CharField(max_length=10, default='14px', verbose_name='Kích thước chữ menu (px)')
-    
-    # Cài đặt Footer
-    footer_bg_color = ColorField(default='#212529', verbose_name='Màu nền Footer')
-    footer_text_color = ColorField(default='#ffffff', verbose_name='Màu chữ Footer')
-    footer_link_color = ColorField(default='#6c757d', verbose_name='Màu liên kết Footer')
-    
-    # Cài đặt Hero Section
-    hero_bg_image = models.ImageField(upload_to='hero/', null=True, blank=True, verbose_name='Hình nền Hero Section')
-    hero_bg_color = ColorField(default='#003d99', verbose_name='Màu nền Hero Section (khi không có hình)')
-    hero_title = models.CharField(max_length=100, default='HITECH NDT', verbose_name='Tiêu đề Hero Section')
-    hero_subtitle = models.TextField(default='Công nghệ kiểm tra không phá hủy hàng đầu Việt Nam với các giải pháp tiên tiến và đội ngũ chuyên gia giàu kinh nghiệm', verbose_name='Mô tả Hero Section')
-    hero_image = models.ImageField(upload_to='hero/', null=True, blank=True, verbose_name='Hình ảnh Hero Section')
-    hero_btn_primary_text = models.CharField(max_length=50, default='Khám phá dịch vụ', verbose_name='Nút chính - Văn bản')
-    hero_btn_primary_url = models.CharField(max_length=100, default='/dich-vu', verbose_name='Nút chính - Liên kết')
-    hero_btn_secondary_text = models.CharField(max_length=50, default='Liên hệ ngay', verbose_name='Nút phụ - Văn bản')
-    hero_btn_secondary_url = models.CharField(max_length=100, default='/lien-he', verbose_name='Nút phụ - Liên kết')
-    
-    # Cài đặt Services Section
-    services_title = models.CharField(max_length=100, default='Dịch vụ chuyên nghiệp', verbose_name='Tiêu đề phần Dịch vụ')
-    services_subtitle = models.TextField(blank=True, null=True, verbose_name='Mô tả phần Dịch vụ')
-    services_bg_color = ColorField(default='#ffffff', verbose_name='Màu nền phần Dịch vụ')
-    
-    # Cài đặt About Section
-    about_title = models.CharField(max_length=100, default='Tại sao chọn Hitech NDT?', verbose_name='Tiêu đề phần Giới thiệu')
-    about_content = models.TextField(default='Hitech NDT là đơn vị hàng đầu trong lĩnh vực kiểm tra không phá hủy tại Việt Nam. Với đội ngũ kỹ sư giàu kinh nghiệm và trang thiết bị hiện đại, chúng tôi cam kết mang đến những dịch vụ chất lượng cao nhất.', verbose_name='Nội dung phần Giới thiệu')
-    about_image = models.ImageField(upload_to='about/', null=True, blank=True, verbose_name='Hình ảnh phần Giới thiệu')
-    about_bg_color = ColorField(default='#f8f9fa', verbose_name='Màu nền phần Giới thiệu')
-    
-    # Cài đặt Projects Section
-    projects_title = models.CharField(max_length=100, default='Dự án tiêu biểu', verbose_name='Tiêu đề phần Dự án')
-    projects_subtitle = models.TextField(blank=True, null=True, verbose_name='Mô tả phần Dự án')
-    projects_bg_color = ColorField(default='#ffffff', verbose_name='Màu nền phần Dự án')
-    
-    # Cài đặt Testimonials Section
-    testimonials_title = models.CharField(max_length=100, default='Khách hàng nói gì về chúng tôi', verbose_name='Tiêu đề phần Đánh giá')
-    testimonials_bg_color = ColorField(default='#f8f9fa', verbose_name='Màu nền phần Đánh giá')
-    
-    # Cài đặt Clients Section
-    clients_title = models.CharField(max_length=100, default='Đối tác của chúng tôi', verbose_name='Tiêu đề phần Đối tác')
-    clients_bg_color = ColorField(default='#ffffff', verbose_name='Màu nền phần Đối tác')
-    client_logo1 = models.ImageField(upload_to='clients/', null=True, blank=True, verbose_name='Logo đối tác 1')
-    client_logo2 = models.ImageField(upload_to='clients/', null=True, blank=True, verbose_name='Logo đối tác 2')
-    client_logo3 = models.ImageField(upload_to='clients/', null=True, blank=True, verbose_name='Logo đối tác 3')
-    client_logo4 = models.ImageField(upload_to='clients/', null=True, blank=True, verbose_name='Logo đối tác 4')
-    client_logo5 = models.ImageField(upload_to='clients/', null=True, blank=True, verbose_name='Logo đối tác 5')
-    client_logo6 = models.ImageField(upload_to='clients/', null=True, blank=True, verbose_name='Logo đối tác 6')
-    
-    # Logo và thông tin công ty
-    logo = models.ImageField(upload_to='site/', null=True, blank=True, verbose_name='Logo công ty')
+    # Logo và thông tin công ty chính
+    logo = models.ImageField(upload_to='site/', null=True, blank=True, verbose_name='Logo công ty (hiển thị trên navbar)')
     company_name = models.CharField(max_length=100, default='Hitech NDT', verbose_name='Tên công ty')
     company_slogan = models.CharField(max_length=200, default='Giải pháp công nghệ hàng đầu', verbose_name='Slogan công ty')
     company_description = models.TextField(default='Hitech NDT tự hào là đơn vị hàng đầu trong lĩnh vực kiểm tra không phá hủy và đào tạo chứng chỉ NDT tại Việt Nam', verbose_name='Mô tả công ty')
     
-    # Thông tin liên hệ Footer
-    footer_address = models.CharField(max_length=200, default='123 Đường ABC, Quận XYZ, TP.HCM', verbose_name='Địa chỉ')
-    footer_phone = models.CharField(max_length=20, default='+84 123 456 789', verbose_name='Số điện thoại')
-    footer_email = models.EmailField(default='info@hitechndt.com', verbose_name='Email')
+    # Cài đặt Navbar (Menu điều hướng)
+    navbar_bg_color = ColorField(default='#212529', verbose_name='Màu nền Navbar')
+    navbar_text_color = ColorField(default='#ffffff', verbose_name='Màu chữ Navbar')
+    navbar_brand_size = models.CharField(max_length=10, default='18px', verbose_name='Kích thước chữ thương hiệu (px)')
+    navbar_link_size = models.CharField(max_length=10, default='14px', verbose_name='Kích thước chữ menu (px)')
+    navbar_sticky = models.BooleanField(default=True, verbose_name='Navbar dính (sticky)')
+    
+    # Cài đặt Footer (Chân trang)
+    footer_bg_color = ColorField(default='#212529', verbose_name='Màu nền Footer')
+    footer_text_color = ColorField(default='#ffffff', verbose_name='Màu chữ Footer')
+    footer_link_color = ColorField(default='#6c757d', verbose_name='Màu liên kết Footer')
+    footer_copyright = models.CharField(max_length=200, default='© 2024 Hitech NDT. Tất cả quyền được bảo lưu.', verbose_name='Bản quyền Footer')
+    
+    # Thông tin liên hệ hiển thị trên Footer
+    footer_address = models.CharField(max_length=200, default='123 Đường ABC, Quận XYZ, TP.HCM', verbose_name='Địa chỉ công ty')
+    footer_phone = models.CharField(max_length=20, default='+84 123 456 789', verbose_name='Số điện thoại chính')
+    footer_email = models.EmailField(default='info@hitechndt.com', verbose_name='Email liên hệ chính')
     
     # Liên kết mạng xã hội
     facebook_url = models.URLField(blank=True, null=True, verbose_name='Facebook URL')
     linkedin_url = models.URLField(blank=True, null=True, verbose_name='LinkedIn URL')
     youtube_url = models.URLField(blank=True, null=True, verbose_name='YouTube URL')
     twitter_url = models.URLField(blank=True, null=True, verbose_name='Twitter URL')
+    zalo_phone = models.CharField(max_length=15, blank=True, null=True, verbose_name='Số Zalo')
+    
+    # Màu sắc chung của website (cho các trang chưa có cấu hình riêng)
+    primary_color = ColorField(default='#007bff', verbose_name='Màu chính (Primary)')
+    secondary_color = ColorField(default='#6c757d', verbose_name='Màu phụ (Secondary)')
+    success_color = ColorField(default='#28a745', verbose_name='Màu thành công (Success)')
+    warning_color = ColorField(default='#ffc107', verbose_name='Màu cảnh báo (Warning)')
+    danger_color = ColorField(default='#dc3545', verbose_name='Màu nguy hiểm (Danger)')
+    
+    # Cài đặt typography chung
+    font_family = models.CharField(max_length=100, default='Roboto, sans-serif', verbose_name='Font chữ chính')
+    heading_font_family = models.CharField(max_length=100, default='Roboto, sans-serif', verbose_name='Font chữ tiêu đề')
+    
+    # SEO chung
+    site_title = models.CharField(max_length=200, default='Hitech NDT - Giải pháp kiểm tra không phá hủy', verbose_name='Tiêu đề website (Meta Title)')
+    site_description = models.TextField(default='Công ty hàng đầu về kiểm tra không phá hủy (NDT) tại Việt Nam. Cung cấp dịch vụ chuyên nghiệp và đào tạo chứng chỉ NDT.', verbose_name='Mô tả website (Meta Description)')
+    site_keywords = models.CharField(max_length=300, default='NDT, kiểm tra không phá hủy, Hitech NDT, chứng chỉ NDT', verbose_name='Từ khóa SEO')
+    
+    # Cài đặt hiển thị
+    show_breadcrumb = models.BooleanField(default=True, verbose_name='Hiển thị breadcrumb (đường dẫn)')
+    show_scroll_top = models.BooleanField(default=True, verbose_name='Hiển thị nút cuộn lên đầu trang')
+    
+    # Thông tin liên hệ nhanh (floating)
+    enable_floating_contact = models.BooleanField(default=True, verbose_name='Bật liên hệ nhanh (floating)')
+    floating_phone = models.CharField(max_length=20, blank=True, null=True, verbose_name='SĐT liên hệ nhanh')
+    floating_zalo = models.CharField(max_length=15, blank=True, null=True, verbose_name='Số Zalo liên hệ nhanh')
     
     def clean(self):
         # Đảm bảo chỉ có một bản ghi cấu hình
@@ -86,11 +73,11 @@ class SiteSettings(models.Model):
         super().save(*args, **kwargs)
     
     def __str__(self):
-        return 'Cấu hình website'
+        return f'Cấu hình chung website - {self.company_name}'
     
     class Meta:
-        verbose_name = 'Cấu hình website'
-        verbose_name_plural = 'Cấu hình website'
+        verbose_name = 'Cấu hình chung website'
+        verbose_name_plural = 'Cấu hình chung website'
 
 
 class ContactSettings(models.Model):
@@ -137,7 +124,7 @@ class Category(models.Model):
 class Post(models.Model):
     title = models.CharField(max_length=200)
     slug = models.SlugField(unique=True, null=True, blank=True)
-    content = CKEditor5Field()
+    content = CKEditor5Field(config_name='advanced')
     summary = models.TextField(blank=True, null=True)
     featured_image = models.ImageField(upload_to='blog/%Y/%m/', null=True, blank=True)
     category = models.ForeignKey(Category, on_delete=models.CASCADE, null=True)
@@ -147,6 +134,14 @@ class Post(models.Model):
     published = models.BooleanField(default=False)
     view_count = models.PositiveIntegerField(default=0)
     tags = models.ManyToManyField('Tag', blank=True)
+    
+    # SEO Fields
+    meta_title = models.CharField(max_length=60, blank=True, null=True, verbose_name='Meta Title', 
+                                 help_text='Tiêu đề hiển thị trên Google (tối đa 60 ký tự). Để trống sẽ sử dụng tiêu đề bài viết.')
+    meta_description = models.TextField(max_length=160, blank=True, null=True, verbose_name='Meta Description',
+                                       help_text='Mô tả hiển thị trên Google (tối đa 160 ký tự).')
+    meta_keywords = models.CharField(max_length=255, blank=True, null=True, verbose_name='Keywords',
+                                    help_text='Từ khóa SEO, phân cách bằng dấu phẩy.')
     
     def __str__(self):
         return self.title
@@ -609,6 +604,9 @@ class Project(models.Model):
     equipment = models.ManyToManyField(Equipment, verbose_name='Thiết bị sử dụng')
     staff = models.ManyToManyField(User, related_name='assigned_projects', verbose_name='Nhân viên')
     contract_value = models.DecimalField(max_digits=15, decimal_places=2, null=True, blank=True, verbose_name='Giá trị hợp đồng')
+    
+    # Progress tracking
+    completion_percentage = models.PositiveIntegerField(default=0, verbose_name='Phần trăm hoàn thành')
     
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)

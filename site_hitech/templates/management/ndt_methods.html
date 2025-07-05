@@ -1,0 +1,312 @@
+{% extends "dashboard/dashboard_base.html" %}
+{% load static %}
+
+{% block title %}{{ title }} - Dashboard{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+
+    
+    .method-card {
+        background: white;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+        margin-bottom: 1.5rem;
+    }
+    
+    .method-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+    
+    .method-header {
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        padding: 1.5rem;
+        border-bottom: 1px solid #dee2e6;
+    }
+    
+    .method-code {
+        background: #667eea;
+        color: white;
+        padding: 0.3rem 0.8rem;
+        border-radius: 15px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    
+    .method-name {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #2c3e50;
+        margin: 0.5rem 0;
+    }
+    
+    .method-description {
+        color: #6c757d;
+        font-size: 0.9rem;
+        line-height: 1.5;
+    }
+    
+    .create-form {
+        background: white;
+        border-radius: 12px;
+        padding: 2rem;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+    }
+    
+    .form-floating {
+        margin-bottom: 1rem;
+    }
+    
+    .form-control, .form-select {
+        border: 2px solid #e9ecef;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+    
+    .btn {
+        border-radius: 8px;
+        font-weight: 600;
+        padding: 0.5rem 1.5rem;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+    }
+    
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    }
+    
+    .btn-danger {
+        background: #dc3545;
+        border: none;
+    }
+    
+    .btn-danger:hover {
+        transform: translateY(-2px);
+        background: #c82333;
+    }
+    
+    .btn-info {
+        background: #17a2b8;
+        border: none;
+    }
+    
+    .btn-info:hover {
+        transform: translateY(-2px);
+        background: #138496;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+        color: #6c757d;
+    }
+    
+    .empty-state i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+    
+    .alert {
+        border-radius: 8px;
+        border: none;
+    }
+    
+    @media (max-width: 768px) {
+        .method-card {
+            margin-bottom: 1rem;
+        }
+        
+        .create-form {
+            padding: 1rem;
+        }
+        
+        .methods-header {
+            padding: 1.5rem 0;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block page_title %}
+<h1 class="h3 mb-3">
+    <i class="fas fa-tools text-primary me-2"></i>
+    {{ title }}
+</h1>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                <i class="fas fa-{% if message.tags == 'success' %}check-circle{% elif message.tags == 'error' %}exclamation-triangle{% else %}info-circle{% endif %} me-2"></i>
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+    
+    <!-- Form tạo phương pháp mới -->
+    <div class="create-form">
+        <h4 class="mb-4">
+            <i class="fas fa-plus-circle text-primary me-2"></i>
+            Thêm phương pháp NDT mới
+        </h4>
+        
+        <form method="POST" action="{% url 'create_ndt_method' %}">
+            {% csrf_token %}
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="form-floating">
+                        <input type="text" class="form-control" id="code" name="code" placeholder="Mã" required maxlength="10">
+                        <label for="code">Mã phương pháp (VD: UT, RT...)</label>
+                    </div>
+                </div>
+                <div class="col-md-5">
+                    <div class="form-floating">
+                        <input type="text" class="form-control" id="name" name="name" placeholder="Tên" required maxlength="100">
+                        <label for="name">Tên phương pháp</label>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="d-grid h-100">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>Thêm phương pháp
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-12">
+                    <div class="form-floating">
+                        <textarea class="form-control" id="description" name="description" placeholder="Mô tả" style="height: 80px"></textarea>
+                        <label for="description">Mô tả phương pháp (tùy chọn)</label>
+                    </div>
+                </div>
+            </div>
+        </form>
+        
+        <div class="text-center mt-3">
+            <a href="{% url 'create_default_ndt_methods' %}" class="btn btn-info">
+                <i class="fas fa-magic me-2"></i>Tạo phương pháp mặc định
+            </a>
+        </div>
+    </div>
+    
+    <!-- Danh sách phương pháp -->
+    <div class="row">
+        <div class="col-12">
+            <h4 class="mb-4">
+                <i class="fas fa-list text-success me-2"></i>
+                Danh sách phương pháp NDT ({{ methods.count }})
+            </h4>
+            
+            {% if methods %}
+                <div class="row">
+                    {% for method in methods %}
+                    <div class="col-lg-4 col-md-6 mb-4">
+                        <div class="method-card">
+                            <div class="method-header">
+                                                                 <div class="d-flex justify-content-between align-items-start">
+                                     <div>
+                                         <span class="method-code">{{ method.code }}</span>
+                                         <div class="method-name">{{ method.name }}</div>
+                                     </div>
+                                     <button class="btn btn-sm btn-outline-danger" type="button" onclick="confirmDelete('{{ method.id }}', '{{ method.code }} - {{ method.name }}')">
+                                         <i class="fas fa-trash"></i>
+                                     </button>
+                                 </div>
+                            </div>
+                            <div class="p-3">
+                                {% if method.description %}
+                                    <p class="method-description">{{ method.description }}</p>
+                                {% else %}
+                                    <p class="method-description text-muted fst-italic">Chưa có mô tả</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-tools"></i>
+                    <h5>Chưa có phương pháp NDT nào</h5>
+                    <p>Bắt đầu bằng cách thêm phương pháp đầu tiên hoặc tạo phương pháp mặc định</p>
+                    <a href="{% url 'create_default_ndt_methods' %}" class="btn btn-primary">
+                        <i class="fas fa-magic me-2"></i>Tạo phương pháp mặc định
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal xác nhận xóa -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Xác nhận xóa</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Bạn có chắc chắn muốn xóa phương pháp NDT <strong id="methodName"></strong> không?</p>
+                <p class="text-warning small">
+                    <i class="fas fa-exclamation-triangle me-1"></i>
+                    Hành động này không thể hoàn tác!
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <a href="#" id="deleteLink" class="btn btn-danger">
+                    <i class="fas fa-trash me-2"></i>Xóa
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+function confirmDelete(methodId, methodName) {
+    document.getElementById('methodName').textContent = methodName;
+    document.getElementById('deleteLink').href = '{% url "delete_ndt_method" 0 %}'.replace('0', methodId);
+    
+    // Sử dụng Bootstrap modal
+    var deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    deleteModal.show();
+}
+
+// Auto uppercase mã phương pháp
+document.getElementById('code').addEventListener('input', function() {
+    this.value = this.value.toUpperCase();
+});
+
+// Đảm bảo Bootstrap JS được load
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('NDT Methods page loaded');
+});
+</script>
+{% endblock %} 

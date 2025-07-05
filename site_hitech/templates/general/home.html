@@ -180,7 +180,7 @@ body {
 
 /* Section Base */
 .section {
-    padding: 100px 0;
+    padding: 60px 0; /* Giảm từ 100px xuống 60px */
     position: relative;
 }
 
@@ -188,12 +188,13 @@ body {
     font-size: clamp(2rem, 5vw, 3.5rem);
     font-weight: 800;
     text-align: center;
-    margin-bottom: 1rem;
+    margin-bottom: 1.5rem; /* Tăng từ 1rem lên 1.5rem */
     background: var(--primary-gradient);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
     font-family: 'Be Vietnam Pro', 'Nunito', 'Roboto', sans-serif;
+    line-height: 1.2; /* Thêm line-height để tránh text bị cắt */
 }
 
 .section-subtitle {
@@ -205,6 +206,8 @@ body {
     margin-left: auto;
     margin-right: auto;
     font-family: 'Be Vietnam Pro', 'Nunito', 'Roboto', sans-serif;
+    line-height: 1.5; /* Thêm line-height cho subtitle */
+    margin-top: 0.5rem; /* Thêm margin-top để tạo khoảng cách */
 }
 
 /* NDT Methods Section */
@@ -229,9 +232,9 @@ body {
     position: relative;
     z-index: 5;
     background: white;
-    padding-top: 150px;
-    padding-bottom: 100px;
-    margin-top: -150px;
+    padding-top: 80px; /* Giảm từ 150px xuống 80px */
+    padding-bottom: 60px; /* Giảm từ 100px xuống 60px */
+    margin-top: -80px; /* Điều chỉnh margin tương ứng */
     border-radius: 30px 30px 0 0;
     box-shadow: 0 -10px 30px rgba(0,0,0,0.1);
 }
@@ -721,12 +724,13 @@ body {
     max-width: 1000px;
     margin: 0 auto;
     position: relative;
+    padding: 0 20px;
 }
 
 .testimonials-slider {
     position: relative;
     width: 100%;
-    height: 500px;
+    min-height: 500px;
     overflow: hidden;
     border-radius: 20px;
     box-shadow: 0 20px 60px rgba(0,0,0,0.3);
@@ -823,21 +827,28 @@ body {
 
 .testimonial-author {
     text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
 }
 
 .author-name {
-    font-size: 1.4rem;
-    font-weight: 700;
-    margin-bottom: 15px;
+    font-size: 1.8rem;
+    font-weight: 800;
+    margin-bottom: 8px;
     color: #ffffff;
     text-shadow: 0 2px 6px rgba(0,0,0,0.4);
+    order: 1;
 }
 
 .author-position {
-    font-size: 1rem;
-    color: #f0f4f8;
+    font-size: 0.95rem;
+    color: rgba(255,255,255,0.85);
     text-shadow: 0 1px 4px rgba(0,0,0,0.3);
     font-weight: 400;
+    order: 2;
+    margin-top: 5px;
 }
 
 .slider-nav {
@@ -1225,17 +1236,107 @@ body {
     }
 }
 
+@media (max-width: 1024px) and (min-width: 769px) {
+    /* Tablet Testimonials */
+    .testimonials {
+        padding: 100px 0;
+    }
+    
+    .testimonials-container {
+        padding: 0 30px;
+    }
+    
+    .testimonials-slider {
+        min-height: 480px;
+        margin: 0 15px;
+    }
+    
+    .testimonial-item {
+        padding: 50px 40px;
+    }
+    
+    .testimonial-content {
+        font-size: 1.2rem;
+        line-height: 1.8;
+    }
+    
+    .testimonial-image {
+        width: 100px;
+        height: 100px;
+        margin-bottom: 30px;
+    }
+    
+    .author-name {
+        font-size: 1.7rem;
+    }
+    
+    .author-position {
+        font-size: 1.05rem;
+    }
+}
+
 @media (max-width: 768px) {
+    /* Hero Section Mobile */
+    .hero-banner {
+        min-height: 100vh;
+        padding: 80px 0 40px;
+    }
+    
+    .hero-content {
+        padding: 0 15px;
+        max-width: 100%;
+    }
+    
+    .hero-title-wrapper {
+        margin-bottom: 2rem;
+    }
+    
+    .hero-title {
+        font-size: clamp(2.5rem, 8vw, 4rem) !important;
+        line-height: 1.2;
+        margin-bottom: 1rem;
+        letter-spacing: 1px;
+    }
+    
+    .hero-subtitle {
+        font-size: clamp(0.9rem, 4vw, 1.1rem) !important;
+        line-height: 1.6;
+        margin: 0.5rem auto 1rem;
+        max-width: 90%;
+    }
+    
     .hero-buttons {
-        flex-direction: column;
-        align-items: center;
+        flex-direction: column !important;
+        align-items: center !important;
+        gap: 18px !important; /* Tăng gap giữa 2 nút */
+        margin-top: 2rem !important; /* Tăng khoảng cách từ subtitle */
     }
     
     .hero-btn {
-        width: 100%;
-        max-width: 320px;
-        justify-content: center;
-        min-width: unset;
+        width: 100% !important;
+        max-width: 300px !important; /* Tăng max-width để nút đẹp hơn */
+        justify-content: center !important;
+        min-width: unset !important;
+        padding: 16px 30px !important; /* Tăng padding cho thoải mái hơn */
+        font-size: 1.05rem !important; /* Tăng font size nhẹ */
+        border-radius: 30px !important; /* Bo góc đẹp hơn */
+        font-weight: 600 !important;
+    }
+    
+    /* Section Spacing Mobile */
+    .section {
+        padding: 60px 0 40px;
+    }
+    
+    .section-title {
+        font-size: clamp(1.8rem, 6vw, 2.5rem) !important;
+        margin-bottom: 0.8rem;
+    }
+    
+    .section-subtitle {
+        font-size: 1rem;
+        margin-bottom: 2.5rem;
+        padding: 0 15px;
     }
     
     .blog-grid {
@@ -1260,45 +1361,311 @@ body {
         grid-template-columns: 1fr;
     }
     
+    .testimonials {
+        padding: 80px 0;
+    }
+    
+    .testimonials-container {
+        padding: 0 15px;
+    }
+    
     .testimonials-slider {
-        height: 400px;
-        margin: 0 20px;
+        min-height: 450px;
+        margin: 0 10px;
+        border-radius: 15px;
     }
     
     .testimonial-item {
-        padding: 40px 30px;
+        padding: 45px 35px;
     }
     
     .testimonial-content {
-        font-size: 1.1rem;
+        font-size: 1.15rem;
+        line-height: 1.7;
+        margin-bottom: 35px;
     }
     
     .testimonial-image {
-        width: 80px;
-        height: 80px;
-        margin-bottom: 20px;
+        width: 90px;
+        height: 90px;
+        margin-bottom: 25px;
     }
     
     .testimonial-image.no-image {
-        font-size: 1.8rem;
+        font-size: 2rem;
     }
     
-    .slider-nav {
-        width: 50px;
-        height: 50px;
+    .author-name {
+        font-size: 1.6rem;
+    }
+    
+    .author-position {
         font-size: 1rem;
     }
     
+    .slider-nav {
+        width: 55px;
+        height: 55px;
+        font-size: 1.1rem;
+    }
+    
     .slider-nav.prev {
-        left: -25px;
+        left: -20px;
     }
     
     .slider-nav.next {
-        right: -25px;
+        right: -20px;
     }
     
     .section {
         padding: 60px 0;
+    }
+}
+
+@media (max-width: 480px) {
+    /* Hero Ultra Mobile */
+    .hero-banner {
+        min-height: 100vh;
+        padding: 70px 0 30px;
+    }
+    
+    .hero-content {
+        padding: 0 10px;
+    }
+    
+    .hero-title {
+        font-size: clamp(2rem, 10vw, 3rem) !important;
+        line-height: 1.1;
+        letter-spacing: 0.5px;
+    }
+    
+    .hero-subtitle {
+        font-size: clamp(0.85rem, 4vw, 1rem) !important;
+        max-width: 95%;
+        line-height: 1.5;
+    }
+    
+    .hero-buttons {
+        gap: 16px !important; /* Tăng gap cho mobile nhỏ */
+        margin-top: 1.8rem !important; /* Tăng khoảng cách từ subtitle */
+    }
+    
+    .hero-btn {
+        max-width: 280px !important; /* Tăng width cho mobile nhỏ */
+        padding: 14px 25px !important; /* Tăng padding */
+        font-size: 0.95rem !important; /* Tăng font size nhẹ */
+        border-radius: 25px !important; /* Bo góc đẹp hơn */
+        font-weight: 600 !important;
+    }
+    
+    /* Section Ultra Mobile */
+    .section {
+        padding: 40px 0 30px;
+    }
+    
+    .section-title {
+        font-size: clamp(1.5rem, 8vw, 2rem) !important;
+        margin-bottom: 0.6rem;
+    }
+    
+    .section-subtitle {
+        font-size: 0.9rem;
+        margin-bottom: 2rem;
+        padding: 0 10px;
+    }
+    
+    /* Methods Grid Mobile */
+    .methods-grid {
+        grid-template-columns: 1fr !important;
+        gap: 15px;
+        padding: 0 10px;
+    }
+    
+    .method-card {
+        padding: 20px 15px;
+    }
+    
+    .method-icon {
+        width: 50px !important;
+        height: 50px !important;
+        font-size: 1.2rem !important;
+    }
+    
+    .method-title {
+        font-size: 1.1rem;
+    }
+    
+    .method-description {
+        font-size: 0.85rem;
+    }
+    
+    /* Testimonials Ultra Mobile */
+    .testimonials {
+        padding: 60px 0 !important;
+    }
+    
+    .testimonials-container {
+        padding: 0 10px !important;
+    }
+    
+    .testimonials-slider {
+        min-height: 420px !important;
+        margin: 0 5px !important;
+        border-radius: 12px !important;
+    }
+    
+    .testimonial-item {
+        padding: 35px 25px !important;
+    }
+    
+    .testimonial-content {
+        font-size: 1.05rem !important;
+        line-height: 1.6 !important;
+        margin-bottom: 30px !important;
+    }
+    
+    .testimonial-content::before,
+    .testimonial-content::after {
+        font-size: 3rem !important;
+    }
+    
+    .testimonial-content::before {
+        top: -15px !important;
+        left: -20px !important;
+    }
+    
+    .testimonial-content::after {
+        bottom: -45px !important;
+        right: -20px !important;
+    }
+    
+    .testimonial-image {
+        width: 70px !important;
+        height: 70px !important;
+        margin-bottom: 20px !important;
+    }
+    
+    .testimonial-image.no-image {
+        font-size: 1.6rem !important;
+    }
+    
+    .author-name {
+        font-size: 1.4rem !important;
+        margin-bottom: 6px !important;
+    }
+    
+    .author-position {
+        font-size: 0.9rem !important;
+        line-height: 1.4 !important;
+    }
+    
+    .slider-nav {
+        width: 45px !important;
+        height: 45px !important;
+        font-size: 1rem !important;
+    }
+    
+    .slider-nav.prev {
+        left: -15px !important;
+    }
+    
+    .slider-nav.next {
+        right: -15px !important;
+    }
+    
+    .slider-dots {
+        margin-top: 30px !important;
+    }
+    
+    .dot {
+        width: 10px !important;
+        height: 10px !important;
+    }
+}
+
+/* Extra Small Mobile (320px - 575px) */
+@media (max-width: 575px) {
+    .testimonials {
+        padding: 50px 0 !important;
+    }
+    
+    .testimonials-container {
+        padding: 0 5px !important;
+    }
+    
+    .testimonials-slider {
+        min-height: 380px !important;
+        margin: 0 !important;
+        border-radius: 10px !important;
+    }
+    
+    .testimonial-item {
+        padding: 30px 20px !important;
+    }
+    
+    .testimonial-content {
+        font-size: 1rem !important;
+        line-height: 1.5 !important;
+        margin-bottom: 25px !important;
+    }
+    
+    .testimonial-content::before,
+    .testimonial-content::after {
+        font-size: 2.5rem !important;
+    }
+    
+    .testimonial-content::before {
+        top: -12px !important;
+        left: -15px !important;
+    }
+    
+    .testimonial-content::after {
+        bottom: -35px !important;
+        right: -15px !important;
+    }
+    
+    .testimonial-image {
+        width: 60px !important;
+        height: 60px !important;
+        margin-bottom: 15px !important;
+    }
+    
+    .testimonial-image.no-image {
+        font-size: 1.4rem !important;
+    }
+    
+    .author-name {
+        font-size: 1.25rem !important;
+        margin-bottom: 5px !important;
+    }
+    
+    .author-position {
+        font-size: 0.85rem !important;
+        line-height: 1.3 !important;
+    }
+    
+    .slider-nav {
+        width: 40px !important;
+        height: 40px !important;
+        font-size: 0.9rem !important;
+    }
+    
+    .slider-nav.prev {
+        left: -10px !important;
+    }
+    
+    .slider-nav.next {
+        right: -10px !important;
+    }
+    
+    .slider-dots {
+        margin-top: 25px !important;
+        gap: 8px !important;
+    }
+    
+    .dot {
+        width: 8px !important;
+        height: 8px !important;
     }
 }
 
@@ -1368,7 +1735,7 @@ body {
             {% empty %}
             <!-- Ultrasonic Testing (UT) -->
             <div class="method-card" data-aos="zoom-in">
-                <div class="method-icon"><i class="fas fa-sound"></i></div>
+                <div class="method-icon"><i class="fas fa-heartbeat"></i></div>
                 <h3 class="method-title">Kiểm tra siêu âm (UT)</h3>
                 <p class="method-description">Phát hiện khuyết tật bên trong vật liệu bằng sóng siêu âm tần số cao</p>
             </div>
@@ -2249,4 +2616,69 @@ document.addEventListener('DOMContentLoaded', function() {
 //     }
 // });
 </script>
+
+<!-- Responsive Spacing Adjustments -->
+<style>
+/* Mobile Responsive Spacing */
+@media (max-width: 768px) {
+    .section {
+        padding: 40px 0; /* Giảm thêm cho mobile */
+    }
+    
+    .ndt-methods .container {
+        padding-top: 50px; /* Compact hơn cho mobile */
+        padding-bottom: 40px;
+        margin-top: -50px;
+        border-radius: 20px 20px 0 0;
+    }
+    
+    .hero-title-wrapper {
+        margin-bottom: 2rem; /* Giảm margin bottom */
+    }
+    
+    /* Responsive cho title và subtitle */
+    .section-title {
+        margin-bottom: 2rem; /* Tăng spacing cho mobile */
+        line-height: 1.3;
+        padding: 0 15px; /* Thêm padding để tránh text bị sát */
+    }
+    
+    .section-subtitle {
+        margin-top: 1rem; /* Tăng margin-top cho mobile */
+        margin-bottom: 3rem;
+        font-size: 1.1rem;
+        padding: 0 20px; /* Thêm padding */
+        line-height: 1.6;
+    }
+}
+
+@media (max-width: 480px) {
+    .section {
+        padding: 30px 0; /* Thêm compact cho mobile nhỏ */
+    }
+    
+    .ndt-methods .container {
+        padding-top: 40px;
+        padding-bottom: 30px;
+        margin-top: -40px;
+        border-radius: 15px 15px 0 0;
+    }
+    
+    /* Mobile nhỏ - spacing rộng hơn để tránh đè */
+    .section-title {
+        margin-bottom: 2.5rem; /* Tăng thêm cho mobile nhỏ */
+        font-size: clamp(1.8rem, 8vw, 2.5rem); /* Điều chỉnh size */
+        line-height: 1.4;
+        padding: 0 10px;
+    }
+    
+    .section-subtitle {
+        margin-top: 1.5rem; /* Tăng margin-top */
+        margin-bottom: 2.5rem;
+        font-size: 1rem; /* Giảm font size cho mobile nhỏ */
+        padding: 0 15px;
+        line-height: 1.7; /* Tăng line-height */
+    }
+}
+</style>
 {% endblock %}

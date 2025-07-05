@@ -31,7 +31,7 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-fx^a=6!1s-s@2&@@n&ko_
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'hitechndt.vn,www.hitechndt.vn,localhost,127.0.0.1').split(',')
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'hitechndt.vn,www.hitechndt.vn,localhost,127.0.0.1,192.168.1.4,0.0.0.0').split(',')
 
 
 # Application definition
@@ -344,7 +344,112 @@ SUMMERNOTE_CONFIG = {
 
 # CKEditor 5 Configuration
 CKEDITOR_5_CONFIGS = {
- 'default': {
- 'toolbar': ['heading', '|', 'bold', 'italic', 'link', 'bulletedList', 'numberedList', 'blockQuote'],
- }
+    'default': {
+        'toolbar': ['heading', '|', 'bold', 'italic', 'link', 'bulletedList', 'numberedList', 'blockQuote'],
+    },
+    'advanced': {
+        'toolbar': [
+            'heading', '|', 
+            'bold', 'italic', 'underline', 'strikethrough', '|',
+            'fontSize', 'fontColor', 'fontBackgroundColor', '|',
+            'link', 'uploadImage', 'mediaEmbed', '|',
+            'bulletedList', 'numberedList', 'todoList', '|',
+            'outdent', 'indent', '|',
+            'blockQuote', 'insertTable', '|',
+            'code', 'codeBlock', '|',
+            'alignment', '|',
+            'undo', 'redo', '|',
+            'sourceEditing'
+        ],
+        'heading': {
+            'options': [
+                {'model': 'paragraph', 'title': 'Đoạn văn', 'class': 'ck-heading_paragraph'},
+                {'model': 'heading1', 'view': 'h1', 'title': 'Tiêu đề 1', 'class': 'ck-heading_heading1'},
+                {'model': 'heading2', 'view': 'h2', 'title': 'Tiêu đề 2', 'class': 'ck-heading_heading2'},
+                {'model': 'heading3', 'view': 'h3', 'title': 'Tiêu đề 3', 'class': 'ck-heading_heading3'},
+                {'model': 'heading4', 'view': 'h4', 'title': 'Tiêu đề 4', 'class': 'ck-heading_heading4'},
+            ]
+        },
+        'fontSize': {
+            'options': [9, 11, 13, 'default', 17, 19, 21, 24, 28],
+            'supportAllValues': True
+        },
+        'fontColor': {
+            'colors': [
+                {'color': 'hsl(0, 0%, 0%)', 'label': 'Đen'},
+                {'color': 'hsl(0, 0%, 30%)', 'label': 'Xám đậm'},
+                {'color': 'hsl(0, 0%, 60%)', 'label': 'Xám'},
+                {'color': 'hsl(0, 0%, 90%)', 'label': 'Xám nhạt'},
+                {'color': 'hsl(0, 0%, 100%)', 'label': 'Trắng'},
+                {'color': 'hsl(0, 75%, 60%)', 'label': 'Đỏ'},
+                {'color': 'hsl(30, 75%, 60%)', 'label': 'Cam'},
+                {'color': 'hsl(60, 75%, 60%)', 'label': 'Vàng'},
+                {'color': 'hsl(90, 75%, 60%)', 'label': 'Xanh lá nhạt'},
+                {'color': 'hsl(120, 75%, 60%)', 'label': 'Xanh lá'},
+                {'color': 'hsl(150, 75%, 60%)', 'label': 'Aquamarine'},
+                {'color': 'hsl(180, 75%, 60%)', 'label': 'Turquoise'},
+                {'color': 'hsl(210, 75%, 60%)', 'label': 'Xanh nhạt'},
+                {'color': 'hsl(240, 75%, 60%)', 'label': 'Xanh dương'},
+                {'color': 'hsl(270, 75%, 60%)', 'label': 'Tím'},
+                {'color': 'hsl(300, 75%, 60%)', 'label': 'Magenta'},
+            ]
+        },
+        'fontBackgroundColor': {
+            'colors': [
+                {'color': 'hsl(0, 0%, 0%)', 'label': 'Đen'},
+                {'color': 'hsl(0, 0%, 30%)', 'label': 'Xám đậm'},
+                {'color': 'hsl(0, 0%, 60%)', 'label': 'Xám'},
+                {'color': 'hsl(0, 0%, 90%)', 'label': 'Xám nhạt'},
+                {'color': 'hsl(0, 0%, 100%)', 'label': 'Trắng'},
+                {'color': 'hsl(0, 75%, 60%)', 'label': 'Đỏ'},
+                {'color': 'hsl(30, 75%, 60%)', 'label': 'Cam'},
+                {'color': 'hsl(60, 75%, 60%)', 'label': 'Vàng'},
+                {'color': 'hsl(90, 75%, 60%)', 'label': 'Xanh lá nhạt'},
+                {'color': 'hsl(120, 75%, 60%)', 'label': 'Xanh lá'},
+                {'color': 'hsl(150, 75%, 60%)', 'label': 'Aquamarine'},
+                {'color': 'hsl(180, 75%, 60%)', 'label': 'Turquoise'},
+                {'color': 'hsl(210, 75%, 60%)', 'label': 'Xanh nhạt'},
+                {'color': 'hsl(240, 75%, 60%)', 'label': 'Xanh dương'},
+                {'color': 'hsl(270, 75%, 60%)', 'label': 'Tím'},
+                {'color': 'hsl(300, 75%, 60%)', 'label': 'Magenta'},
+            ]
+        },
+        'alignment': {
+            'options': ['left', 'center', 'right', 'justify']
+        },
+        'image': {
+            'toolbar': [
+                'imageStyle:inline',
+                'imageStyle:block',
+                'imageStyle:side',
+                '|',
+                'toggleImageCaption',
+                'imageTextAlternative',
+                '|',
+                'linkImage'
+            ]
+        },
+        'table': {
+            'contentToolbar': [
+                'tableColumn',
+                'tableRow',
+                'mergeTableCells',
+                'tableCellProperties',
+                'tableProperties'
+            ]
+        },
+        'link': {
+            'addTargetToExternalLinks': True
+        },
+        'codeBlock': {
+            'languages': [
+                {'language': 'css', 'label': 'CSS'},
+                {'language': 'html', 'label': 'HTML'},
+                {'language': 'javascript', 'label': 'JavaScript'},
+                {'language': 'php', 'label': 'PHP'},
+                {'language': 'python', 'label': 'Python'},
+                {'language': 'xml', 'label': 'XML'},
+            ]
+        }
+    }
 }

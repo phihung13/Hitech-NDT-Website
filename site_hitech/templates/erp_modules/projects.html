@@ -1,40 +1,332 @@
 {% extends "dashboard/dashboard_base.html" %}
+{% load static %}
 
 {% block title %}Quản lý Dự án - Dashboard{% endblock %}
 
 {% block page_title %}
-<i class="fas fa-project-diagram text-primary me-2"></i>Quản lý Dự án
-{% endblock %}
-
-{% block header_controls %}
-<a href="{% url 'create_project' %}" class="btn btn-success">
-    <i class="fas fa-plus me-1"></i>Tạo dự án mới
-</a>
+<h1 class="h3 mb-3">
+    <i class="fas fa-project-diagram text-primary me-2"></i>
+    Quản lý Dự án
+</h1>
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid">
+    <!-- Statistics Overview -->
+    <div class="row mb-4">
+        <div class="col-md-2 col-sm-6 mb-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <h3 class="text-primary">{{ total_projects }}</h3>
+                    <p class="mb-0 text-muted small">Tổng dự án</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2 col-sm-6 mb-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <h3 class="text-success">{{ active_projects }}</h3>
+                    <p class="mb-0 text-muted small">Đang thực hiện</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2 col-sm-6 mb-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <h3 class="text-info">{{ completed_projects }}</h3>
+                    <p class="mb-0 text-muted small">Hoàn thành</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2 col-sm-6 mb-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <h3 class="text-warning">{{ planning_projects }}</h3>
+                    <p class="mb-0 text-muted small">Lập kế hoạch</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2 col-sm-6 mb-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <h3 class="text-danger">{{ pending_projects }}</h3>
+                    <p class="mb-0 text-muted small">Tạm dừng</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2 col-sm-6 mb-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <a href="{% url 'create_project' %}" class="btn btn-primary btn-sm">
+                        <i class="fas fa-plus me-1"></i>Tạo mới
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="row">
-        <div class="col-12">
-            <div class="card shadow">
+        <div class="col-lg-9">
+            <!-- Search and Filters -->
+            <div class="card border-0 shadow-sm mb-4">
                 <div class="card-body">
-                    <h5 class="text-center text-muted">
-                        <i class="fas fa-project-diagram fa-3x mb-3 d-block"></i>
-                        Trang Quản lý Dự án đang được phát triển
-                    </h5>
-                    <p class="text-center text-muted">
-                        Chức năng này sẽ bao gồm:
-                    </p>
-                    <ul class="list-unstyled text-center">
-                        <li><i class="fas fa-check text-success me-2"></i>Danh sách tất cả dự án</li>
-                        <li><i class="fas fa-check text-success me-2"></i>Tạo và chỉnh sửa dự án</li>
-                        <li><i class="fas fa-check text-success me-2"></i>Theo dõi tiến độ</li>
-                        <li><i class="fas fa-check text-success me-2"></i>Quản lý nhân viên</li>
-                        <li><i class="fas fa-check text-success me-2"></i>Báo cáo dự án</li>
-                    </ul>
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <form method="GET" class="position-relative">
+                                <i class="fas fa-search position-absolute" style="left: 15px; top: 12px; color: #6c757d;"></i>
+                                <input type="text" name="search" class="form-control ps-5" 
+                                       placeholder="Tìm kiếm dự án, mã dự án, công ty..." 
+                                       value="{{ search }}">
+                                <input type="hidden" name="status" value="{{ status_filter }}">
+                                <input type="hidden" name="sort" value="{{ sort_by }}">
+                            </form>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex gap-2 flex-wrap justify-content-md-end">
+                                <a href="?search={{ search }}&sort={{ sort_by }}" 
+                                   class="btn btn-outline-secondary btn-sm {% if not status_filter %}active{% endif %}">
+                                    Tất cả
+                                </a>
+                                {% for status_code, status_name in status_choices %}
+                                <a href="?search={{ search }}&status={{ status_code }}&sort={{ sort_by }}" 
+                                   class="btn btn-outline-secondary btn-sm {% if status_filter == status_code %}active{% endif %}">
+                                    {{ status_name }}
+                                </a>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Projects Grid -->
+            <div class="row">
+                <!-- Create New Project Card -->
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <a href="{% url 'create_project' %}" class="text-decoration-none">
+                        <div class="card border-0 shadow-sm h-100" style="min-height: 300px; background: linear-gradient(135deg, #007bff, #6f42c1);">
+                            <div class="card-body d-flex align-items-center justify-content-center text-white">
+                                <div class="text-center">
+                                    <i class="fas fa-plus fa-3x mb-3 opacity-75"></i>
+                                    <h5>Tạo dự án mới</h5>
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+
+                <!-- Project Cards -->
+                {% for project in projects %}
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-light d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="mb-1 fw-bold">{{ project.name|truncatechars:30 }}</h6>
+                                <small class="text-primary">{{ project.code }}</small>
+                            </div>
+                            <span class="badge 
+                                {% if project.status == 'active' %}bg-success
+                                {% elif project.status == 'completed' %}bg-info
+                                {% elif project.status == 'planning' %}bg-warning
+                                {% elif project.status == 'pending' %}bg-danger
+                                {% else %}bg-secondary
+                                {% endif %}">
+                                {{ project.get_status_display }}
+                            </span>
+                        </div>
+                        
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="fas fa-building text-primary me-2"></i>
+                                    <small>{{ project.company.name|default:"Chưa có công ty" }}</small>
+                                </div>
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="fas fa-map-marker-alt text-primary me-2"></i>
+                                    <small>{{ project.location|truncatechars:25 }}</small>
+                                </div>
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="fas fa-calendar text-primary me-2"></i>
+                                    <small>{{ project.start_date|date:"d/m/Y" }} - {{ project.end_date|date:"d/m/Y" }}</small>
+                                </div>
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-user-tie text-primary me-2"></i>
+                                    <small>
+                                        {% if project.project_manager %}
+                                            {{ project.project_manager.get_full_name|default:project.project_manager.username }}
+                                        {% else %}
+                                            Chưa phân công PM
+                                        {% endif %}
+                                    </small>
+                                </div>
+                            </div>
+
+                            <!-- Team Members -->
+                            {% if project.staff.all %}
+                            <div class="mb-3">
+                                <small class="text-muted">Nhân viên:</small>
+                                <div class="d-flex mt-1">
+                                    {% for member in project.staff.all|slice:":4" %}
+                                    <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center text-white me-1" 
+                                         style="width: 24px; height: 24px; font-size: 10px; font-weight: bold;"
+                                         title="{{ member.get_full_name|default:member.username }}">
+                                        {{ member.first_name.0|default:member.username.0|upper }}
+                                    </div>
+                                    {% endfor %}
+                                    {% if project.staff.count > 4 %}
+                                    <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center text-white" 
+                                         style="width: 24px; height: 24px; font-size: 10px;">
+                                        +{{ project.staff.count|add:"-4" }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            <!-- NDT Methods -->
+                            {% if project.methods.all %}
+                            <div class="mb-3">
+                                <small class="text-muted">Phương pháp:</small>
+                                <div class="mt-1">
+                                    {% for method in project.methods.all|slice:":3" %}
+                                        <span class="badge bg-light text-dark me-1">{{ method.code }}</span>
+                                    {% endfor %}
+                                    {% if project.methods.count > 3 %}
+                                        <span class="badge bg-light text-dark">+{{ project.methods.count|add:"-3" }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="card-footer bg-transparent">
+                            <div class="d-grid gap-2 d-md-flex">
+                                <a href="{% url 'project_detail' project.id %}" class="btn btn-outline-primary btn-sm flex-fill">
+                                    <i class="fas fa-eye me-1"></i>Xem
+                                </a>
+                                <a href="#" class="btn btn-outline-warning btn-sm flex-fill">
+                                    <i class="fas fa-edit me-1"></i>Sửa
+                                </a>
+                                <a href="#" class="btn btn-outline-info btn-sm flex-fill">
+                                    <i class="fas fa-folder me-1"></i>Files
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-3">
+            <!-- Recent Projects -->
+            {% if recent_projects %}
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-transparent">
+                    <h6 class="mb-0">
+                        <i class="fas fa-clock text-primary me-2"></i>
+                        Dự án gần đây
+                    </h6>
+                </div>
+                <div class="card-body p-0">
+                    {% for project in recent_projects %}
+                    <a href="{% url 'project_detail' project.id %}" class="d-block p-3 text-decoration-none border-bottom">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="fw-bold small">{{ project.name|truncatechars:20 }}</div>
+                                <small class="text-muted">{{ project.code }}</small>
+                            </div>
+                            <span class="badge 
+                                {% if project.status == 'active' %}bg-success
+                                {% elif project.status == 'completed' %}bg-info
+                                {% elif project.status == 'planning' %}bg-warning
+                                {% else %}bg-secondary
+                                {% endif %} small">
+                                {{ project.get_status_display }}
+                            </span>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Quick Stats -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-transparent">
+                    <h6 class="mb-0">
+                        <i class="fas fa-chart-pie text-success me-2"></i>
+                        Thống kê nhanh
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="small">Công ty tham gia:</span>
+                        <strong>{{ companies.count }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="small">Nhân viên:</span>
+                        <strong>{{ staff_list.count }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="small">Phương pháp NDT:</span>
+                        <strong>{{ ndt_methods.count }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="small">Thiết bị:</span>
+                        <strong>{{ equipment_list.count }}</strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent">
+                    <h6 class="mb-0">
+                        <i class="fas fa-bolt text-warning me-2"></i>
+                        Hành động nhanh
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'create_project' %}" class="btn btn-primary btn-sm">
+                            <i class="fas fa-plus me-2"></i>Tạo dự án
+                        </a>
+                        <a href="{% url 'ndt_methods_management' %}" class="btn btn-outline-secondary btn-sm">
+                            <i class="fas fa-microscope me-2"></i>Phương pháp NDT
+                        </a>
+                        <a href="{% url 'equipment_management' %}" class="btn btn-outline-secondary btn-sm">
+                            <i class="fas fa-tools me-2"></i>Quản lý thiết bị
+                        </a>
+                        <a href="{% url 'staff_management' %}" class="btn btn-outline-secondary btn-sm">
+                            <i class="fas fa-users me-2"></i>Quản lý nhân viên
+                        </a>
+                        <a href="{% url 'analytics_management' %}" class="btn btn-outline-secondary btn-sm">
+                            <i class="fas fa-chart-bar me-2"></i>Báo cáo
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
-{% endblock %} 
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto submit search form on Enter
+    const searchInput = document.querySelector('input[name="search"]');
+    if (searchInput) {
+        searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                this.form.submit();
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

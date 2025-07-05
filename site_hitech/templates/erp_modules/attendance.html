@@ -1,45 +1,927 @@
 {% extends "dashboard/dashboard_base.html" %}
+{% load static %}
 
 {% block title %}Chấm công - Dashboard{% endblock %}
 
 {% block page_title %}
-<i class="fas fa-clock text-primary me-2"></i>Chấm công
+<i class="fas fa-calendar-check text-primary me-2"></i>Chấm công hôm nay
 {% endblock %}
 
-{% block header_controls %}
-<div class="btn-group" role="group">
-    <a href="#" class="btn btn-success">
-        <i class="fas fa-user-clock me-1"></i>Chấm công ngay
-    </a>
-    <a href="#" class="btn btn-outline-info">
-        <i class="fas fa-calendar-week me-1"></i>Xem lịch
-    </a>
-</div>
+{% block extra_css %}
+<style>
+    .work-status-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 25px;
+        text-align: center;
+        margin-bottom: 20px;
+    }
+    .work-form {
+        background: #f8f9fa;
+        border-radius: 15px;
+        padding: 25px;
+        border: 2px dashed #dee2e6;
+        transition: all 0.3s ease;
+    }
+    .status-card {
+        border-radius: 15px;
+        border: none;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    .work-badge {
+        font-size: 0.9rem;
+        padding: 8px 15px;
+        border-radius: 20px;
+        font-weight: 600;
+    }
+    .method-badge {
+        font-size: 0.8rem;
+        padding: 5px 10px;
+        border-radius: 15px;
+        font-weight: 500;
+    }
+    .overtime-row {
+        background-color: #fff3cd;
+        border-left: 4px solid #ffc107;
+    }
+    .expense-row {
+        background-color: #d1ecf1;
+        border-left: 4px solid #17a2b8;
+    }
+    .work-row {
+        transition: all 0.2s ease;
+    }
+    .work-row:hover {
+        background-color: #f8f9fa;
+    }
+    .action-btn {
+        padding: 12px 25px;
+        border-radius: 10px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        margin: 5px;
+    }
+    .action-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+    }
+    .stats-box {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        text-align: center;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        margin-bottom: 15px;
+    }
+    .hidden-section {
+        display: none;
+        margin-top: 15px;
+        padding: 15px;
+        background: white;
+        border-radius: 10px;
+        border: 1px solid #e3e6f0;
+    }
+    .show-section {
+        display: block;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid">
+    <!-- Work Status & Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-lg-8">
+            <div class="card status-card h-100">
+                <div class="card-body">
+                    <!-- Current Work Status -->
+                    <div class="work-status-card" id="workStatusCard">
+                        <h5 class="mb-3">
+                            <i class="fas fa-calendar-day me-2"></i>
+                            Hôm nay: {{ "now"|date:"d/m/Y" }}
+                        </h5>
+                        <div id="currentWorkStatus">
+                            <h6 class="mb-2">Bạn có đi làm hôm nay không?</h6>
+                            <div class="d-flex justify-content-center gap-3">
+                                <button class="btn btn-success action-btn" onclick="setWorkStatus(true)">
+                                    <i class="fas fa-check me-2"></i>Có đi làm
+                                </button>
+                                <button class="btn btn-secondary action-btn" onclick="setWorkStatus(false)">
+                                    <i class="fas fa-home me-2"></i>Nghỉ
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Work Location Form (Hidden initially) -->
+                    <div class="hidden-section" id="workLocationForm">
+                        <h6 class="text-primary mb-3">
+                            <i class="fas fa-map-marker-alt me-2"></i>Chọn nơi làm việc
+                        </h6>
+                        <div class="row g-3">
+                            <div class="col-md-8">
+                                <select class="form-select" id="workLocation" onchange="updateWorkLocation()">
+                                    <option value="office">Văn phòng</option>
+                                    <option value="construction">Đi công trình</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <button class="btn btn-primary w-100" onclick="confirmWorkDay()">
+                                    <i class="fas fa-save me-2"></i>Xác nhận
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Construction Details (Hidden initially) -->
+                        <div class="hidden-section" id="constructionDetails">
+                            <div class="row g-3 mt-2">
+                                <div class="col-md-6">
+                                    <label class="form-label">Tên công trình/Khách hàng</label>
+                                    <input type="text" class="form-control" id="constructionName" placeholder="Ví dụ: HEINEKEN, PetroVietnam...">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Phương pháp NDT</label>
+                                    <select class="form-select" id="ndtMethod">
+                                        <option value="">-- Chọn phương pháp --</option>
+                                        <option value="UT">UT (Siêu âm)</option>
+                                        <option value="MT">MT (Từ tính)</option>
+                                        <option value="PT">PT (Thẩm thấu)</option>
+                                        <option value="RT">RT (X-quang)</option>
+                                        <option value="VT">VT (Mục thi)</option>
+                                        <option value="ET">ET (Dòng xoáy)</option>
+                                        <option value="multiple">Nhiều phương pháp</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Additional Actions (Hidden initially) -->
+                    <div class="hidden-section" id="additionalActions">
+                        <h6 class="text-success mb-3">
+                            <i class="fas fa-plus-circle me-2"></i>Thêm thông tin
+                        </h6>
+                        <div class="d-flex flex-wrap justify-content-center gap-2">
+                            <button class="btn btn-warning action-btn" onclick="addOvertime()">
+                                <i class="fas fa-clock me-2"></i>Tăng ca
+                            </button>
+                            <button class="btn btn-info action-btn" onclick="addExpense()">
+                                <i class="fas fa-receipt me-2"></i>Lấy lại tiền
+                            </button>
+                            <button class="btn btn-success action-btn" onclick="exportToExcel()">
+                                <i class="fas fa-file-excel me-2"></i>Xuất Excel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card status-card h-100">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">
+                        <i class="fas fa-chart-bar text-primary me-2"></i>
+                        Thống kê tháng này
+                    </h5>
+                    
+                    <div class="stats-box">
+                        <h4 class="text-primary mb-1">22</h4>
+                        <small class="text-muted">Ngày đi làm</small>
+                    </div>
+                    
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <div class="stats-box">
+                                <h5 class="text-success mb-1">18</h5>
+                                <small>Công trình</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="stats-box">
+                                <h5 class="text-info mb-1">4</h5>
+                                <small>Văn phòng</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="stats-box">
+                                <h5 class="text-warning mb-1">8</h5>
+                                <small>Tăng ca</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="stats-box">
+                                <h5 class="text-secondary mb-1">2.1M</h5>
+                                <small>Chi phí</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <h6>Trạng thái:</h6>
+                        <div class="p-3 bg-light rounded">
+                            <div class="text-center">
+                                <i class="fas fa-question-circle text-muted me-2"></i>
+                                <strong id="todayStatus">Chưa chấm công</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Today's Work Log -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list-alt text-primary me-2"></i>
+                        Nhật ký hôm nay
+                    </h5>
+                    <button class="btn btn-outline-success btn-sm" onclick="exportToExcel()">
+                        <i class="fas fa-file-excel me-1"></i>
+                        Xuất Excel tháng này
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th width="120">Thời gian</th>
+                                    <th width="150">Loại</th>
+                                    <th>Nội dung</th>
+                                    <th width="120">Phương pháp</th>
+                                    <th width="100">Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody id="todayWorkLog">
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted py-4">
+                                        <i class="fas fa-calendar fa-2x mb-2 d-block opacity-50"></i>
+                                        Chưa có thông tin nào hôm nay
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Work History -->
     <div class="row">
         <div class="col-12">
-            <div class="card shadow">
-                <div class="card-body">
-                    <h5 class="text-center text-muted">
-                        <i class="fas fa-clock fa-3x mb-3 d-block"></i>
-                        Trang Chấm công đang được phát triển
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-history text-primary me-2"></i>
+                        Lịch sử 7 ngày gần nhất
                     </h5>
-                    <p class="text-center text-muted">
-                        Chức năng này sẽ bao gồm:
-                    </p>
-                    <ul class="list-unstyled text-center">
-                        <li><i class="fas fa-check text-success me-2"></i>Chấm công vào/ra</li>
-                        <li><i class="fas fa-check text-success me-2"></i>Theo dõi giờ làm việc</li>
-                        <li><i class="fas fa-check text-success me-2"></i>Đăng ký nghỉ phép</li>
-                        <li><i class="fas fa-check text-success me-2"></i>Báo cáo chấm công</li>
-                        <li><i class="fas fa-check text-success me-2"></i>Quản lý ca làm việc</li>
-                    </ul>
+                    <div>
+                        <button class="btn btn-outline-secondary btn-sm me-2">
+                            <i class="fas fa-filter me-1"></i>
+                            Lọc
+                        </button>
+                        <button class="btn btn-primary btn-sm">
+                            <i class="fas fa-calendar me-1"></i>
+                            Xem tháng
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Ngày</th>
+                                    <th>Nơi làm việc</th>
+                                    <th>Phương pháp NDT</th>
+                                    <th>Tăng ca</th>
+                                    <th>Chi phí</th>
+                                    <th>Ghi chú</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Hôm nay -->
+                                <tr class="work-row">
+                                    <td>
+                                        <strong>Hôm nay</strong><br>
+                                        <small class="text-muted">{{ "now"|date:"d/m/Y" }}</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-dark">Chưa xác định</span>
+                                    </td>
+                                    <td>--</td>
+                                    <td>--</td>
+                                    <td>--</td>
+                                    <td class="text-muted">Chưa chấm công</td>
+                                </tr>
+                                
+                                <!-- Hôm qua -->
+                                <tr class="work-row">
+                                    <td>
+                                        <strong>Hôm qua</strong><br>
+                                        <small class="text-muted">12/01/2024</small>
+                                    </td>
+                                    <td>
+                                        <span class="work-badge bg-primary text-white">
+                                            <i class="fas fa-industry me-1"></i>HEINEKEN
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="method-badge bg-warning text-dark">UT</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-warning">Đến 20:00</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">500K</span>
+                                    </td>
+                                    <td>Kiểm tra đường ống - Di chuyển</td>
+                                </tr>
+                                
+                                <!-- 11/01 -->
+                                <tr class="work-row">
+                                    <td>
+                                        <strong>11/01/2024</strong><br>
+                                        <small class="text-muted">Chủ nhật</small>
+                                    </td>
+                                    <td>
+                                        <span class="work-badge bg-secondary text-white">
+                                            <i class="fas fa-home me-1"></i>Văn phòng
+                                        </span>
+                                    </td>
+                                    <td>--</td>
+                                    <td>
+                                        <span class="badge bg-warning">Đến 18:00</span>
+                                    </td>
+                                    <td>--</td>
+                                    <td>Làm báo cáo tăng ca</td>
+                                </tr>
+                                
+                                <!-- 10/01 -->
+                                <tr class="work-row">
+                                    <td>
+                                        <strong>10/01/2024</strong><br>
+                                        <small class="text-muted">Thứ 6</small>
+                                    </td>
+                                    <td>
+                                        <span class="work-badge bg-success text-white">
+                                            <i class="fas fa-cogs me-1"></i>VIETINEC
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="method-badge bg-primary text-white">UT + VT</span>
+                                    </td>
+                                    <td>--</td>
+                                    <td>
+                                        <span class="badge bg-info">1.2M</span>
+                                    </td>
+                                    <td>Demo PAUT - Khách sạn + ăn uống</td>
+                                </tr>
+                                
+                                <!-- 09/01 -->
+                                <tr class="work-row">
+                                    <td>
+                                        <strong>09/01/2024</strong><br>
+                                        <small class="text-muted">Thứ 5</small>
+                                    </td>
+                                    <td>
+                                        <span class="work-badge bg-secondary text-white">
+                                            <i class="fas fa-home me-1"></i>Văn phòng
+                                        </span>
+                                    </td>
+                                    <td>--</td>
+                                    <td>--</td>
+                                    <td>--</td>
+                                    <td>Xử lý hồ sơ hành chính</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Overtime Modal -->
+<div class="modal fade" id="overtimeModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-clock text-warning me-2"></i>Thêm tăng ca
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Tăng ca đến mấy giờ?</label>
+                        <input type="time" class="form-control" id="overtimeUntil">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Loại tăng ca</label>
+                        <select class="form-select" id="overtimeType">
+                            <option value="weekday">Ngày thường</option>
+                            <option value="weekend">Cuối tuần</option>
+                            <option value="holiday">Ngày lễ</option>
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Lý do tăng ca</label>
+                        <textarea class="form-control" id="overtimeReason" rows="2" placeholder="Ví dụ: Hoàn thành báo cáo khẩn cấp..."></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-warning" onclick="saveOvertime()">
+                    <i class="fas fa-save me-2"></i>Lưu tăng ca
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Expense Modal -->
+<div class="modal fade" id="expenseModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-receipt text-info me-2"></i>Lấy lại tiền
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Loại chi phí</label>
+                        <select class="form-select" id="expenseCategory">
+                            <option value="">-- Chọn loại --</option>
+                            <option value="transport">Vận chuyển (xăng, cầu phí...)</option>
+                            <option value="accommodation">Khách sạn</option>
+                            <option value="meal">Ăn uống</option>
+                            <option value="materials">Vật tư, dụng cụ</option>
+                            <option value="other">Khác</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Số tiền đã bỏ (VNĐ)</label>
+                        <input type="number" class="form-control" id="expenseAmount" placeholder="0">
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Mô tả chi tiết</label>
+                        <textarea class="form-control" id="expenseDescription" rows="2" placeholder="Ví dụ: Xăng xe đi HEINEKEN, cầu phí..."></textarea>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Hóa đơn/Ảnh chụp</label>
+                        <input type="file" class="form-control" id="expenseFile" accept="image/*,.pdf" multiple>
+                        <small class="text-muted">Có thể chọn nhiều file. Hỗ trợ ảnh và PDF.</small>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-info" onclick="saveExpense()">
+                    <i class="fas fa-save me-2"></i>Lưu chi phí
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+// Global variables
+let todayWorkData = {
+    hasWork: false,
+    location: '',
+    constructionName: '',
+    ndtMethod: '',
+    overtime: null,
+    expenses: []
+};
+
+let workHistory = []; // For Excel export
+
+// Update current time
+function updateTime() {
+    const now = new Date();
+    const dateString = now.toLocaleDateString('vi-VN', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+    
+    // Update if element exists
+    const dateElement = document.querySelector('.work-status-card h5');
+    if (dateElement) {
+        dateElement.innerHTML = `<i class="fas fa-calendar-day me-2"></i>Hôm nay: ${dateString}`;
+    }
+}
+
+// Set work status
+function setWorkStatus(hasWork) {
+    todayWorkData.hasWork = hasWork;
+    
+    if (hasWork) {
+        // Show work location form
+        document.getElementById('workLocationForm').classList.add('show-section');
+        document.getElementById('currentWorkStatus').innerHTML = `
+            <h6 class="mb-2 text-success">
+                <i class="fas fa-check-circle me-2"></i>Có đi làm hôm nay
+            </h6>
+        `;
+    } else {
+        // Set as day off
+        document.getElementById('currentWorkStatus').innerHTML = `
+            <h6 class="mb-2 text-secondary">
+                <i class="fas fa-home me-2"></i>Nghỉ hôm nay
+            </h6>
+            <button class="btn btn-outline-light action-btn" onclick="resetWorkStatus()">
+                <i class="fas fa-edit me-2"></i>Thay đổi
+            </button>
+        `;
+        
+        updateTodayStatus('Nghỉ');
+        addToWorkLog('Nghỉ', '--', '--', '--');
+        
+        // Hide forms
+        document.getElementById('workLocationForm').classList.remove('show-section');
+        document.getElementById('additionalActions').classList.remove('show-section');
+    }
+}
+
+// Reset work status
+function resetWorkStatus() {
+    todayWorkData = {
+        hasWork: false,
+        location: '',
+        constructionName: '',
+        ndtMethod: '',
+        overtime: null,
+        expenses: []
+    };
+    
+    document.getElementById('currentWorkStatus').innerHTML = `
+        <h6 class="mb-2">Bạn có đi làm hôm nay không?</h6>
+        <div class="d-flex justify-content-center gap-3">
+            <button class="btn btn-success action-btn" onclick="setWorkStatus(true)">
+                <i class="fas fa-check me-2"></i>Có đi làm
+            </button>
+            <button class="btn btn-secondary action-btn" onclick="setWorkStatus(false)">
+                <i class="fas fa-home me-2"></i>Nghỉ
+            </button>
+        </div>
+    `;
+    
+    // Hide all forms
+    document.getElementById('workLocationForm').classList.remove('show-section');
+    document.getElementById('constructionDetails').classList.remove('show-section');
+    document.getElementById('additionalActions').classList.remove('show-section');
+    
+    updateTodayStatus('Chưa chấm công');
+    clearWorkLog();
+}
+
+// Update work location dropdown
+function updateWorkLocation() {
+    const location = document.getElementById('workLocation').value;
+    
+    if (location === 'construction') {
+        document.getElementById('constructionDetails').classList.add('show-section');
+    } else {
+        document.getElementById('constructionDetails').classList.remove('show-section');
+    }
+}
+
+// Confirm work day
+function confirmWorkDay() {
+    const location = document.getElementById('workLocation').value;
+    let locationText = location === 'office' ? 'Văn phòng' : 'Công trình';
+    let details = '';
+    let method = '--';
+    
+    if (location === 'construction') {
+        const constructionName = document.getElementById('constructionName').value;
+        const ndtMethod = document.getElementById('ndtMethod').value;
+        
+        if (!constructionName) {
+            Swal.fire('Lỗi', 'Vui lòng nhập tên công trình!', 'error');
+            return;
+        }
+        if (!ndtMethod) {
+            Swal.fire('Lỗi', 'Vui lòng chọn phương pháp NDT!', 'error');
+            return;
+        }
+        
+        details = constructionName;
+        method = ndtMethod;
+        todayWorkData.constructionName = constructionName;
+        todayWorkData.ndtMethod = ndtMethod;
+    }
+    
+    todayWorkData.location = location;
+    
+    // Update UI
+    document.getElementById('currentWorkStatus').innerHTML = `
+        <h6 class="mb-2 text-success">
+            <i class="fas fa-check-circle me-2"></i>Đã xác nhận: ${locationText}
+        </h6>
+        <button class="btn btn-outline-light action-btn btn-sm" onclick="resetWorkStatus()">
+            <i class="fas fa-edit me-2"></i>Thay đổi
+        </button>
+    `;
+    
+    // Hide location form, show additional actions
+    document.getElementById('workLocationForm').classList.remove('show-section');
+    document.getElementById('additionalActions').classList.add('show-section');
+    
+    updateTodayStatus(locationText);
+    addToWorkLog(locationText, details || locationText, method, '--');
+    
+    Swal.fire({
+        title: 'Đã xác nhận!',
+        text: `Hôm nay làm việc tại: ${locationText}`,
+        icon: 'success',
+        timer: 1500,
+        showConfirmButton: false
+    });
+}
+
+// Add overtime
+function addOvertime() {
+    const modal = new bootstrap.Modal(document.getElementById('overtimeModal'));
+    modal.show();
+}
+
+// Save overtime
+function saveOvertime() {
+    const until = document.getElementById('overtimeUntil').value;
+    const type = document.getElementById('overtimeType').value;
+    const reason = document.getElementById('overtimeReason').value;
+    
+    if (!until) {
+        Swal.fire('Lỗi', 'Vui lòng nhập thời gian tăng ca!', 'error');
+        return;
+    }
+    
+    const typeText = document.getElementById('overtimeType').selectedOptions[0].text;
+    todayWorkData.overtime = { until, type, typeText, reason };
+    
+    // Update the existing work log row
+    updateWorkLogOvertime(until, typeText);
+    
+    // Close modal
+    bootstrap.Modal.getInstance(document.getElementById('overtimeModal')).hide();
+    
+    // Clear form
+    document.getElementById('overtimeUntil').value = '';
+    document.getElementById('overtimeReason').value = '';
+    
+    Swal.fire({
+        title: 'Đã thêm tăng ca!',
+        text: `Tăng ca đến ${until} (${typeText})`,
+        icon: 'success',
+        timer: 1500,
+        showConfirmButton: false
+    });
+}
+
+// Add expense
+function addExpense() {
+    const modal = new bootstrap.Modal(document.getElementById('expenseModal'));
+    modal.show();
+}
+
+// Save expense
+function saveExpense() {
+    const category = document.getElementById('expenseCategory').value;
+    const amount = document.getElementById('expenseAmount').value;
+    const description = document.getElementById('expenseDescription').value;
+    
+    if (!category || !amount) {
+        Swal.fire('Lỗi', 'Vui lòng nhập đầy đủ thông tin chi phí!', 'error');
+        return;
+    }
+    
+    const categoryText = document.getElementById('expenseCategory').selectedOptions[0].text;
+    const formattedAmount = parseInt(amount).toLocaleString('vi-VN');
+    
+    const expense = {
+        category,
+        categoryText,
+        amount: formattedAmount,
+        description
+    };
+    
+    todayWorkData.expenses.push(expense);
+    
+    // Update the existing work log row
+    updateWorkLogExpense(formattedAmount);
+    
+    // Close modal
+    bootstrap.Modal.getInstance(document.getElementById('expenseModal')).hide();
+    
+    // Clear form
+    document.getElementById('expenseCategory').value = '';
+    document.getElementById('expenseAmount').value = '';
+    document.getElementById('expenseDescription').value = '';
+    
+    Swal.fire({
+        title: 'Đã thêm chi phí!',
+        text: `${categoryText}: ${formattedAmount} VNĐ`,
+        icon: 'success',
+        timer: 1500,
+        showConfirmButton: false
+    });
+}
+
+// Update today status
+function updateTodayStatus(status) {
+    document.getElementById('todayStatus').textContent = status;
+}
+
+// Add to work log
+function addToWorkLog(type, content, method, overtime) {
+    const tbody = document.getElementById('todayWorkLog');
+    
+    // Remove "no data" row if exists
+    const noDataRow = tbody.querySelector('td[colspan="5"]');
+    if (noDataRow) {
+        noDataRow.parentElement.remove();
+    }
+    
+    const now = new Date();
+    const timeString = now.toLocaleTimeString('vi-VN', { hour12: false, hour: '2-digit', minute: '2-digit' });
+    
+    let typeBadge = '';
+    if (type === 'Văn phòng') {
+        typeBadge = '<span class="work-badge bg-secondary text-white"><i class="fas fa-home me-1"></i>Văn phòng</span>';
+    } else if (type === 'Công trình') {
+        typeBadge = '<span class="work-badge bg-primary text-white"><i class="fas fa-industry me-1"></i>Công trình</span>';
+    } else if (type === 'Nghỉ') {
+        typeBadge = '<span class="work-badge bg-light text-dark"><i class="fas fa-bed me-1"></i>Nghỉ</span>';
+    }
+    
+    let methodBadge = '--';
+    if (method && method !== '--') {
+        methodBadge = `<span class="method-badge bg-warning text-dark">${method}</span>`;
+    }
+    
+    const row = document.createElement('tr');
+    row.className = 'work-row';
+    row.id = 'todayWorkRow';
+    row.innerHTML = `
+        <td><span class="badge bg-primary">${timeString}</span></td>
+        <td>${typeBadge}</td>
+        <td>${content}</td>
+        <td>${methodBadge}</td>
+        <td>
+            <button class="btn btn-sm btn-outline-danger" onclick="resetWorkStatus()" title="Làm lại">
+                <i class="fas fa-redo"></i>
+            </button>
+        </td>
+    `;
+    
+    tbody.appendChild(row);
+}
+
+// Update work log overtime
+function updateWorkLogOvertime(until, typeText) {
+    const row = document.getElementById('todayWorkRow');
+    if (row) {
+        // Add overtime info to content column
+        const contentCell = row.children[2];
+        const currentContent = contentCell.textContent;
+        contentCell.innerHTML = `${currentContent} <span class="badge bg-warning text-dark ms-2">Tăng ca đến ${until}</span>`;
+        
+        // Add overtime styling
+        row.classList.add('overtime-row');
+    }
+}
+
+// Update work log expense
+function updateWorkLogExpense(amount) {
+    const row = document.getElementById('todayWorkRow');
+    if (row) {
+        // Add expense info to content column
+        const contentCell = row.children[2];
+        const currentContent = contentCell.innerHTML;
+        contentCell.innerHTML = `${currentContent} <span class="badge bg-info text-white ms-2">Chi phí: ${amount}</span>`;
+        
+        // Add expense styling
+        row.classList.add('expense-row');
+    }
+}
+
+// Clear work log
+function clearWorkLog() {
+    const tbody = document.getElementById('todayWorkLog');
+    tbody.innerHTML = `
+        <tr>
+            <td colspan="5" class="text-center text-muted py-4">
+                <i class="fas fa-calendar fa-2x mb-2 d-block opacity-50"></i>
+                Chưa có thông tin nào hôm nay
+            </td>
+        </tr>
+    `;
+}
+
+// Export to Excel
+function exportToExcel() {
+    // Sample data for the month
+    const monthData = [
+        ['Ngày', 'Nơi làm việc', 'Công trình/Mô tả', 'Phương pháp NDT', 'Tăng ca', 'Chi phí (VNĐ)', 'Ghi chú'],
+        ['01/01/2024', 'Văn phòng', 'Hành chính', '', '', '', 'Xử lý hồ sơ'],
+        ['02/01/2024', 'Công trình', 'HEINEKEN', 'UT', '', '500,000', 'Kiểm tra đường ống - Xăng xe'],
+        ['03/01/2024', 'Công trình', 'PetroVietnam', 'RT', 'Đến 20:00', '800,000', 'Kiểm tra mối hàn - Khách sạn'],
+        ['04/01/2024', 'Văn phòng', 'Hành chính', '', 'Đến 18:00', '', 'Làm báo cáo tăng ca'],
+        ['05/01/2024', 'Nghỉ', '', '', '', '', ''],
+        // Add today's data if exists
+    ];
+    
+    // Add today's data if available
+    if (todayWorkData.hasWork || !todayWorkData.hasWork) {
+        const today = new Date().toLocaleDateString('vi-VN');
+        let location = '';
+        let description = '';
+        let method = '';
+        let overtime = '';
+        let expense = '';
+        let note = '';
+        
+        if (!todayWorkData.hasWork) {
+            location = 'Nghỉ';
+        } else if (todayWorkData.location === 'office') {
+            location = 'Văn phòng';
+            description = 'Hành chính';
+        } else if (todayWorkData.location === 'construction') {
+            location = 'Công trình';
+            description = todayWorkData.constructionName;
+            method = todayWorkData.ndtMethod;
+        }
+        
+        if (todayWorkData.overtime) {
+            overtime = `Đến ${todayWorkData.overtime.until}`;
+        }
+        
+        if (todayWorkData.expenses.length > 0) {
+            expense = todayWorkData.expenses.map(e => e.amount).join(', ');
+            note = todayWorkData.expenses.map(e => e.description).join('; ');
+        }
+        
+        monthData.push([today, location, description, method, overtime, expense, note]);
+    }
+    
+    // Create workbook
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(monthData);
+    
+    // Set column widths
+    ws['!cols'] = [
+        { width: 12 }, // Ngày
+        { width: 15 }, // Nơi làm việc
+        { width: 20 }, // Công trình/Mô tả
+        { width: 15 }, // Phương pháp NDT
+        { width: 12 }, // Tăng ca
+        { width: 15 }, // Chi phí
+        { width: 30 }  // Ghi chú
+    ];
+    
+    XLSX.utils.book_append_sheet(wb, ws, 'Chấm công tháng ' + (new Date().getMonth() + 1));
+    
+    // Generate filename
+    const now = new Date();
+    const filename = `ChamCong_${now.getMonth() + 1}_${now.getFullYear()}_${now.getDate()}.xlsx`;
+    
+    // Save file
+    XLSX.writeFile(wb, filename);
+    
+    Swal.fire({
+        title: 'Xuất Excel thành công!',
+        text: `File đã được lưu: ${filename}`,
+        icon: 'success',
+        timer: 2000,
+        showConfirmButton: false
+    });
+}
+
+// Initialize page
+document.addEventListener('DOMContentLoaded', function() {
+    updateTime();
+    setInterval(updateTime, 60000);
+});
+</script>
 {% endblock %} 

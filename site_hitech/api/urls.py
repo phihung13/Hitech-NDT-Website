@@ -12,7 +12,8 @@ from .views import (
     # search, profile_view, edit_profile,
     # document_list, document_detail, document_upload, document_delete,
     service_list, service_detail, # service_category,
-    project_list, project_detail, create_project,
+    project_list, project_detail, create_project, project_management_detail,
+    edit_project_file, delete_project_file,
     # public_project_detail, report_list, generate_report,
     staff_dashboard, change_language
 )
@@ -63,7 +64,7 @@ urlpatterns = [
     
     # Project paths
     path('du-an/', project_list, name='project_list'),
-    path('du-an/<int:project_id>/', project_detail, name='project_detail'),
+    path('du-an/<int:project_id>/', project_management_detail, name='project_detail'),
     path('projects/create/', create_project, name='create_project'),
     # path('du-an/cong-khai/<int:project_id>/', public_project_detail, name='public_project_detail'),
     
@@ -104,6 +105,8 @@ urlpatterns = [
     path('project/<int:project_id>/download/<int:file_id>/', views.download_file, name='download_file'),
     path('project/<int:project_id>/update/', views.update_project, name='update_project'),
     path('project/<int:project_id>/progress/', views.update_progress, name='update_progress'),
+    path('project/<int:project_id>/file/<int:file_id>/edit/', views.edit_project_file, name='edit_project_file'),
+    path('project/<int:project_id>/file/<int:file_id>/delete/', views.delete_project_file, name='delete_project_file'),
     
     # Admin và Manager dashboard
     path('admin/dashboard/', views.admin_dashboard, name='admin_dashboard'),
@@ -129,4 +132,10 @@ urlpatterns = [
     path('staff/assign/', views.staff_assign, name='staff_assign'),
     path('equipment/schedule/', views.equipment_schedule, name='equipment_schedule'),
     path('reports/generate/', views.report_generate, name='report_generate'),
+    
+    # NDT Methods Management
+    path('manage/ndt-methods/', views.ndt_methods_management, name='ndt_methods_management'),
+    path('manage/ndt-methods/create/', views.create_ndt_method, name='create_ndt_method'),
+    path('manage/ndt-methods/delete/<int:method_id>/', views.delete_ndt_method, name='delete_ndt_method'),
+    path('manage/ndt-methods/create-defaults/', views.create_default_ndt_methods, name='create_default_ndt_methods'),
 ]

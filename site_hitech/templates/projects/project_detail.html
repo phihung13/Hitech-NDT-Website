@@ -47,6 +47,9 @@
         padding: 1rem 1.5rem;
         font-weight: 600;
         color: var(--dark);
+        display: flex;
+        justify-content: between;
+        align-items: center;
     }
 
     .card-body {
@@ -202,15 +205,41 @@
         color: white;
     }
 
+    .btn-danger {
+        background: var(--danger);
+        color: white;
+    }
+
     .btn-outline {
-        background: transparent;
-        border: 2px solid var(--primary);
-        color: var(--primary);
+        background: rgba(255, 255, 255, 0.1);
+        border: 2px solid rgba(255, 255, 255, 0.8);
+        color: white !important;
+        text-decoration: none !important;
     }
 
     .btn-outline:hover {
-        background: var(--primary);
-        color: white;
+        background: rgba(255, 255, 255, 0.2);
+        border-color: white;
+        color: white !important;
+        text-decoration: none !important;
+        transform: translateY(-2px);
+    }
+
+    .btn-outline:focus,
+    .btn-outline:active {
+        color: white !important;
+        text-decoration: none !important;
+    }
+
+    /* Debug styles */
+    .page-header .btn {
+        position: relative;
+        z-index: 10;
+    }
+
+    .btn-sm {
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
     }
 
     .empty-state {
@@ -248,6 +277,77 @@
         box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
     }
 
+    /* File Management Styles */
+    .file-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem;
+        background: #f8fafc;
+        border-radius: var(--radius);
+        margin-bottom: 0.75rem;
+        border: 1px solid var(--border);
+    }
+
+    .file-info {
+        display: flex;
+        align-items: center;
+        flex: 1;
+    }
+
+    .file-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: var(--radius);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 1rem;
+        font-size: 1.2rem;
+        color: white;
+    }
+
+    .file-excel { background: #10b981; }
+    .file-pdf { background: #ef4444; }
+    .file-word { background: #2563eb; }
+    .file-image { background: #8b5cf6; }
+    .file-default { background: var(--secondary); }
+
+    .file-details h6 {
+        margin: 0 0 0.25rem 0;
+        font-weight: 600;
+        color: var(--dark);
+    }
+
+    .file-details small {
+        color: var(--secondary);
+    }
+
+    .file-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .upload-zone {
+        border: 2px dashed var(--border);
+        border-radius: var(--radius);
+        padding: 2rem;
+        text-align: center;
+        color: var(--secondary);
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .upload-zone:hover {
+        border-color: var(--primary);
+        background: #f0f7ff;
+    }
+
+    .upload-zone.dragover {
+        border-color: var(--success);
+        background: #f0fdf4;
+    }
+
     @media (max-width: 768px) {
         .info-grid {
             grid-template-columns: 1fr;
@@ -260,6 +360,17 @@
         .card-body {
             padding: 1rem;
         }
+
+        .file-item {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+
+        .file-actions {
+            width: 100%;
+            justify-content: flex-end;
+        }
     }
 </style>
 {% endblock %}
@@ -269,19 +380,22 @@
 <div class="page-header">
     <div class="container">
         <div class="row align-items-center">
-            <div class="col-md-8">
+            <div class="col-md-3">
+                <a href="{% url 'projects_management' %}" class="btn btn-outline" 
+                   style="color: white !important; text-decoration: none !important;">
+                    <i class="fas fa-arrow-left"></i> Quay lại
+                </a>
+            </div>
+            <div class="col-md-6 text-center">
                 <h1 class="mb-2">{{ project.name }}</h1>
                 <p class="mb-0 opacity-75">Mã dự án: {{ project.code }}</p>
             </div>
-            <div class="col-md-4 text-md-end">
-                <div class="d-flex gap-2 justify-content-md-end">
-                    <button class="btn btn-outline" onclick="editProject()">
-                        <i class="fas fa-edit"></i> Sửa dự án
-                    </button>
-                    <a href="{% url 'staff_dashboard' %}" class="btn btn-outline">
-                        <i class="fas fa-arrow-left"></i> Quay lại
-                    </a>
-                </div>
+            <div class="col-md-3 text-md-end">
+                <button type="button" class="btn btn-outline" 
+                        onclick="console.log('Button clicked'); editProject(); return false;"
+                        style="color: white !important; text-decoration: none !important;">
+                    <i class="fas fa-edit"></i> Sửa dự án
+                </button>
             </div>
         </div>
     </div>
@@ -302,14 +416,14 @@
                             <i class="fas fa-building"></i>
                             <div class="info-content">
                                 <h6>Công ty</h6>
-                                <p>{{ project.company|default:"Chưa xác định" }}</p>
+                                <p>{{ project.company.name|default:"Chưa xác định" }}</p>
                             </div>
                         </div>
                         <div class="info-item">
                             <i class="fas fa-user-tie"></i>
                             <div class="info-content">
                                 <h6>Quản lý dự án</h6>
-                                <p>{{ project.project_manager|default:"Chưa phân công" }}</p>
+                                <p>{{ project.project_manager.get_full_name|default:"Chưa phân công" }}</p>
                             </div>
                         </div>
                         <div class="info-item">
@@ -322,11 +436,32 @@
                         <div class="info-item">
                             <i class="fas fa-calendar-plus"></i>
                             <div class="info-content">
-                                <h6>Ngày tạo</h6>
-                                <p>{{ project.created_at|date:"d/m/Y" }}</p>
+                                <h6>Ngày bắt đầu</h6>
+                                <p>{{ project.start_date|date:"d/m/Y"|default:"Chưa xác định" }}</p>
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <i class="fas fa-calendar-check"></i>
+                            <div class="info-content">
+                                <h6>Ngày kết thúc</h6>
+                                <p>{{ project.end_date|date:"d/m/Y"|default:"Chưa xác định" }}</p>
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <div class="info-content">
+                                <h6>Địa điểm</h6>
+                                <p>{{ project.location|default:"Chưa xác định" }}</p>
                             </div>
                         </div>
                     </div>
+                    
+                    {% if project.description %}
+                    <div class="mt-4">
+                        <h6><i class="fas fa-file-alt me-2"></i>Mô tả dự án</h6>
+                        <p class="text-muted">{{ project.description }}</p>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
 
@@ -344,6 +479,122 @@
                         <div class="empty-state">
                             <i class="fas fa-tools"></i>
                             <p>Chưa có phương pháp nào được chỉ định</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Project Files & Reports -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center w-100">
+                        <span><i class="fas fa-folder-open me-2"></i>Báo cáo & Tài liệu</span>
+                        <button class="btn btn-primary btn-sm" onclick="showUploadModal()">
+                            <i class="fas fa-plus"></i> Thêm file
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if project_files %}
+                        {% for file in project_files %}
+                            <div class="file-item">
+                                <div class="file-info">
+                                    <div class="file-icon file-{{ file.file_type|default:'default' }}">
+                                        {% if file.file_type == 'excel' %}
+                                            <i class="fas fa-file-excel"></i>
+                                        {% elif file.file_type == 'pdf' %}
+                                            <i class="fas fa-file-pdf"></i>
+                                        {% elif file.file_type == 'word' %}
+                                            <i class="fas fa-file-word"></i>
+                                        {% elif file.file_type == 'image' %}
+                                            <i class="fas fa-file-image"></i>
+                                        {% else %}
+                                            <i class="fas fa-file"></i>
+                                        {% endif %}
+                                    </div>
+                                                                         <div class="file-details">
+                                         <h6>{{ file.name }}</h6>
+                                         <small class="d-block text-muted">
+                                             <i class="fas fa-user"></i> {{ file.uploaded_by.get_full_name|default:file.uploaded_by.username }}
+                                             • <i class="fas fa-clock"></i> {{ file.uploaded_at|date:"d/m/Y H:i" }}
+                                         </small>
+                                         {% if file.description %}
+                                         <small class="d-block text-info mt-1">
+                                             <i class="fas fa-comment"></i> {{ file.description }}
+                                         </small>
+                                         {% endif %}
+                                     </div>
+                                </div>
+                                <div class="file-actions">
+                                    <a href="{% url 'download_file' project.id file.id %}" class="btn btn-primary btn-sm">
+                                        <i class="fas fa-download"></i> Tải xuống
+                                    </a>
+                                    <button class="btn btn-warning btn-sm" onclick="editFile({{ file.id }}, '{{ file.name }}', '{{ file.description }}')">
+                                        <i class="fas fa-edit"></i> Sửa
+                                    </button>
+                                    <button class="btn btn-danger btn-sm" onclick="deleteFile({{ file.id }})">
+                                        <i class="fas fa-trash"></i> Xóa
+                                    </button>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-folder-open"></i>
+                            <p>Chưa có báo cáo hoặc tài liệu nào</p>
+                            <button class="btn btn-primary" onclick="showUploadModal()">
+                                <i class="fas fa-plus"></i> Thêm file đầu tiên
+                            </button>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Status & Progress -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-chart-pie me-2"></i>Trạng thái & Tiến độ
+                </div>
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <span class="status-badge status-{{ project.status }}">
+                            <i class="fas fa-circle"></i>
+                            {{ project.get_status_display }}
+                        </span>
+                    </div>
+                    
+                    <div class="progress" style="height: 20px; border-radius: 10px;">
+                        <div class="progress-bar bg-success" role="progressbar" style="width: {{ project.completion_percentage|default:0 }}%"></div>
+                    </div>
+                    <p class="mt-2 mb-0">{{ project.completion_percentage|default:0 }}% hoàn thành</p>
+                </div>
+            </div>
+
+            <!-- Team Members -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-users me-2"></i>Thành viên nhóm
+                </div>
+                <div class="card-body">
+                    {% if project.staff.all %}
+                        {% for staff in project.staff.all %}
+                            <div class="d-flex align-items-center mb-2">
+                                <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 35px; height: 35px; font-size: 0.8rem;">
+                                    {{ staff.get_full_name|default:staff.username|slice:":2"|upper }}
+                                </div>
+                                <div>
+                                    <div class="fw-bold">{{ staff.get_full_name|default:staff.username }}</div>
+                                    <small class="text-muted">{{ staff.user_profile.role|default:"Nhân viên" }}</small>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-users"></i>
+                            <p>Chưa có thành viên nào</p>
                         </div>
                     {% endif %}
                 </div>
@@ -376,53 +627,48 @@
                 </div>
             </div>
         </div>
+    </div>
+</div>
 
-        <!-- Sidebar -->
-        <div class="col-lg-4">
-            <!-- Status & Progress -->
-            <div class="card">
-                <div class="card-header">
-                    <i class="fas fa-chart-pie me-2"></i>Trạng thái & Tiến độ
-                </div>
-                <div class="card-body text-center">
+<!-- Upload File Modal -->
+<div class="modal fade" id="uploadFileModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-upload me-2"></i>Tải lên báo cáo/tài liệu
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="uploadFileForm" method="post" enctype="multipart/form-data" action="{% url 'upload_file' project.id %}">
+                {% csrf_token %}
+                <div class="modal-body">
                     <div class="mb-3">
-                        <span class="status-badge status-{{ project.status }}">
-                            <i class="fas fa-circle"></i>
-                            {{ project.get_status_display }}
-                        </span>
+                        <label class="form-label">Chọn file</label>
+                        <div class="upload-zone" onclick="document.getElementById('fileInput').click()">
+                            <i class="fas fa-cloud-upload-alt fa-2x mb-2"></i>
+                            <p class="mb-0">Nhấp để chọn file hoặc kéo thả vào đây</p>
+                            <small class="text-muted">Hỗ trợ: Excel, PDF, Word, Hình ảnh (Tối đa 50MB)</small>
+                        </div>
+                        <input type="file" id="fileInput" name="file" style="display: none;" accept=".xlsx,.xls,.pdf,.docx,.doc,.jpg,.jpeg,.png,.zip,.rar" required>
+                        <div id="selectedFile" class="mt-2" style="display: none;">
+                            <small class="text-success">
+                                <i class="fas fa-check"></i> <span id="fileName"></span>
+                            </small>
+                        </div>
                     </div>
-                    
-                    <div class="progress-circle mx-auto mb-3">
-                        <svg width="80" height="80">
-                            <circle class="progress-bg" cx="40" cy="40" r="36" stroke-dasharray="226.2" stroke-dashoffset="0"></circle>
-                            <circle class="progress-bar" cx="40" cy="40" r="36" stroke-dasharray="226.2" stroke-dashoffset="{{ progress_offset }}"></circle>
-                        </svg>
-                        <div class="progress-text">{{ project.completion_percentage|default:0 }}%</div>
-                    </div>
-                    
-                    <p class="text-muted mb-0">Tiến độ hoàn thành</p>
-                </div>
-            </div>
-
-            <!-- Quick Actions -->
-            <div class="card">
-                <div class="card-header">
-                    <i class="fas fa-bolt me-2"></i>Thao tác nhanh
-                </div>
-                <div class="card-body">
-                    <div class="d-grid gap-2">
-                        <button class="btn btn-primary" onclick="addReport()">
-                            <i class="fas fa-plus"></i> Thêm báo cáo
-                        </button>
-                        <button class="btn btn-success" onclick="updateProgress()">
-                            <i class="fas fa-chart-line"></i> Cập nhật tiến độ
-                        </button>
-                        <button class="btn btn-warning" onclick="manageTeam()">
-                            <i class="fas fa-users"></i> Quản lý nhóm
-                        </button>
+                    <div class="mb-3">
+                        <label class="form-label">Ghi chú/Mô tả</label>
+                        <textarea class="form-control" name="description" rows="3" placeholder="Nhập ghi chú hoặc mô tả về file này..."></textarea>
                     </div>
                 </div>
-            </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-upload"></i> Tải lên
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -437,7 +683,7 @@
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form id="editProjectForm" method="post">
+            <form id="editProjectForm" method="post" action="{% url 'update_project' project.id %}">
                 {% csrf_token %}
                 <div class="modal-body">
                     <div class="row">
@@ -446,20 +692,8 @@
                             <input type="text" class="form-control" name="name" value="{{ project.name }}" required>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">Mã dự án</label>
-                            <input type="text" class="form-control" name="code" value="{{ project.code }}" required>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Công ty</label>
-                            <input type="text" class="form-control" name="company" value="{{ project.company }}">
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Quản lý dự án</label>
-                            <input type="text" class="form-control" name="project_manager" value="{{ project.project_manager }}">
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Giá trị hợp đồng</label>
-                            <input type="number" class="form-control" name="contract_value" value="{{ project.contract_value }}">
+                            <label class="form-label">Địa điểm</label>
+                            <input type="text" class="form-control" name="location" value="{{ project.location }}">
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Trạng thái</label>
@@ -469,6 +703,16 @@
                                 <option value="completed" {% if project.status == 'completed' %}selected{% endif %}>Hoàn thành</option>
                                 <option value="cancelled" {% if project.status == 'cancelled' %}selected{% endif %}>Đã hủy</option>
                             </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Tiến độ hoàn thành</label>
+                            <div class="d-flex align-items-center gap-3">
+                                <input type="range" class="form-range flex-grow-1" name="completion_percentage" 
+                                       id="progressSlider" value="{{ project.completion_percentage|default:0 }}" 
+                                       min="0" max="100" oninput="updateProgressDisplay(this.value)">
+                                <span class="badge bg-primary" id="progressDisplay">{{ project.completion_percentage|default:0 }}%</span>
+                            </div>
+                            <small class="text-muted">Kéo thanh trượt để cập nhật tiến độ hoàn thành</small>
                         </div>
                         <div class="col-12 mb-3">
                             <label class="form-label">Mô tả</label>
@@ -487,33 +731,237 @@
     </div>
 </div>
 
+<!-- Edit File Modal -->
+<div class="modal fade" id="editFileModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-edit me-2"></i>Sửa thông tin file
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="editFileForm" method="post">
+                {% csrf_token %}
+                <input type="hidden" id="editFileId" name="file_id">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Tên file</label>
+                        <input type="text" class="form-control" id="editFileName" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Mô tả</label>
+                        <textarea class="form-control" id="editFileDescription" name="description" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Lưu thay đổi
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+let uploadModal, editProjectModal, editFileModal;
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, initializing modals...');
+    
+    const uploadModalEl = document.getElementById('uploadFileModal');
+    const editProjectModalEl = document.getElementById('editProjectModal');
+    const editFileModalEl = document.getElementById('editFileModal');
+    
+    console.log('Modal elements:', {
+        uploadModal: uploadModalEl,
+        editProjectModal: editProjectModalEl,
+        editFileModal: editFileModalEl
+    });
+    
+    if (uploadModalEl) {
+        uploadModal = new bootstrap.Modal(uploadModalEl);
+        console.log('Upload modal initialized');
+    }
+    
+    if (editProjectModalEl) {
+        editProjectModal = new bootstrap.Modal(editProjectModalEl);
+        console.log('Edit project modal initialized');
+    }
+    
+    if (editFileModalEl) {
+        editFileModal = new bootstrap.Modal(editFileModalEl);
+        console.log('Edit file modal initialized');
+    }
+    
+    // File input handling
+    const fileInput = document.getElementById('fileInput');
+    const uploadZone = document.querySelector('.upload-zone');
+    const selectedFile = document.getElementById('selectedFile');
+    const fileName = document.getElementById('fileName');
+    
+    fileInput.addEventListener('change', function(e) {
+        if (e.target.files.length > 0) {
+            fileName.textContent = e.target.files[0].name;
+            selectedFile.style.display = 'block';
+        }
+    });
+    
+    // Drag and drop
+    uploadZone.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        uploadZone.classList.add('dragover');
+    });
+    
+    uploadZone.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        uploadZone.classList.remove('dragover');
+    });
+    
+    uploadZone.addEventListener('drop', function(e) {
+        e.preventDefault();
+        uploadZone.classList.remove('dragover');
+        
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            fileInput.files = files;
+            fileName.textContent = files[0].name;
+            selectedFile.style.display = 'block';
+        }
+    });
+});
+
+function showUploadModal() {
+    uploadModal.show();
+}
+
 function editProject() {
-    new bootstrap.Modal(document.getElementById('editProjectModal')).show();
+    console.log('editProject called');
+    try {
+        // Fallback: sử dụng jQuery nếu Bootstrap không khả dụng
+        if (typeof bootstrap === 'undefined' && typeof $ !== 'undefined') {
+            $('#editProjectModal').modal('show');
+            return;
+        }
+        
+        if (!editProjectModal) {
+            console.error('editProjectModal not initialized');
+            // Fallback: tìm modal bằng JS thuần
+            const modalEl = document.getElementById('editProjectModal');
+            if (modalEl && typeof bootstrap !== 'undefined') {
+                editProjectModal = new bootstrap.Modal(modalEl);
+            } else {
+                alert('Không thể mở form sửa dự án. Vui lòng tải lại trang.');
+                return;
+            }
+        }
+        
+        // Cập nhật màu badge khi mở modal
+        const progressSlider = document.getElementById('progressSlider');
+        if (progressSlider) {
+            const currentProgress = progressSlider.value;
+            updateProgressDisplay(currentProgress);
+        }
+        
+        editProjectModal.show();
+        console.log('Modal should be shown');
+    } catch (error) {
+        console.error('Error in editProject:', error);
+        alert('Có lỗi khi mở form sửa dự án: ' + error.message);
+    }
 }
 
-function addReport() {
-    // Implement add report functionality
-    alert('Tính năng thêm báo cáo sẽ được phát triển');
+function updateProgressDisplay(value) {
+    document.getElementById('progressDisplay').textContent = value + '%';
+    
+    // Update color based on progress
+    const badge = document.getElementById('progressDisplay');
+    if (value < 30) {
+        badge.className = 'badge bg-danger';
+    } else if (value < 70) {
+        badge.className = 'badge bg-warning';
+    } else {
+        badge.className = 'badge bg-success';
+    }
 }
 
-function updateProgress() {
-    // Implement update progress functionality
-    alert('Tính năng cập nhật tiến độ sẽ được phát triển');
+function editFile(fileId, name, description) {
+    document.getElementById('editFileId').value = fileId;
+    document.getElementById('editFileName').value = name;
+    document.getElementById('editFileDescription').value = description;
+    editFileModal.show();
 }
 
-function manageTeam() {
-    // Implement team management functionality
-    alert('Tính năng quản lý nhóm sẽ được phát triển');
+function deleteFile(fileId) {
+    if (confirm('Bạn có chắc chắn muốn xóa file này không?')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/project/{{ project.id }}/file/${fileId}/delete/`;
+        
+        const csrfToken = document.createElement('input');
+        csrfToken.type = 'hidden';
+        csrfToken.name = 'csrfmiddlewaretoken';
+        csrfToken.value = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        
+        form.appendChild(csrfToken);
+        document.body.appendChild(form);
+        form.submit();
+    }
 }
 
-// Handle form submission
+// Handle form submissions
+document.getElementById('uploadFileForm').addEventListener('submit', function(e) {
+    const submitBtn = this.querySelector('button[type="submit"]');
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang tải lên...';
+    submitBtn.disabled = true;
+});
+
 document.getElementById('editProjectForm').addEventListener('submit', function(e) {
     e.preventDefault();
     
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang lưu...';
+    submitBtn.disabled = true;
+    
     const formData = new FormData(this);
     
-    fetch(window.location.href, {
+    fetch(this.action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Có lỗi xảy ra: ' + (data.error || 'Vui lòng thử lại'));
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Có lỗi xảy ra khi cập nhật dự án');
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    });
+});
+
+document.getElementById('editFileForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const fileId = document.getElementById('editFileId').value;
+    
+    fetch(`/project/{{ project.id }}/file/${fileId}/edit/`, {
         method: 'POST',
         body: formData,
         headers: {
@@ -531,15 +979,6 @@ document.getElementById('editProjectForm').addEventListener('submit', function(e
     .catch(error => {
         alert('Có lỗi xảy ra: ' + error.message);
     });
-});
-
-// Calculate progress circle
-document.addEventListener('DOMContentLoaded', function() {
-    const percentage = {{ project.completion_percentage|default:0 }};
-    const circumference = 2 * Math.PI * 36;
-    const offset = circumference - (percentage / 100) * circumference;
-    
-    document.querySelector('.progress-bar').style.strokeDashoffset = offset;
 });
 </script>
 {% endblock %}

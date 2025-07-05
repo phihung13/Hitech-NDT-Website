@@ -208,67 +208,9 @@ def post_comment(request, post_id):
 
 @login_required
 def create_post(request):
-    """Trang tạo bài viết mới hoặc sửa bài viết nếu có post_id"""
-    post_id = request.GET.get('post_id')
-    post = None
-    if post_id:
-        try:
-            post = Post.objects.get(id=post_id)
-            # Kiểm tra quyền sửa
-            if not request.user.is_superuser and post.author != request.user:
-                messages.error(request, 'Bạn không có quyền sửa bài viết này!')
-                return redirect('my_posts')
-        except Post.DoesNotExist:
-            messages.error(request, 'Không tìm thấy bài viết!')
-            return redirect('my_posts')
-
-    if request.method == 'POST':
-        form = PostForm(request.POST, request.FILES, instance=post)
-        if form.is_valid():
-            post_obj = form.save(commit=False)
-            post_obj.author = request.user
-            # Tạo slug và kiểm tra trùng lặp
-            base_slug = slugify(post_obj.title)
-            slug = base_slug
-            counter = 1
-            while Post.objects.filter(slug=slug).exclude(id=post_obj.id if post else None).exists():
-                slug = f"{base_slug}-{counter}"
-                counter += 1
-            post_obj.slug = slug
-            post_obj.save()
-            form.save_m2m()
-            if post_obj.published:
-                messages.success(request, 'Bài viết đã được đăng thành công!')
-                return redirect('blog_detail', category_slug=post_obj.category.slug, post_slug=post_obj.slug)
-            else:
-                messages.success(request, 'Bản nháp đã được lưu thành công!')
-                return redirect('my_posts')
-        else:
-            messages.error(request, 'Có lỗi trong form. Vui lòng kiểm tra lại thông tin!')
-    else:
-        form = PostForm(instance=post)
-
-    # Phân tích SEO nếu có dữ liệu
-    seo_analysis = None
-    if request.method == 'POST':
-        seo_analyzer = SEOAnalyzer()
-        seo_analysis = seo_analyzer.analyze_seo(
-            title=request.POST.get('title', ''),
-            meta_description=request.POST.get('meta_description', ''),
-            content=request.POST.get('content', ''),
-            keywords=request.POST.get('keywords', ''),
-            slug=slugify(request.POST.get('title', '')),
-            featured_image=request.FILES.get('featured_image')
-        )
-
-    context = {
-        'form': form,
-        'seo_analysis': seo_analysis,
-        'categories': Category.objects.all(),
-        'tags': Tag.objects.all(),
-        'post': post,
-    }
-    return render(request, 'blog/create_post.html', context)
+    """Redirect đến Django Admin để tạo bài viết với SEO analyzer"""
+    # Redirect đến admin add Post với tham số quay lại
+    return redirect('/admin/api/post/add/?_changelist_filters=author__id__exact%3D' + str(request.user.id))
 
 @login_required
 def edit_post(request, post_id):
