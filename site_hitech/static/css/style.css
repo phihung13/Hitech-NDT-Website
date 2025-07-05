@@ -908,13 +908,19 @@ textarea.form-control {
 .navbar {
     padding: 1rem 0;
     transition: all 0.3s ease;
-    background-color: #003d99 !important; /* Thêm !important để ghi đè */
+    background: linear-gradient(135deg, 
+        #0f2027 0%, 
+        #203a43 25%, 
+        #2c5364 50%, 
+        #203a43 75%, 
+        #0f2027 100%) !important;
+    border-radius: 0 !important;
 }
 
 .navbar-brand {
     font-weight: 700;
     font-size: 1.3rem;
-    color: white !important; /* Thêm !important để ghi đè */
+    color: white !important;
 }
 
 .navbar-nav .nav-link {
