@@ -104,26 +104,7 @@
     opacity: 0.3;
 }
 
-.breadcrumb-section {
-    background: #fff;
-    padding: 20px 0;
-    border-bottom: 1px solid #e9ecef;
-}
-
-.breadcrumb {
-    margin: 0;
-    background: none;
-    padding: 0;
-}
-
-.breadcrumb-item a {
-    color: #2c5364;
-    text-decoration: none;
-}
-
-.breadcrumb-item a:hover {
-    color: rgb(23, 15, 188);
-}
+/* Breadcrumb styles moved to inline for consistency */
 
 @media (max-width: 900px) {
     .service-grid {
@@ -153,7 +134,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="breadcrumb-section">
+<div class="breadcrumb-section" style="padding: 25px 0; background: #f8f9fa; border-bottom: 1px solid #e9ecef;">
     <div class="container">
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">

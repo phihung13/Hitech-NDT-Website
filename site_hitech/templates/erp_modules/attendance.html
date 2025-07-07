@@ -4,57 +4,27 @@
 {% block title %}Chấm công - Dashboard{% endblock %}
 
 {% block page_title %}
-<i class="fas fa-calendar-check text-primary me-2"></i>Chấm công hôm nay
+<i class="fas fa-calendar-check text-primary me-2"></i>Chấm công
 {% endblock %}
 
 {% block extra_css %}
 <style>
-    .work-status-card {
+    .attendance-card {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
         border-radius: 15px;
         padding: 25px;
-        text-align: center;
         margin-bottom: 20px;
     }
-    .work-form {
+    
+    .form-section {
         background: #f8f9fa;
         border-radius: 15px;
         padding: 25px;
         border: 2px dashed #dee2e6;
-        transition: all 0.3s ease;
+        margin-bottom: 20px;
     }
-    .status-card {
-        border-radius: 15px;
-        border: none;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    }
-    .work-badge {
-        font-size: 0.9rem;
-        padding: 8px 15px;
-        border-radius: 20px;
-        font-weight: 600;
-    }
-    .method-badge {
-        font-size: 0.8rem;
-        padding: 5px 10px;
-        border-radius: 15px;
-        font-weight: 500;
-    }
-    .overtime-row {
-        background-color: #fff3cd;
-        border-left: 4px solid #ffc107;
-    }
-    .expense-row {
-        background-color: #d1ecf1;
-        border-left: 4px solid #17a2b8;
-    }
-    .work-row {
-        transition: all 0.2s ease;
-    }
-    .work-row:hover {
-        background-color: #f8f9fa;
-    }
+    
     .action-btn {
         padding: 12px 25px;
         border-radius: 10px;
@@ -62,10 +32,12 @@
         transition: all 0.3s ease;
         margin: 5px;
     }
+    
     .action-btn:hover {
         transform: translateY(-2px);
         box-shadow: 0 6px 20px rgba(0,0,0,0.15);
     }
+    
     .stats-box {
         background: white;
         border-radius: 12px;
@@ -74,73 +46,104 @@
         box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         margin-bottom: 15px;
     }
-    .hidden-section {
-        display: none;
-        margin-top: 15px;
-        padding: 15px;
-        background: white;
-        border-radius: 10px;
-        border: 1px solid #e3e6f0;
+    
+    .work-badge {
+        font-size: 0.9rem;
+        padding: 8px 15px;
+        border-radius: 20px;
+        font-weight: 600;
     }
-    .show-section {
-        display: block;
+    
+    .method-badge {
+        font-size: 0.8rem;
+        padding: 5px 10px;
+        border-radius: 15px;
+        font-weight: 500;
+    }
+    
+    .hidden { display: none; }
+    .show { display: block; }
+    
+    .filter-section {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
     }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid">
-    <!-- Work Status & Quick Actions -->
+    <!-- Top Actions -->
     <div class="row mb-4">
         <div class="col-lg-8">
-            <div class="card status-card h-100">
+            <!-- Chấm công hôm nay -->
+            <div class="card">
                 <div class="card-body">
-                    <!-- Current Work Status -->
-                    <div class="work-status-card" id="workStatusCard">
+                    <div class="attendance-card text-center">
                         <h5 class="mb-3">
                             <i class="fas fa-calendar-day me-2"></i>
-                            Hôm nay: {{ "now"|date:"d/m/Y" }}
+                            Chấm công hôm nay: {{ "now"|date:"d/m/Y" }}
                         </h5>
-                        <div id="currentWorkStatus">
-                            <h6 class="mb-2">Bạn có đi làm hôm nay không?</h6>
-                            <div class="d-flex justify-content-center gap-3">
-                                <button class="btn btn-success action-btn" onclick="setWorkStatus(true)">
-                                    <i class="fas fa-check me-2"></i>Có đi làm
+                        <div id="todayAttendanceForm">
+                            <!-- Nút sẽ render động bằng JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <!-- Quick Export -->
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <h5 class="mb-3">
+                        <i class="fas fa-file-excel text-success me-2"></i>
+                        Xuất báo cáo
+                    </h5>
+                    <button class="btn btn-success action-btn w-100" onclick="exportMonthlyReport()" id="exportBtn">
+                        <i class="fas fa-download me-2"></i>Xuất báo cáo Excel <span id="currentMonth"></span>
                                 </button>
-                                <button class="btn btn-secondary action-btn" onclick="setWorkStatus(false)">
-                                    <i class="fas fa-home me-2"></i>Nghỉ
-                                </button>
+                </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Work Location Form (Hidden initially) -->
-                    <div class="hidden-section" id="workLocationForm">
-                        <h6 class="text-primary mb-3">
-                            <i class="fas fa-map-marker-alt me-2"></i>Chọn nơi làm việc
-                        </h6>
+    <!-- Attendance Form (Hidden) -->
+    <div class="row mb-4 hidden" id="attendanceFormSection">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0" id="formTitle">
+                        <i class="fas fa-edit text-primary me-2"></i>
+                        Chấm công
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="form-section">
                         <div class="row g-3">
-                            <div class="col-md-8">
-                                <select class="form-select" id="workLocation" onchange="updateWorkLocation()">
+                            <div class="col-md-3">
+                                <label class="form-label">Ngày chấm công</label>
+                                <input type="date" class="form-control" id="attendanceDate" value="{{ "now"|date:"Y-m-d" }}">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Loại công việc</label>
+                                <select class="form-select" id="workType" onchange="toggleConstructionFields()">
+                                    <option value="">-- Chọn loại --</option>
                                     <option value="office">Văn phòng</option>
                                     <option value="construction">Đi công trình</option>
+                                    <option value="off">Nghỉ</option>
                                 </select>
                             </div>
-                            <div class="col-md-4">
-                                <button class="btn btn-primary w-100" onclick="confirmWorkDay()">
-                                    <i class="fas fa-save me-2"></i>Xác nhận
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Construction Details (Hidden initially) -->
-                        <div class="hidden-section" id="constructionDetails">
-                            <div class="row g-3 mt-2">
-                                <div class="col-md-6">
+                            <div class="col-md-6" id="constructionFields" style="display: none;">
+                                <div class="row">
+                                    <div class="col-6">
                                     <label class="form-label">Tên công trình/Khách hàng</label>
-                                    <input type="text" class="form-control" id="constructionName" placeholder="Ví dụ: HEINEKEN, PetroVietnam...">
+                                        <input type="text" class="form-control" id="constructionName" placeholder="VD: HEINEKEN, PetroVietnam...">
                                 </div>
-                                <div class="col-md-6">
+                                    <div class="col-6">
                                     <label class="form-label">Phương pháp NDT</label>
                                     <select class="form-select" id="ndtMethod">
                                         <option value="">-- Chọn phương pháp --</option>
@@ -157,139 +160,124 @@
                         </div>
                     </div>
 
-                    <!-- Additional Actions (Hidden initially) -->
-                    <div class="hidden-section" id="additionalActions">
-                        <h6 class="text-success mb-3">
-                            <i class="fas fa-plus-circle me-2"></i>Thêm thông tin
-                        </h6>
-                        <div class="d-flex flex-wrap justify-content-center gap-2">
-                            <button class="btn btn-warning action-btn" onclick="addOvertime()">
-                                <i class="fas fa-clock me-2"></i>Tăng ca
-                            </button>
-                            <button class="btn btn-info action-btn" onclick="addExpense()">
-                                <i class="fas fa-receipt me-2"></i>Lấy lại tiền
-                            </button>
-                            <button class="btn btn-success action-btn" onclick="exportToExcel()">
-                                <i class="fas fa-file-excel me-2"></i>Xuất Excel
-                            </button>
+                        <!-- Optional fields -->
+                        <div class="row g-3 mt-3">
+                            <div class="col-md-3">
+                                <label class="form-label">Tăng ca đến (nếu có)</label>
+                                <input type="time" class="form-control" id="overtimeUntil">
                         </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Chi phí (VNĐ)</label>
+                                <input type="number" class="form-control" id="expenseAmount" placeholder="0">
                     </div>
-                </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Ghi chú</label>
+                                <input type="text" class="form-control" id="workNote" placeholder="Mô tả công việc...">
             </div>
         </div>
         
-        <div class="col-lg-4">
-            <div class="card status-card h-100">
-                <div class="card-body">
-                    <h5 class="card-title mb-4">
-                        <i class="fas fa-chart-bar text-primary me-2"></i>
-                        Thống kê tháng này
-                    </h5>
-                    
-                    <div class="stats-box">
-                        <h4 class="text-primary mb-1">22</h4>
-                        <small class="text-muted">Ngày đi làm</small>
+                        <div class="text-end mt-3">
+                            <button class="btn btn-secondary me-2" onclick="hideAttendanceForm()">
+                                <i class="fas fa-times me-2"></i>Hủy
+                            </button>
+                            <button class="btn btn-primary" onclick="saveAttendance()">
+                                <i class="fas fa-save me-2"></i>Lưu chấm công
+                            </button>
                     </div>
-                    
-                    <div class="row g-2">
-                        <div class="col-6">
-                            <div class="stats-box">
-                                <h5 class="text-success mb-1">18</h5>
-                                <small>Công trình</small>
                             </div>
                         </div>
-                        <div class="col-6">
-                            <div class="stats-box">
-                                <h5 class="text-info mb-1">4</h5>
-                                <small>Văn phòng</small>
                             </div>
                         </div>
-                        <div class="col-6">
-                            <div class="stats-box">
-                                <h5 class="text-warning mb-1">8</h5>
-                                <small>Tăng ca</small>
                             </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="stats-box">
-                                <h5 class="text-secondary mb-1">2.1M</h5>
-                                <small>Chi phí</small>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="mt-4">
-                        <h6>Trạng thái:</h6>
-                        <div class="p-3 bg-light rounded">
-                            <div class="text-center">
-                                <i class="fas fa-question-circle text-muted me-2"></i>
-                                <strong id="todayStatus">Chưa chấm công</strong>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
     
-    <!-- Today's Work Log -->
+    <!-- Filter Section -->
     <div class="row mb-4">
         <div class="col-12">
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">
-                        <i class="fas fa-list-alt text-primary me-2"></i>
-                        Nhật ký hôm nay
-                    </h5>
-                    <button class="btn btn-outline-success btn-sm" onclick="exportToExcel()">
-                        <i class="fas fa-file-excel me-1"></i>
-                        Xuất Excel tháng này
-                    </button>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead class="table-light">
-                                <tr>
-                                    <th width="120">Thời gian</th>
-                                    <th width="150">Loại</th>
-                                    <th>Nội dung</th>
-                                    <th width="120">Phương pháp</th>
-                                    <th width="100">Thao tác</th>
-                                </tr>
-                            </thead>
-                            <tbody id="todayWorkLog">
-                                <tr>
-                                    <td colspan="5" class="text-center text-muted py-4">
-                                        <i class="fas fa-calendar fa-2x mb-2 d-block opacity-50"></i>
-                                        Chưa có thông tin nào hôm nay
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+            <div class="filter-section">
+                <div class="row align-items-end g-3">
+                    <div class="col-md-2">
+                        <label class="form-label">Tháng/Năm</label>
+                        <input type="month" class="form-control" id="filterMonth" value="{{ "now"|date:"Y-m" }}" onchange="loadAttendanceData()">
+                        </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Loại công việc</label>
+                        <select class="form-select" id="filterWorkType" onchange="loadAttendanceData()">
+                            <option value="">Tất cả</option>
+                            <option value="office">Văn phòng</option>
+                            <option value="construction">Công trình</option>
+                            <option value="off">Nghỉ</option>
+                        </select>
+                            </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Phương pháp NDT</label>
+                        <select class="form-select" id="filterNDTMethod" onchange="loadAttendanceData()">
+                            <option value="">Tất cả</option>
+                            <option value="UT">UT</option>
+                            <option value="MT">MT</option>
+                            <option value="PT">PT</option>
+                            <option value="RT">RT</option>
+                            <option value="VT">VT</option>
+                            <option value="ET">ET</option>
+                        </select>
+                        </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Tìm kiếm</label>
+                        <input type="text" class="form-control" id="searchKeyword" placeholder="Tên công trình, ghi chú..." onkeyup="loadAttendanceData()">
+                    </div>
+                    <div class="col-md-3">
+                        <button class="btn btn-primary" onclick="loadAttendanceData()">
+                            <i class="fas fa-search me-2"></i>Lọc
+                        </button>
+                        <button class="btn btn-outline-secondary ms-2" onclick="clearFilter()">
+                            <i class="fas fa-eraser me-2"></i>Xóa lọc
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
     </div>
     
-    <!-- Recent Work History -->
+    <!-- Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="stats-box">
+                <h4 class="text-primary mb-1" id="totalWorkDays">0</h4>
+                <small class="text-muted">Ngày đi làm</small>
+                </div>
+                    </div>
+        <div class="col-md-3">
+            <div class="stats-box">
+                <h4 class="text-success mb-1" id="constructionDays">0</h4>
+                <small>Công trình</small>
+                </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-box">
+                <h4 class="text-info mb-1" id="officeDays">0</h4>
+                <small>Văn phòng</small>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-box">
+                <h4 class="text-warning mb-1" id="overtimeDays">0</h4>
+                <small>Ngày tăng ca</small>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Attendance Data -->
     <div class="row">
         <div class="col-12">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">
-                        <i class="fas fa-history text-primary me-2"></i>
-                        Lịch sử 7 ngày gần nhất
+                        <i class="fas fa-table text-primary me-2"></i>
+                        Dữ liệu chấm công <span id="currentMonthDisplay"></span>
                     </h5>
                     <div>
-                        <button class="btn btn-outline-secondary btn-sm me-2">
-                            <i class="fas fa-filter me-1"></i>
-                            Lọc
-                        </button>
-                        <button class="btn btn-primary btn-sm">
-                            <i class="fas fa-calendar me-1"></i>
-                            Xem tháng
+                        <button class="btn btn-outline-success btn-sm" onclick="exportCurrentView()">
+                            <i class="fas fa-file-excel me-1"></i>
+                            Xuất dữ liệu hiện tại
                         </button>
                     </div>
                 </div>
@@ -299,107 +287,21 @@
                             <thead class="table-light">
                                 <tr>
                                     <th>Ngày</th>
-                                    <th>Nơi làm việc</th>
+                                    <th>Loại công việc</th>
+                                    <th>Công trình/Mô tả</th>
                                     <th>Phương pháp NDT</th>
                                     <th>Tăng ca</th>
                                     <th>Chi phí</th>
                                     <th>Ghi chú</th>
+                                    <th>Thao tác</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                <!-- Hôm nay -->
-                                <tr class="work-row">
-                                    <td>
-                                        <strong>Hôm nay</strong><br>
-                                        <small class="text-muted">{{ "now"|date:"d/m/Y" }}</small>
+                            <tbody id="attendanceTableBody">
+                                <tr>
+                                    <td colspan="8" class="text-center text-muted py-4">
+                                        <i class="fas fa-spinner fa-spin fa-2x mb-2 d-block"></i>
+                                        Đang tải dữ liệu...
                                     </td>
-                                    <td>
-                                        <span class="badge bg-light text-dark">Chưa xác định</span>
-                                    </td>
-                                    <td>--</td>
-                                    <td>--</td>
-                                    <td>--</td>
-                                    <td class="text-muted">Chưa chấm công</td>
-                                </tr>
-                                
-                                <!-- Hôm qua -->
-                                <tr class="work-row">
-                                    <td>
-                                        <strong>Hôm qua</strong><br>
-                                        <small class="text-muted">12/01/2024</small>
-                                    </td>
-                                    <td>
-                                        <span class="work-badge bg-primary text-white">
-                                            <i class="fas fa-industry me-1"></i>HEINEKEN
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <span class="method-badge bg-warning text-dark">UT</span>
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-warning">Đến 20:00</span>
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-info">500K</span>
-                                    </td>
-                                    <td>Kiểm tra đường ống - Di chuyển</td>
-                                </tr>
-                                
-                                <!-- 11/01 -->
-                                <tr class="work-row">
-                                    <td>
-                                        <strong>11/01/2024</strong><br>
-                                        <small class="text-muted">Chủ nhật</small>
-                                    </td>
-                                    <td>
-                                        <span class="work-badge bg-secondary text-white">
-                                            <i class="fas fa-home me-1"></i>Văn phòng
-                                        </span>
-                                    </td>
-                                    <td>--</td>
-                                    <td>
-                                        <span class="badge bg-warning">Đến 18:00</span>
-                                    </td>
-                                    <td>--</td>
-                                    <td>Làm báo cáo tăng ca</td>
-                                </tr>
-                                
-                                <!-- 10/01 -->
-                                <tr class="work-row">
-                                    <td>
-                                        <strong>10/01/2024</strong><br>
-                                        <small class="text-muted">Thứ 6</small>
-                                    </td>
-                                    <td>
-                                        <span class="work-badge bg-success text-white">
-                                            <i class="fas fa-cogs me-1"></i>VIETINEC
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <span class="method-badge bg-primary text-white">UT + VT</span>
-                                    </td>
-                                    <td>--</td>
-                                    <td>
-                                        <span class="badge bg-info">1.2M</span>
-                                    </td>
-                                    <td>Demo PAUT - Khách sạn + ăn uống</td>
-                                </tr>
-                                
-                                <!-- 09/01 -->
-                                <tr class="work-row">
-                                    <td>
-                                        <strong>09/01/2024</strong><br>
-                                        <small class="text-muted">Thứ 5</small>
-                                    </td>
-                                    <td>
-                                        <span class="work-badge bg-secondary text-white">
-                                            <i class="fas fa-home me-1"></i>Văn phòng
-                                        </span>
-                                    </td>
-                                    <td>--</td>
-                                    <td>--</td>
-                                    <td>--</td>
-                                    <td>Xử lý hồ sơ hành chính</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -409,504 +311,440 @@
         </div>
     </div>
 </div>
-
-<!-- Overtime Modal -->
-<div class="modal fade" id="overtimeModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">
-                    <i class="fas fa-clock text-warning me-2"></i>Thêm tăng ca
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label class="form-label">Tăng ca đến mấy giờ?</label>
-                        <input type="time" class="form-control" id="overtimeUntil">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Loại tăng ca</label>
-                        <select class="form-select" id="overtimeType">
-                            <option value="weekday">Ngày thường</option>
-                            <option value="weekend">Cuối tuần</option>
-                            <option value="holiday">Ngày lễ</option>
-                        </select>
-                    </div>
-                    <div class="col-12">
-                        <label class="form-label">Lý do tăng ca</label>
-                        <textarea class="form-control" id="overtimeReason" rows="2" placeholder="Ví dụ: Hoàn thành báo cáo khẩn cấp..."></textarea>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                <button type="button" class="btn btn-warning" onclick="saveOvertime()">
-                    <i class="fas fa-save me-2"></i>Lưu tăng ca
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Expense Modal -->
-<div class="modal fade" id="expenseModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">
-                    <i class="fas fa-receipt text-info me-2"></i>Lấy lại tiền
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label class="form-label">Loại chi phí</label>
-                        <select class="form-select" id="expenseCategory">
-                            <option value="">-- Chọn loại --</option>
-                            <option value="transport">Vận chuyển (xăng, cầu phí...)</option>
-                            <option value="accommodation">Khách sạn</option>
-                            <option value="meal">Ăn uống</option>
-                            <option value="materials">Vật tư, dụng cụ</option>
-                            <option value="other">Khác</option>
-                        </select>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Số tiền đã bỏ (VNĐ)</label>
-                        <input type="number" class="form-control" id="expenseAmount" placeholder="0">
-                    </div>
-                    <div class="col-12">
-                        <label class="form-label">Mô tả chi tiết</label>
-                        <textarea class="form-control" id="expenseDescription" rows="2" placeholder="Ví dụ: Xăng xe đi HEINEKEN, cầu phí..."></textarea>
-                    </div>
-                    <div class="col-12">
-                        <label class="form-label">Hóa đơn/Ảnh chụp</label>
-                        <input type="file" class="form-control" id="expenseFile" accept="image/*,.pdf" multiple>
-                        <small class="text-muted">Có thể chọn nhiều file. Hỗ trợ ảnh và PDF.</small>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                <button type="button" class="btn btn-info" onclick="saveExpense()">
-                    <i class="fas fa-save me-2"></i>Lưu chi phí
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
 {% endblock %}
 
 {% block extra_js %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
-// Global variables
-let todayWorkData = {
-    hasWork: false,
-    location: '',
-    constructionName: '',
-    ndtMethod: '',
-    overtime: null,
-    expenses: []
-};
+// Global data
+let attendanceData = [];
+let currentMode = 'today'; // 'today' or 'makeup'
 
-let workHistory = []; // For Excel export
-
-// Update current time
-function updateTime() {
-    const now = new Date();
-    const dateString = now.toLocaleDateString('vi-VN', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-    });
+// Show attendance form
+function showAttendanceForm(mode) {
+    currentMode = mode;
+    const formSection = document.getElementById('attendanceFormSection');
+    const formTitle = document.getElementById('formTitle');
+    const dateInput = document.getElementById('attendanceDate');
     
-    // Update if element exists
-    const dateElement = document.querySelector('.work-status-card h5');
-    if (dateElement) {
-        dateElement.innerHTML = `<i class="fas fa-calendar-day me-2"></i>Hôm nay: ${dateString}`;
-    }
-}
-
-// Set work status
-function setWorkStatus(hasWork) {
-    todayWorkData.hasWork = hasWork;
-    
-    if (hasWork) {
-        // Show work location form
-        document.getElementById('workLocationForm').classList.add('show-section');
-        document.getElementById('currentWorkStatus').innerHTML = `
-            <h6 class="mb-2 text-success">
-                <i class="fas fa-check-circle me-2"></i>Có đi làm hôm nay
-            </h6>
-        `;
+    if (mode === 'today') {
+        formTitle.innerHTML = '<i class="fas fa-edit text-primary me-2"></i>Chấm công hôm nay';
+        dateInput.value = new Date().toISOString().split('T')[0];
+        dateInput.disabled = true;
     } else {
-        // Set as day off
-        document.getElementById('currentWorkStatus').innerHTML = `
-            <h6 class="mb-2 text-secondary">
-                <i class="fas fa-home me-2"></i>Nghỉ hôm nay
-            </h6>
-            <button class="btn btn-outline-light action-btn" onclick="resetWorkStatus()">
-                <i class="fas fa-edit me-2"></i>Thay đổi
-            </button>
-        `;
-        
-        updateTodayStatus('Nghỉ');
-        addToWorkLog('Nghỉ', '--', '--', '--');
-        
-        // Hide forms
-        document.getElementById('workLocationForm').classList.remove('show-section');
-        document.getElementById('additionalActions').classList.remove('show-section');
+        formTitle.innerHTML = '<i class="fas fa-calendar-plus text-warning me-2"></i>Chấm công bù';
+        dateInput.disabled = false;
     }
+    
+    formSection.classList.remove('hidden');
+    formSection.classList.add('show');
 }
 
-// Reset work status
-function resetWorkStatus() {
-    todayWorkData = {
-        hasWork: false,
-        location: '',
-        constructionName: '',
-        ndtMethod: '',
-        overtime: null,
-        expenses: []
-    };
-    
-    document.getElementById('currentWorkStatus').innerHTML = `
-        <h6 class="mb-2">Bạn có đi làm hôm nay không?</h6>
-        <div class="d-flex justify-content-center gap-3">
-            <button class="btn btn-success action-btn" onclick="setWorkStatus(true)">
-                <i class="fas fa-check me-2"></i>Có đi làm
-            </button>
-            <button class="btn btn-secondary action-btn" onclick="setWorkStatus(false)">
-                <i class="fas fa-home me-2"></i>Nghỉ
-            </button>
-        </div>
-    `;
-    
-    // Hide all forms
-    document.getElementById('workLocationForm').classList.remove('show-section');
-    document.getElementById('constructionDetails').classList.remove('show-section');
-    document.getElementById('additionalActions').classList.remove('show-section');
-    
-    updateTodayStatus('Chưa chấm công');
-    clearWorkLog();
+function showMakeupForm() {
+    showAttendanceForm('makeup');
 }
 
-// Update work location dropdown
-function updateWorkLocation() {
-    const location = document.getElementById('workLocation').value;
+function hideAttendanceForm() {
+    document.getElementById('attendanceFormSection').classList.add('hidden');
+    document.getElementById('attendanceFormSection').classList.remove('show');
+    clearForm();
+}
+
+function clearForm() {
+    document.getElementById('workType').value = '';
+    document.getElementById('constructionName').value = '';
+    document.getElementById('ndtMethod').value = '';
+    document.getElementById('overtimeUntil').value = '';
+    document.getElementById('expenseAmount').value = '';
+    document.getElementById('workNote').value = '';
+    document.getElementById('constructionFields').style.display = 'none';
+}
+
+function toggleConstructionFields() {
+    const workType = document.getElementById('workType').value;
+    const constructionFields = document.getElementById('constructionFields');
     
-    if (location === 'construction') {
-        document.getElementById('constructionDetails').classList.add('show-section');
+    if (workType === 'construction') {
+        constructionFields.style.display = 'block';
     } else {
-        document.getElementById('constructionDetails').classList.remove('show-section');
+        constructionFields.style.display = 'none';
     }
 }
 
-// Confirm work day
-function confirmWorkDay() {
-    const location = document.getElementById('workLocation').value;
-    let locationText = location === 'office' ? 'Văn phòng' : 'Công trình';
-    let details = '';
-    let method = '--';
-    
-    if (location === 'construction') {
+function renderTodayAttendanceButton() {
+    const today = new Date().toISOString().slice(0, 10);
+    const data = JSON.parse(localStorage.getItem('attendanceData') || '[]');
+    const todayRecord = data.find(r => r.date === today);
+    let html = '';
+    if (todayRecord) {
+        html += `<button class="btn btn-secondary action-btn" disabled style="opacity:0.8;cursor:not-allowed;">
+            <i class="fas fa-check-double me-2"></i>Đã chấm công hôm nay
+        </button>`;
+    } else {
+        html += `<button class="btn btn-success action-btn" onclick="showAttendanceForm('today')">
+            <i class="fas fa-check me-2"></i>Chấm công hôm nay
+        </button>`;
+    }
+    html += `<button class="btn btn-warning action-btn" onclick="showMakeupForm()">
+        <i class="fas fa-calendar-plus me-2"></i>Chấm công bù
+    </button>`;
+    document.getElementById('todayAttendanceForm').innerHTML = html;
+}
+
+function saveAttendance() {
+    const date = document.getElementById('attendanceDate').value;
+    const workType = document.getElementById('workType').value;
         const constructionName = document.getElementById('constructionName').value;
         const ndtMethod = document.getElementById('ndtMethod').value;
+    const overtimeUntil = document.getElementById('overtimeUntil').value;
+    const expenseAmount = document.getElementById('expenseAmount').value;
+    const workNote = document.getElementById('workNote').value;
         
-        if (!constructionName) {
-            Swal.fire('Lỗi', 'Vui lòng nhập tên công trình!', 'error');
+    if (!date || !workType) {
+        Swal.fire('Lỗi', 'Vui lòng nhập đầy đủ ngày và loại công việc!', 'error');
             return;
         }
-        if (!ndtMethod) {
-            Swal.fire('Lỗi', 'Vui lòng chọn phương pháp NDT!', 'error');
+    
+    if (workType === 'construction' && (!constructionName || !ndtMethod)) {
+        Swal.fire('Lỗi', 'Vui lòng nhập tên công trình và phương pháp NDT!', 'error');
             return;
         }
         
-        details = constructionName;
-        method = ndtMethod;
-        todayWorkData.constructionName = constructionName;
-        todayWorkData.ndtMethod = ndtMethod;
-    }
-    
-    todayWorkData.location = location;
-    
-    // Update UI
-    document.getElementById('currentWorkStatus').innerHTML = `
-        <h6 class="mb-2 text-success">
-            <i class="fas fa-check-circle me-2"></i>Đã xác nhận: ${locationText}
-        </h6>
-        <button class="btn btn-outline-light action-btn btn-sm" onclick="resetWorkStatus()">
-            <i class="fas fa-edit me-2"></i>Thay đổi
-        </button>
-    `;
-    
-    // Hide location form, show additional actions
-    document.getElementById('workLocationForm').classList.remove('show-section');
-    document.getElementById('additionalActions').classList.add('show-section');
-    
-    updateTodayStatus(locationText);
-    addToWorkLog(locationText, details || locationText, method, '--');
-    
-    Swal.fire({
-        title: 'Đã xác nhận!',
-        text: `Hôm nay làm việc tại: ${locationText}`,
-        icon: 'success',
-        timer: 1500,
-        showConfirmButton: false
-    });
-}
-
-// Add overtime
-function addOvertime() {
-    const modal = new bootstrap.Modal(document.getElementById('overtimeModal'));
-    modal.show();
-}
-
-// Save overtime
-function saveOvertime() {
-    const until = document.getElementById('overtimeUntil').value;
-    const type = document.getElementById('overtimeType').value;
-    const reason = document.getElementById('overtimeReason').value;
-    
-    if (!until) {
-        Swal.fire('Lỗi', 'Vui lòng nhập thời gian tăng ca!', 'error');
-        return;
-    }
-    
-    const typeText = document.getElementById('overtimeType').selectedOptions[0].text;
-    todayWorkData.overtime = { until, type, typeText, reason };
-    
-    // Update the existing work log row
-    updateWorkLogOvertime(until, typeText);
-    
-    // Close modal
-    bootstrap.Modal.getInstance(document.getElementById('overtimeModal')).hide();
-    
-    // Clear form
-    document.getElementById('overtimeUntil').value = '';
-    document.getElementById('overtimeReason').value = '';
-    
-    Swal.fire({
-        title: 'Đã thêm tăng ca!',
-        text: `Tăng ca đến ${until} (${typeText})`,
-        icon: 'success',
-        timer: 1500,
-        showConfirmButton: false
-    });
-}
-
-// Add expense
-function addExpense() {
-    const modal = new bootstrap.Modal(document.getElementById('expenseModal'));
-    modal.show();
-}
-
-// Save expense
-function saveExpense() {
-    const category = document.getElementById('expenseCategory').value;
-    const amount = document.getElementById('expenseAmount').value;
-    const description = document.getElementById('expenseDescription').value;
-    
-    if (!category || !amount) {
-        Swal.fire('Lỗi', 'Vui lòng nhập đầy đủ thông tin chi phí!', 'error');
-        return;
-    }
-    
-    const categoryText = document.getElementById('expenseCategory').selectedOptions[0].text;
-    const formattedAmount = parseInt(amount).toLocaleString('vi-VN');
-    
-    const expense = {
-        category,
-        categoryText,
-        amount: formattedAmount,
-        description
+    // Create attendance record
+    const record = {
+        date: date,
+        workType: workType,
+        constructionName: constructionName || '',
+        ndtMethod: ndtMethod || '',
+        overtimeUntil: overtimeUntil || '',
+        expenseAmount: expenseAmount || '',
+        workNote: workNote || '',
+        timestamp: new Date().toISOString()
     };
     
-    todayWorkData.expenses.push(expense);
+    // Save to localStorage (in real app, this would be sent to server)
+    let existingData = JSON.parse(localStorage.getItem('attendanceData') || '[]');
     
-    // Update the existing work log row
-    updateWorkLogExpense(formattedAmount);
+    // Remove existing record for same date if exists
+    existingData = existingData.filter(item => item.date !== date);
     
-    // Close modal
-    bootstrap.Modal.getInstance(document.getElementById('expenseModal')).hide();
+    // Add new record
+    existingData.push(record);
+    localStorage.setItem('attendanceData', JSON.stringify(existingData));
     
-    // Clear form
-    document.getElementById('expenseCategory').value = '';
-    document.getElementById('expenseAmount').value = '';
-    document.getElementById('expenseDescription').value = '';
-    
+    // Show success message
     Swal.fire({
-        title: 'Đã thêm chi phí!',
-        text: `${categoryText}: ${formattedAmount} VNĐ`,
+        title: 'Thành công!',
+        text: `Đã lưu chấm công ngày ${new Date(date).toLocaleDateString('vi-VN')}`,
         icon: 'success',
         timer: 1500,
         showConfirmButton: false
     });
-}
-
-// Update today status
-function updateTodayStatus(status) {
-    document.getElementById('todayStatus').textContent = status;
-}
-
-// Add to work log
-function addToWorkLog(type, content, method, overtime) {
-    const tbody = document.getElementById('todayWorkLog');
     
-    // Remove "no data" row if exists
-    const noDataRow = tbody.querySelector('td[colspan="5"]');
-    if (noDataRow) {
-        noDataRow.parentElement.remove();
+    hideAttendanceForm();
+    loadAttendanceData();
+    renderTodayAttendanceButton();
+}
+
+function loadAttendanceData() {
+    const filterMonth = document.getElementById('filterMonth').value;
+    const filterWorkType = document.getElementById('filterWorkType').value;
+    const filterNDTMethod = document.getElementById('filterNDTMethod').value;
+    const searchKeyword = document.getElementById('searchKeyword').value.toLowerCase();
+    
+    // Load data from localStorage
+    let data = JSON.parse(localStorage.getItem('attendanceData') || '[]');
+    
+    // Filter by month
+    if (filterMonth) {
+        data = data.filter(item => item.date.startsWith(filterMonth));
     }
     
+    // Filter by work type
+    if (filterWorkType) {
+        data = data.filter(item => item.workType === filterWorkType);
+    }
+    
+    // Filter by NDT method
+    if (filterNDTMethod) {
+        data = data.filter(item => item.ndtMethod === filterNDTMethod);
+    }
+    
+    // Filter by search keyword
+    if (searchKeyword) {
+        data = data.filter(item => 
+            item.constructionName.toLowerCase().includes(searchKeyword) ||
+            item.workNote.toLowerCase().includes(searchKeyword)
+        );
+    }
+    
+    // Sort by date descending
+    data.sort((a, b) => new Date(b.date) - new Date(a.date));
+    
+    attendanceData = data;
+    renderAttendanceTable();
+    updateStatistics();
+    updateCurrentMonthDisplay(filterMonth);
+}
+
+function renderAttendanceTable() {
+    const tbody = document.getElementById('attendanceTableBody');
+    
+    if (attendanceData.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="8" class="text-center text-muted py-4">
+                    <i class="fas fa-calendar-times fa-2x mb-2 d-block opacity-50"></i>
+                    Không có dữ liệu chấm công
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    tbody.innerHTML = attendanceData.map(record => {
+        const formattedDate = new Date(record.date).toLocaleDateString('vi-VN');
+        
+        let workTypeBadge = '';
+        switch(record.workType) {
+            case 'office':
+                workTypeBadge = '<span class="work-badge bg-secondary text-white"><i class="fas fa-home me-1"></i>Văn phòng</span>';
+                break;
+            case 'construction':
+                workTypeBadge = '<span class="work-badge bg-primary text-white"><i class="fas fa-industry me-1"></i>Công trình</span>';
+                break;
+            case 'off':
+                workTypeBadge = '<span class="work-badge bg-light text-dark"><i class="fas fa-bed me-1"></i>Nghỉ</span>';
+                break;
+        }
+        
+        const methodBadge = record.ndtMethod ? 
+            `<span class="method-badge bg-warning text-dark">${record.ndtMethod}</span>` : '--';
+        
+        const overtimeBadge = record.overtimeUntil ? 
+            `<span class="badge bg-warning">Đến ${record.overtimeUntil}</span>` : '--';
+            
+        const expenseFormatted = record.expenseAmount ? 
+            parseInt(record.expenseAmount).toLocaleString('vi-VN') + ' VNĐ' : '--';
+        
+        return `
+            <tr>
+                <td><strong>${formattedDate}</strong></td>
+                <td>${workTypeBadge}</td>
+                <td>${record.constructionName || (record.workType === 'office' ? 'Hành chính' : '--')}</td>
+                <td>${methodBadge}</td>
+                <td>${overtimeBadge}</td>
+                <td>${expenseFormatted}</td>
+                <td>${record.workNote || '--'}</td>
+                <td>
+                    <button class="btn btn-sm btn-outline-primary" onclick="editRecord('${record.date}')" title="Sửa">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger ms-1" onclick="deleteRecord('${record.date}')" title="Xóa">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function updateStatistics() {
+    const totalWorkDays = attendanceData.filter(r => r.workType !== 'off').length;
+    const constructionDays = attendanceData.filter(r => r.workType === 'construction').length;
+    const officeDays = attendanceData.filter(r => r.workType === 'office').length;
+    const overtimeDays = attendanceData.filter(r => r.overtimeUntil).length;
+    
+    document.getElementById('totalWorkDays').textContent = totalWorkDays;
+    document.getElementById('constructionDays').textContent = constructionDays;
+    document.getElementById('officeDays').textContent = officeDays;
+    document.getElementById('overtimeDays').textContent = overtimeDays;
+}
+
+function updateCurrentMonthDisplay(filterMonth) {
+    if (filterMonth) {
+        const [year, month] = filterMonth.split('-');
+        document.getElementById('currentMonth').textContent = `${month.padStart(2, '0')}/${year}`;
+    } else {
     const now = new Date();
-    const timeString = now.toLocaleTimeString('vi-VN', { hour12: false, hour: '2-digit', minute: '2-digit' });
-    
-    let typeBadge = '';
-    if (type === 'Văn phòng') {
-        typeBadge = '<span class="work-badge bg-secondary text-white"><i class="fas fa-home me-1"></i>Văn phòng</span>';
-    } else if (type === 'Công trình') {
-        typeBadge = '<span class="work-badge bg-primary text-white"><i class="fas fa-industry me-1"></i>Công trình</span>';
-    } else if (type === 'Nghỉ') {
-        typeBadge = '<span class="work-badge bg-light text-dark"><i class="fas fa-bed me-1"></i>Nghỉ</span>';
-    }
-    
-    let methodBadge = '--';
-    if (method && method !== '--') {
-        methodBadge = `<span class="method-badge bg-warning text-dark">${method}</span>`;
-    }
-    
-    const row = document.createElement('tr');
-    row.className = 'work-row';
-    row.id = 'todayWorkRow';
-    row.innerHTML = `
-        <td><span class="badge bg-primary">${timeString}</span></td>
-        <td>${typeBadge}</td>
-        <td>${content}</td>
-        <td>${methodBadge}</td>
-        <td>
-            <button class="btn btn-sm btn-outline-danger" onclick="resetWorkStatus()" title="Làm lại">
-                <i class="fas fa-redo"></i>
-            </button>
-        </td>
-    `;
-    
-    tbody.appendChild(row);
-}
-
-// Update work log overtime
-function updateWorkLogOvertime(until, typeText) {
-    const row = document.getElementById('todayWorkRow');
-    if (row) {
-        // Add overtime info to content column
-        const contentCell = row.children[2];
-        const currentContent = contentCell.textContent;
-        contentCell.innerHTML = `${currentContent} <span class="badge bg-warning text-dark ms-2">Tăng ca đến ${until}</span>`;
-        
-        // Add overtime styling
-        row.classList.add('overtime-row');
+        document.getElementById('currentMonth').textContent = `${(now.getMonth() + 1).toString().padStart(2, '0')}/${now.getFullYear()}`;
     }
 }
 
-// Update work log expense
-function updateWorkLogExpense(amount) {
-    const row = document.getElementById('todayWorkRow');
-    if (row) {
-        // Add expense info to content column
-        const contentCell = row.children[2];
-        const currentContent = contentCell.innerHTML;
-        contentCell.innerHTML = `${currentContent} <span class="badge bg-info text-white ms-2">Chi phí: ${amount}</span>`;
-        
-        // Add expense styling
-        row.classList.add('expense-row');
+function clearFilter() {
+    document.getElementById('filterMonth').value = new Date().toISOString().slice(0, 7);
+    document.getElementById('filterWorkType').value = '';
+    document.getElementById('filterNDTMethod').value = '';
+    document.getElementById('searchKeyword').value = '';
+    loadAttendanceData();
+}
+
+function editRecord(date) {
+    const record = attendanceData.find(r => r.date === date);
+    if (!record) return;
+    
+    // Show form with existing data
+    showAttendanceForm('makeup');
+    
+    document.getElementById('attendanceDate').value = record.date;
+    document.getElementById('workType').value = record.workType;
+    document.getElementById('constructionName').value = record.constructionName;
+    document.getElementById('ndtMethod').value = record.ndtMethod;
+    document.getElementById('overtimeUntil').value = record.overtimeUntil;
+    document.getElementById('expenseAmount').value = record.expenseAmount;
+    document.getElementById('workNote').value = record.workNote;
+    
+    toggleConstructionFields();
+}
+
+function deleteRecord(date) {
+    Swal.fire({
+        title: 'Xác nhận xóa?',
+        text: `Bạn có chắc muốn xóa chấm công ngày ${new Date(date).toLocaleDateString('vi-VN')}?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Xóa',
+        cancelButtonText: 'Hủy'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            let data = JSON.parse(localStorage.getItem('attendanceData') || '[]');
+            data = data.filter(item => item.date !== date);
+            localStorage.setItem('attendanceData', JSON.stringify(data));
+            
+            Swal.fire('Đã xóa!', 'Dữ liệu chấm công đã được xóa.', 'success');
+            loadAttendanceData();
+            renderTodayAttendanceButton();
+        }
+    });
+}
+
+function exportMonthlyReport() {
+    const filterMonth = document.getElementById('filterMonth').value;
+    console.log('Selected month:', filterMonth); // Debug log
+    
+    // Kiểm tra và set giá trị mặc định nếu chưa có
+    if (!filterMonth) {
+        const now = new Date();
+        const defaultMonth = now.toISOString().slice(0, 7); // Format YYYY-MM
+        document.getElementById('filterMonth').value = defaultMonth;
+        console.log('Setting default month:', defaultMonth); // Debug log
     }
-}
-
-// Clear work log
-function clearWorkLog() {
-    const tbody = document.getElementById('todayWorkLog');
-    tbody.innerHTML = `
-        <tr>
-            <td colspan="5" class="text-center text-muted py-4">
-                <i class="fas fa-calendar fa-2x mb-2 d-block opacity-50"></i>
-                Chưa có thông tin nào hôm nay
-            </td>
-        </tr>
-    `;
-}
-
-// Export to Excel
-function exportToExcel() {
-    // Sample data for the month
+    
+    const [year, month] = (filterMonth || document.getElementById('filterMonth').value).split('-');
+    if (!year || !month) {
+        Swal.fire('Lỗi', 'Tháng không hợp lệ!', 'error');
+        return;
+    }
+    // Generate all days of the month
+    const daysInMonth = new Date(year, month, 0).getDate();
     const monthData = [
-        ['Ngày', 'Nơi làm việc', 'Công trình/Mô tả', 'Phương pháp NDT', 'Tăng ca', 'Chi phí (VNĐ)', 'Ghi chú'],
-        ['01/01/2024', 'Văn phòng', 'Hành chính', '', '', '', 'Xử lý hồ sơ'],
-        ['02/01/2024', 'Công trình', 'HEINEKEN', 'UT', '', '500,000', 'Kiểm tra đường ống - Xăng xe'],
-        ['03/01/2024', 'Công trình', 'PetroVietnam', 'RT', 'Đến 20:00', '800,000', 'Kiểm tra mối hàn - Khách sạn'],
-        ['04/01/2024', 'Văn phòng', 'Hành chính', '', 'Đến 18:00', '', 'Làm báo cáo tăng ca'],
-        ['05/01/2024', 'Nghỉ', '', '', '', '', ''],
-        // Add today's data if exists
+        ['Ngày', 'Loại công việc', 'Công trình/Mô tả', 'Phương pháp NDT', 'Tăng ca', 'Chi phí (VNĐ)', 'Ghi chú']
     ];
-    
-    // Add today's data if available
-    if (todayWorkData.hasWork || !todayWorkData.hasWork) {
-        const today = new Date().toLocaleDateString('vi-VN');
-        let location = '';
-        let description = '';
-        let method = '';
-        let overtime = '';
-        let expense = '';
-        let note = '';
-        
-        if (!todayWorkData.hasWork) {
-            location = 'Nghỉ';
-        } else if (todayWorkData.location === 'office') {
-            location = 'Văn phòng';
-            description = 'Hành chính';
-        } else if (todayWorkData.location === 'construction') {
-            location = 'Công trình';
-            description = todayWorkData.constructionName;
-            method = todayWorkData.ndtMethod;
+    // Get attendance data for the month
+    const monthAttendanceData = JSON.parse(localStorage.getItem('attendanceData') || '[]')
+        .filter(item => item.date.startsWith(filterMonth));
+    let hasData = false;
+    for (let day = 1; day <= daysInMonth; day++) {
+        const dateStr = `${year}-${month.padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+        const record = monthAttendanceData.find(r => r.date === dateStr);
+        if (record) hasData = true;
+        if (record) {
+            let workTypeText = '';
+            switch(record.workType) {
+                case 'office': workTypeText = 'Văn phòng'; break;
+                case 'construction': workTypeText = 'Công trình'; break;
+                case 'off': workTypeText = 'Nghỉ'; break;
+            }
+            monthData.push([
+                new Date(dateStr).toLocaleDateString('vi-VN'),
+                workTypeText,
+                record.constructionName || (record.workType === 'office' ? 'Hành chính' : ''),
+                record.ndtMethod || '',
+                record.overtimeUntil ? `Đến ${record.overtimeUntil}` : '',
+                record.expenseAmount || '',
+                record.workNote || ''
+            ]);
+        } else {
+            // Empty row for days not attended
+            monthData.push([
+                new Date(dateStr).toLocaleDateString('vi-VN'),
+                '', '', '', '', '', ''
+            ]);
         }
-        
-        if (todayWorkData.overtime) {
-            overtime = `Đến ${todayWorkData.overtime.until}`;
-        }
-        
-        if (todayWorkData.expenses.length > 0) {
-            expense = todayWorkData.expenses.map(e => e.amount).join(', ');
-            note = todayWorkData.expenses.map(e => e.description).join('; ');
-        }
-        
-        monthData.push([today, location, description, method, overtime, expense, note]);
+    }
+    if (!hasData) {
+        Swal.fire('Thông báo', 'Không có dữ liệu chấm công nào trong tháng này!', 'info');
+        return;
+    }
+    // Create and download Excel file
+    try {
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet(monthData);
+        ws['!cols'] = [
+            { width: 12 }, { width: 15 }, { width: 25 }, 
+            { width: 15 }, { width: 12 }, { width: 15 }, { width: 30 }
+        ];
+        XLSX.utils.book_append_sheet(wb, ws, `Chấm công ${month}-${year}`);
+        const shortYear = year.slice(-2);
+        const filename = `Bảng chấm công Nhân viên ${month.padStart(2, '0')}-${shortYear}.xlsx`;
+        XLSX.writeFile(wb, filename);
+        console.log('Đã xuất file:', filename);
+        Swal.fire({
+            title: 'Xuất Excel thành công!',
+            text: `File đã được lưu: ${filename}`,
+            icon: 'success',
+            timer: 2000,
+            showConfirmButton: false
+        });
+    } catch (err) {
+        console.error('Lỗi xuất Excel:', err);
+        Swal.fire('Lỗi', 'Không thể xuất file Excel. Vui lòng thử lại hoặc kiểm tra trình duyệt!', 'error');
+    }
+}
+
+function exportCurrentView() {
+    if (attendanceData.length === 0) {
+        Swal.fire('Thông báo', 'Không có dữ liệu để xuất!', 'info');
+        return;
     }
     
-    // Create workbook
-    const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.aoa_to_sheet(monthData);
-    
-    // Set column widths
-    ws['!cols'] = [
-        { width: 12 }, // Ngày
-        { width: 15 }, // Nơi làm việc
-        { width: 20 }, // Công trình/Mô tả
-        { width: 15 }, // Phương pháp NDT
-        { width: 12 }, // Tăng ca
-        { width: 15 }, // Chi phí
-        { width: 30 }  // Ghi chú
+    const exportData = [
+        ['Ngày', 'Loại công việc', 'Công trình/Mô tả', 'Phương pháp NDT', 'Tăng ca', 'Chi phí (VNĐ)', 'Ghi chú']
     ];
     
-    XLSX.utils.book_append_sheet(wb, ws, 'Chấm công tháng ' + (new Date().getMonth() + 1));
+    attendanceData.forEach(record => {
+        let workTypeText = '';
+        switch(record.workType) {
+            case 'office': workTypeText = 'Văn phòng'; break;
+            case 'construction': workTypeText = 'Công trình'; break;
+            case 'off': workTypeText = 'Nghỉ'; break;
+        }
+        
+        exportData.push([
+            new Date(record.date).toLocaleDateString('vi-VN'),
+            workTypeText,
+            record.constructionName || (record.workType === 'office' ? 'Hành chính' : ''),
+            record.ndtMethod || '',
+            record.overtimeUntil ? `Đến ${record.overtimeUntil}` : '',
+            record.expenseAmount || '',
+            record.workNote || ''
+        ]);
+    });
     
-    // Generate filename
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(exportData);
+    
+    ws['!cols'] = [
+        { width: 12 }, { width: 15 }, { width: 25 }, 
+        { width: 15 }, { width: 12 }, { width: 15 }, { width: 30 }
+    ];
+    
+    XLSX.utils.book_append_sheet(wb, ws, 'Dữ liệu lọc');
+    
     const now = new Date();
-    const filename = `ChamCong_${now.getMonth() + 1}_${now.getFullYear()}_${now.getDate()}.xlsx`;
-    
-    // Save file
+    const filename = `ChamCong_Loc_${now.getDate()}_${now.getMonth() + 1}_${now.getFullYear()}.xlsx`;
     XLSX.writeFile(wb, filename);
     
     Swal.fire({
@@ -920,8 +758,16 @@ function exportToExcel() {
 
 // Initialize page
 document.addEventListener('DOMContentLoaded', function() {
-    updateTime();
-    setInterval(updateTime, 60000);
+    const filterMonth = document.getElementById('filterMonth').value;
+    updateCurrentMonthDisplay(filterMonth);
+    renderTodayAttendanceButton();
+    loadAttendanceData();
+});
+
+// Update month display when filter changes
+document.getElementById('filterMonth').addEventListener('change', function() {
+    updateCurrentMonthDisplay(this.value);
+    loadAttendanceData();
 });
 </script>
 {% endblock %} 

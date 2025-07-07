@@ -311,6 +311,8 @@
         opacity: 0.3;
         color: #6366f1;
     }
+
+
 </style>
 {% endblock %}
 
@@ -392,6 +394,8 @@
                 </div>
             </div>
 
+
+
             <div class="stat-card quality">
                 <div class="stat-header">
                     <div class="stat-info">
@@ -408,6 +412,8 @@
             </div>
         </div>
     </div>
+
+
 
     <!-- Main Content -->
     <div class="row">
@@ -518,6 +524,45 @@
                         </div>
                         <span>Xem báo cáo</span>
                     </a>
+                </div>
+            </div>
+
+            <!-- Compact Disk Usage Monitor -->
+            <div class="modern-card mt-3">
+                <div class="card-body-modern" style="padding: 1rem;">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-hdd me-2" style="color: 
+                                {% if disk_info.status == 'danger' %}#dc3545
+                                {% elif disk_info.status == 'warning' %}#ffc107
+                                {% else %}#28a745{% endif %}; font-size: 0.9rem;"></i>
+                            <span style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Dung lượng VPS</span>
+                        </div>
+                        <small style="font-size: 0.75rem; font-weight: 600; color: 
+                            {% if disk_info.status == 'danger' %}#dc3545
+                            {% elif disk_info.status == 'warning' %}#856404
+                            {% else %}#065f46{% endif %};">
+                            {{ disk_info.usage_percent|floatformat:1 }}%
+                        </small>
+                    </div>
+                    
+                    <!-- Thin Progress Bar -->
+                    <div style="background: #f1f5f9; border-radius: 6px; height: 4px; margin-bottom: 0.5rem; overflow: hidden;">
+                        <div style="background: 
+                            {% if disk_info.status == 'danger' %}linear-gradient(90deg, #dc3545, #c82333)
+                            {% elif disk_info.status == 'warning' %}linear-gradient(90deg, #ffc107, #e0a800)
+                            {% else %}linear-gradient(90deg, #28a745, #1e7e34){% endif %}; 
+                            width: {{ disk_info.usage_percent }}%; height: 100%; border-radius: 6px; transition: width 0.3s ease;"></div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small style="color: #94a3b8; font-size: 0.7rem;">
+                            {{ disk_info.used_gb|floatformat:1 }}GB / {{ disk_info.total_gb|floatformat:1 }}GB
+                        </small>
+                        <small style="color: #64748b; font-size: 0.7rem;">
+                            {{ disk_info.free_gb|floatformat:1 }}GB còn lại
+                        </small>
+                    </div>
                 </div>
             </div>
         </div>

@@ -87,6 +87,8 @@ class ContactSettings(models.Model):
     business_hours = models.TextField(verbose_name='Giờ làm việc', help_text='Định dạng: Thứ Hai - Thứ Sáu: 8:00 - 17:30')
     email_contact = models.TextField(verbose_name='Email liên hệ', help_text='Mỗi email một dòng')
     maps_embed = models.TextField(verbose_name='Mã nhúng Google Maps', help_text='Mã iframe từ Google Maps')
+    maps_link = models.URLField(blank=True, null=True, verbose_name='Link Google Maps', 
+                               help_text='Link trực tiếp đến Google Maps (VD: https://maps.app.goo.gl/A8TcFmJHawaxYMND6)')
     
     def clean(self):
         # Đảm bảo chỉ có một bản ghi cấu hình

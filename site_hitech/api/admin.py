@@ -77,8 +77,9 @@ class ContactSettingsAdmin(admin.ModelAdmin):
             'fields': ['recipient_email', 'address', 'phone_numbers', 'business_hours', 'email_contact']
         }),
         ('Bản đồ', {
-            'fields': ['maps_embed'],
-            'classes': ['collapse']
+            'fields': ['maps_link', 'maps_embed'],
+            'classes': ['collapse'],
+            'description': 'Link Google Maps sẽ được dùng cho nút "Xem bản đồ". Mã nhúng để hiển thị bản đồ trên trang.'
         })
     ]
     

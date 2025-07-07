@@ -24,6 +24,39 @@ from django.views.decorators.http import require_POST
 from django.utils import translation
 import json
 from datetime import timedelta
+import shutil
+
+def get_disk_usage():
+    """Lấy thông tin dung lượng disk"""
+    try:
+        # Lấy thông tin disk cho thư mục project
+        total, used, free = shutil.disk_usage('/')
+        
+        # Chuyển đổi sang GB
+        total_gb = total / (1024**3)
+        used_gb = used / (1024**3)
+        free_gb = free / (1024**3)
+        
+        # Tính phần trăm đã sử dụng
+        usage_percent = (used_gb / total_gb) * 100
+        
+        return {
+            'total_gb': round(total_gb, 2),
+            'used_gb': round(used_gb, 2),
+            'free_gb': round(free_gb, 2),
+            'usage_percent': round(usage_percent, 2),
+            'status': 'danger' if usage_percent > 90 else 'warning' if usage_percent > 75 else 'success'
+        }
+    except Exception as e:
+        # Fallback data nếu có lỗi
+        return {
+            'total_gb': 0,
+            'used_gb': 0,
+            'free_gb': 0,
+            'usage_percent': 0,
+            'status': 'info',
+            'error': str(e)
+        }
 
 def home(request):
     # Lấy cấu hình trang chủ
@@ -340,6 +373,9 @@ def staff_dashboard(request):
     # Thêm danh sách nhân viên
     staff_list = UserProfile.objects.select_related('user').all()
     
+    # Lấy thông tin disk usage
+    disk_info = get_disk_usage()
+    
     context = {
         'profile': profile,
         'total_posts': total_posts,
@@ -360,6 +396,8 @@ def staff_dashboard(request):
         'total_equipment': total_equipment,
         'active_equipment': active_equipment,
         'maintenance_equipment': maintenance_equipment,
+        # Thông tin dung lượng disk
+        'disk_info': disk_info,
     }
     return render(request, 'dashboard/staff_dashboard.html', context)
 

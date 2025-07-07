@@ -11,23 +11,7 @@
 <link rel="stylesheet" href="https://unpkg.com/aos@2.3.1/dist/aos.css">
 <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
 <style>
-/* Breadcrumb */
-.breadcrumb-section {
-    background: #f8f9fa;
-    padding: 20px 0;
-    border-bottom: 1px solid #e9ecef;
-    margin-bottom: 0;
-    font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-}
-
-.breadcrumb-item a {
-    color: #185a9d;
-    text-decoration: none;
-}
-
-.breadcrumb-item.active {
-    color: #6c757d;
-}
+/* Breadcrumb styles moved to inline for consistency */
 
 .contact-hero-pro {
     background: linear-gradient(120deg, #185a9d 0%, #43cea2 100%);
@@ -289,7 +273,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 {% block content %}
 <!-- Breadcrumb -->
-<div class="breadcrumb-section">
+<div class="breadcrumb-section" style="padding: 25px 0; background: #f8f9fa; border-bottom: 1px solid #e9ecef;">
     <div class="container">
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">
@@ -321,7 +305,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="contact-card-icon-pro"><i class="fas fa-map-marker-alt"></i></div>
                 <div class="contact-card-title-pro">Địa chỉ</div>
                 <div class="contact-card-text-pro">{{ contact_settings.address|default:'123 Đường ABC, Quận XYZ, TP.HCM' }}</div>
-                <div class="contact-card-action"><a href="https://maps.google.com/?q={{ contact_settings.address|urlencode }}" target="_blank">Xem bản đồ</a></div>
+                <div class="contact-card-action">
+                    {% if contact_settings.maps_link %}
+                        <a href="{{ contact_settings.maps_link }}" target="_blank">Xem bản đồ</a>
+                    {% else %}
+                        <a href="https://maps.google.com/?q={{ contact_settings.address|urlencode }}" target="_blank">Xem bản đồ</a>
+                    {% endif %}
+                </div>
             </div>
             <div class="contact-card-pro" data-aos="fade-up" data-aos-delay="100">
                 <div class="contact-card-icon-pro"><i class="fas fa-phone-alt"></i></div>
