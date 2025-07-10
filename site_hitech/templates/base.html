@@ -15,7 +15,9 @@
     <!-- Open Graph Meta Tags for Social Media -->
     <meta property="og:title" content="{% block og_title %}{% if site_settings %}{{ site_settings.company_name }} - {{ site_settings.company_slogan }}{% else %}Hitech NDT - Công nghệ kiểm tra không phá hủy hàng đầu{% endif %}{% endblock %}">
     <meta property="og:description" content="{% block og_description %}{% if site_settings %}{{ site_settings.company_description }}{% else %}Công ty hàng đầu về NDT tại Việt Nam - Dịch vụ kiểm tra chuyên nghiệp và đào tạo chứng chỉ{% endif %}{% endblock %}">
-    <meta property="og:image" content="{% if site_settings and site_settings.logo %}{{ site_settings.logo.url }}{% else %}{% static 'image/logo-hitech.png' %}{% endif %}">
+    {% if site_settings and site_settings.logo %}
+    <meta property="og:image" content="{{ site_settings.logo.url }}">
+    {% endif %}
     <meta property="og:url" content="https://hitechndt.vn">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="{% if site_settings %}{{ site_settings.company_name }}{% else %}Hitech NDT{% endif %}">
@@ -24,20 +26,26 @@
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="{% block twitter_title %}{% if site_settings %}{{ site_settings.company_name }} - Công nghệ kiểm tra không phá hủy{% else %}Hitech NDT - Công nghệ kiểm tra không phá hủy{% endif %}{% endblock %}">
     <meta name="twitter:description" content="{% block twitter_description %}{% if site_settings %}{{ site_settings.company_description }}{% else %}Dịch vụ NDT chuyên nghiệp và đào tạo chứng chỉ tại Việt Nam{% endif %}{% endblock %}">
-    <meta name="twitter:image" content="{% if site_settings and site_settings.logo %}{{ site_settings.logo.url }}{% else %}{% static 'image/logo-hitech.png' %}{% endif %}">
+    {% if site_settings and site_settings.logo %}
+    <meta name="twitter:image" content="{{ site_settings.logo.url }}">
+    {% endif %}
     
     <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="{% if site_settings and site_settings.logo %}{{ site_settings.logo.url }}{% else %}{% static 'image/logo-hitech.png' %}{% endif %}">
-    <link rel="shortcut icon" type="image/x-icon" href="{% if site_settings and site_settings.logo %}{{ site_settings.logo.url }}{% else %}{% static 'image/logo-hitech.png' %}{% endif %}">
-    <link rel="apple-touch-icon" href="{% if site_settings and site_settings.logo %}{{ site_settings.logo.url }}{% else %}{% static 'image/logo-hitech.png' %}{% endif %}">
-    <link rel="icon" type="image/png" sizes="32x32" href="{% if site_settings and site_settings.logo %}{{ site_settings.logo.url }}{% else %}{% static 'image/logo-hitech.png' %}{% endif %}">
-    <link rel="icon" type="image/png" sizes="16x16" href="{% if site_settings and site_settings.logo %}{{ site_settings.logo.url }}{% else %}{% static 'image/logo-hitech.png' %}{% endif %}">
+    {% if site_settings and site_settings.logo %}
+    <link rel="icon" type="image/x-icon" href="{{ site_settings.logo.url }}">
+    <link rel="shortcut icon" type="image/x-icon" href="{{ site_settings.logo.url }}">
+    <link rel="apple-touch-icon" href="{{ site_settings.logo.url }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ site_settings.logo.url }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ site_settings.logo.url }}">
+    {% endif %}
     
     <!-- PWA Manifest -->
     <link rel="manifest" href="{% static 'manifest.json' %}">
     <meta name="theme-color" content="#00d4ff">
     <meta name="msapplication-TileColor" content="#0f2027">
-    <meta name="msapplication-TileImage" href="{% if site_settings and site_settings.logo %}{{ site_settings.logo.url }}{% else %}{% static 'image/logo-hitech.png' %}{% endif %}">
+    {% if site_settings and site_settings.logo %}
+    <meta name="msapplication-TileImage" href="{{ site_settings.logo.url }}">
+    {% endif %}
     
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -1253,10 +1261,12 @@
       "url": "https://hitechndt.vn",
       "logo": {
         "@type": "ImageObject",
-        "url": "https://hitechndt.vn{% if site_settings and site_settings.logo %}{{ site_settings.logo.url }}{% else %}{% static 'image/logo-hitech.png' %}{% endif %}",
+        {% if site_settings and site_settings.logo %}
+        "url": "https://hitechndt.vn{{ site_settings.logo.url }}",
         "width": "512",
         "height": "512",
-        "contentUrl": "https://hitechndt.vn{% if site_settings and site_settings.logo %}{{ site_settings.logo.url }}{% else %}{% static 'image/logo-hitech.png' %}{% endif %}"
+        "contentUrl": "https://hitechndt.vn{{ site_settings.logo.url }}"
+        {% endif %}
       },
       "description": "{% if site_settings %}{{ site_settings.company_description }}{% else %}Công ty hàng đầu về công nghệ kiểm tra không phá hủy tại Việt Nam. Cung cấp dịch vụ NDT chuyên nghiệp, đào tạo chứng chỉ và tư vấn kỹ thuật.{% endif %}",
       "foundingDate": "2020",
@@ -1355,9 +1365,11 @@
         "name": "{% if site_settings %}{{ site_settings.company_name }}{% else %}Hitech NDT{% endif %}",
         "logo": {
           "@type": "ImageObject",
-          "url": "https://hitechndt.vn{% if site_settings and site_settings.logo %}{{ site_settings.logo.url }}{% else %}{% static 'image/logo-hitech.png' %}{% endif %}",
+          {% if site_settings and site_settings.logo %}
+          "url": "https://hitechndt.vn{{ site_settings.logo.url }}",
           "width": "512",
           "height": "512"
+          {% endif %}
         }
       }
     }
@@ -1378,10 +1390,8 @@
             <a class="navbar-brand" href="{% url "home" %}">
                 {% if site_settings and site_settings.logo %}
                     <img src="{{ site_settings.logo.url }}" alt="{{ site_settings.company_name }} Logo" class="d-inline-block align-text-center me-2">
-                {% else %}
-                    <img src="https://i.imgur.com/QMfyRXg.png" alt="HITECH NDT Logo" class="d-inline-block align-text-center me-2">
+                    <span style="color: white; text-transform: uppercase;">{{ site_settings.company_name }}</span>
                 {% endif %}
-                <span style="color: white; text-transform: uppercase;">HITECH NDT</span>
             </a>
             <button class="navbar-toggler" type="button" id="mobileMenuToggle" aria-label="Mở menu">
                 <span class="navbar-toggler-icon"></span>
