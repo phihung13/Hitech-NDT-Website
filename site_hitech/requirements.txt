@@ -7,6 +7,7 @@ djangorestframework-simplejwt==5.3.0
 django-ckeditor==6.7.3
 django-summernote==0.8.20.0
 django-colorfield==0.10.1
+django-cors-headers==4.3.1
 Pillow==11.2.1
 
 # Content analysis
@@ -31,4 +32,3 @@ daphne==4.0.0
 
 # Security
 cryptography==41.0.7
-django-ckeditor-5==0.2.18

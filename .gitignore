@@ -24,6 +24,7 @@ wheels/
 # Django
 *.log
 local_settings.py
+settings_production.py
 db.sqlite3
 db.sqlite3-journal
 
@@ -38,6 +39,21 @@ media/
 # Static files collected
 staticfiles/
 
+# Backup files
+backups/
+*.backup
+*.bak
+
+# SSL certificates
+*.pem
+*.key
+*.crt
+*.csr
+
+# Logs
+logs/
+*.log
+
 # IDE
 .vscode/
 .idea/
@@ -47,3 +63,11 @@ staticfiles/
 # OS
 .DS_Store
 Thumbs.db
+
+# Deployment
+.env
+.env.local
+.env.production
+
+# Node modules (if any)
+node_modules/

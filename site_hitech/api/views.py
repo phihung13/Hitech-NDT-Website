@@ -1450,7 +1450,7 @@ def change_language(request):
     language = request.POST.get('language')
     if language:
         translation.activate(language)
-        request.session[translation.LANGUAGE_SESSION_KEY] = language
+        request.session['_language'] = language  # Sửa thành string constant
     return JsonResponse({'success': True})
 
 @login_required

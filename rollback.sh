@@ -1,21 +1,28 @@
 #!/bin/bash
 
-# ========================================
-# HITECH NDT - ROLLBACK SCRIPT
-# Script rollback về version trước đó
-# ========================================
+# =============================================================================
+# HITECH NDT WEBSITE - ROLLBACK SCRIPT
+# =============================================================================
+# Script này sẽ rollback về phiên bản trước đó nếu có lỗi sau khi update
+# Author: Hitech NDT Team
+# Version: 1.0
+# =============================================================================
 
-# Colors
+set -e  # Exit on any error
+
+# Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
-NC='\033[0m'
+NC='\033[0m' # No Color
 
 # Configuration
-PROJECT_NAME="hitech_ndt"
-PROJECT_DIR="/var/www/$PROJECT_NAME"
+PROJECT_NAME="Hitech NDT"
+PROJECT_DIR="/var/www/hitech_ndt"
+BACKUP_DIR="$PROJECT_DIR/backups"
 SERVICE_NAME="hitech-ndt"
+DOMAIN="hitechndt.vn"
 
 # Functions
 print_status() { echo -e "${BLUE}[INFO]${NC} $1"; }
@@ -203,4 +210,4 @@ main() {
 }
 
 # Run main function
-main "$@" 
+main "$@"

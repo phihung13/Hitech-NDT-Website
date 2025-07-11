@@ -4,6 +4,7 @@
 # HITECH NDT - DEPLOY SCRIPT
 # Script deploy hoàn chỉnh cho website Hitech NDT
 # Domain: hitechndt.vn và www.hitechndt.vn
+# Version: 2.0 - Optimized for Git deployment
 # ========================================
 
 # Colors
@@ -21,7 +22,8 @@ PROJECT_DIR="/var/www/$PROJECT_NAME"
 SERVICE_NAME="hitech-ndt"
 ADMIN_EMAIL="admin@hitechndt.vn"
 DB_PASSWORD="hitech2024"
-GITHUB_REPO="https://github.com/phihung13/Hitech-NDT-Website.git"  # Thay đổi URL này
+GITHUB_REPO="https://github.com/phihung13/Hitech-NDT-Website.git"
+BRANCH="main"
 
 # Functions
 print_status() { echo -e "${BLUE}[INFO]${NC} $1"; }
@@ -136,34 +138,33 @@ deploy_application() {
     cd $PROJECT_DIR
     
     # Clone latest code from Git
-    print_status "Pulling code mới nhất từ Git..."
-    if git clone $GITHUB_REPO .; then
+    print_status "Cloning code từ Git repository..."
+    if git clone -b $BRANCH $GITHUB_REPO .; then
         print_success "✓ Git clone thành công"
         
-        # Pull latest changes
-        git pull origin main
-        
-        # Navigate to Django project if in subfolder
-        if [ -d "site_hitech" ]; then
-            cd site_hitech
-        fi
+        # Navigate to Django project directory
+        cd site_hitech
     else
         print_error "Git clone thất bại!"
         print_warning "Fallback: copy từ thư mục local..."
         rm -rf $PROJECT_DIR/*
-        cp -r "$(dirname "$0")/site_hitech"/* .
+        SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+        cp -r "$SCRIPT_DIR/site_hitech" $PROJECT_DIR/
+        cd $PROJECT_DIR/site_hitech
     fi
     
     # Create virtual environment
-    python3 -m venv venv
-    source venv/bin/activate
+    python3 -m venv ../venv
+    source ../venv/bin/activate
     
     # Install dependencies
     pip install --upgrade pip
     pip install -r requirements.txt
     
-    # Create production settings
-    cat > site_hitech/settings_production.py << EOF
+    # Create production settings if not exists
+    if [ ! -f "site_hitech/settings_production.py" ]; then
+        print_status "Tạo production settings..."
+        cat > site_hitech/settings_production.py << EOF
 from .settings import *
 
 DEBUG = False
@@ -184,6 +185,8 @@ DATABASES = {
 
 STATIC_ROOT = '$PROJECT_DIR/staticfiles'
 MEDIA_ROOT = '$PROJECT_DIR/media'
+STATIC_URL = '/static/'
+MEDIA_URL = '/media/'
 
 # Security settings
 SECURE_SSL_REDIRECT = True
@@ -238,10 +241,17 @@ SUMMERNOTE_CONFIG = {
     },
 }
 EOF
+    else
+        print_status "Production settings đã tồn tại, bỏ qua tạo mới"
+    fi
 
     # Ensure log file exists
     touch /var/log/django.log
     chown www-data:www-data /var/log/django.log
+    
+    # Create media directory
+    mkdir -p $PROJECT_DIR/media
+    mkdir -p $PROJECT_DIR/staticfiles
     
     # Set environment
     export DJANGO_SETTINGS_MODULE=site_hitech.settings_production
@@ -252,6 +262,7 @@ EOF
     
     # Create homepage settings if script exists
     [ -f "create_homepage_settings.py" ] && python create_homepage_settings.py 2>/dev/null
+    [ -f "setup_seo_and_about_data.py" ] && python setup_seo_and_about_data.py 2>/dev/null
     
     print_success "Django application deployed với code mới nhất"
 }
@@ -425,4 +436,4 @@ main() {
 }
 
 # Run main function
-main "$@" 
+main "$@"

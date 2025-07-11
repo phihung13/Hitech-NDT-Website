@@ -16,7 +16,8 @@ NC='\033[0m'
 PROJECT_NAME="hitech_ndt"
 PROJECT_DIR="/var/www/$PROJECT_NAME"
 SERVICE_NAME="hitech-ndt"
-GITHUB_REPO="https://github.com/phihung13/Hitech-NDT-Website.git"  # Thay đổi URL này
+GITHUB_REPO="https://github.com/phihung13/Hitech-NDT-Website.git"
+BRANCH="main"
 
 # Functions
 print_status() { echo -e "${BLUE}[INFO]${NC} $1"; }
@@ -71,38 +72,57 @@ update_code() {
     
     cd $PROJECT_DIR
     
-    # Stash any local changes
+    # Check if this is a Git repository
     if [ -d ".git" ]; then
         print_status "Pull từ Git repository..."
-        git stash
         
-        if git pull origin main; then
+        # Backup production settings
+        cp site_hitech/site_hitech/settings_production.py /tmp/settings_production_backup.py 2>/dev/null
+        
+        # Stash any local changes
+        git stash push -m "Auto-stash before update $(date)"
+        
+        # Pull latest changes
+        if git pull origin $BRANCH; then
             print_success "✓ Git pull thành công"
+            
+            # Restore production settings if backup exists
+            if [ -f "/tmp/settings_production_backup.py" ]; then
+                cp /tmp/settings_production_backup.py site_hitech/site_hitech/settings_production.py
+                print_status "✓ Production settings đã được khôi phục"
+            fi
         else
             print_error "✗ Git pull thất bại"
             exit 1
         fi
-        
-        # Nếu trong subfolder site_hitech
-        if [ -d "site_hitech" ]; then
-            cd site_hitech
-        fi
     else
-        print_warning "Không phải Git repository, copy từ source..."
-        # Backup important files
-        cp site_hitech/settings_production.py /tmp/settings_production_backup.py 2>/dev/null
+        print_warning "Không phải Git repository, re-clone từ Git..."
         
-        # Copy new code (assuming source is in current directory)
-        SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-        if [ -d "$SCRIPT_DIR/site_hitech" ]; then
-            cp -r "$SCRIPT_DIR/site_hitech"/* .
+        # Backup important files
+        cp site_hitech/site_hitech/settings_production.py /tmp/settings_production_backup.py 2>/dev/null
+        cp -r media /tmp/media_backup 2>/dev/null
+        
+        # Remove current code and re-clone
+        cd /var/www
+        rm -rf $PROJECT_DIR
+        
+        if git clone -b $BRANCH $GITHUB_REPO $PROJECT_NAME; then
+            print_success "✓ Git clone thành công"
             
-            # Restore settings
+            cd $PROJECT_DIR
+            
+            # Restore important files
             if [ -f "/tmp/settings_production_backup.py" ]; then
-                cp /tmp/settings_production_backup.py site_hitech/settings_production.py
+                cp /tmp/settings_production_backup.py site_hitech/site_hitech/settings_production.py
+                print_status "✓ Production settings đã được khôi phục"
+            fi
+            
+            if [ -d "/tmp/media_backup" ]; then
+                cp -r /tmp/media_backup/* media/ 2>/dev/null
+                print_status "✓ Media files đã được khôi phục"
             fi
         else
-            print_error "Không tìm thấy source code để update"
+            print_error "Git clone thất bại!"
             exit 1
         fi
     fi
@@ -113,8 +133,8 @@ update_code() {
 update_dependencies() {
     print_status "Cập nhật dependencies..."
     
-    cd $PROJECT_DIR
-    source venv/bin/activate
+    cd $PROJECT_DIR/site_hitech
+    source ../venv/bin/activate
     
     pip install --upgrade pip
     pip install -r requirements.txt --upgrade
@@ -125,12 +145,16 @@ update_dependencies() {
 run_migrations() {
     print_status "Chạy database migrations..."
     
-    cd $PROJECT_DIR
-    source venv/bin/activate
+    cd $PROJECT_DIR/site_hitech
+    source ../venv/bin/activate
     export DJANGO_SETTINGS_MODULE=site_hitech.settings_production
     
     python manage.py migrate
     python manage.py collectstatic --noinput
+    
+    # Run setup scripts if they exist
+    [ -f "create_homepage_settings.py" ] && python create_homepage_settings.py 2>/dev/null
+    [ -f "setup_seo_and_about_data.py" ] && python setup_seo_and_about_data.py 2>/dev/null
     
     print_success "Migrations hoàn thành"
 }
@@ -229,4 +253,4 @@ main() {
 }
 
 # Run main function
-main "$@" 
+main "$@"

@@ -1,7 +1,42 @@
-# Website Hitech NDT
+# Hitech NDT Website
 
-## 📋 Tổng Quan
-Website chính thức của công ty Hitech NDT - chuyên về kiểm tra không phá hủy (Non-Destructive Testing).
+Website chính thức của công ty Hitech NDT - Chuyên về kiểm tra không phá hủy (NDT).
+
+## 🚀 Quick Start
+
+### Production Deployment (1 lệnh)
+
+```bash
+# Lần đầu deploy
+sudo bash deploy.sh
+
+# Update code mới
+sudo bash update.sh
+```
+
+### Development
+
+```bash
+# Clone và setup
+git clone https://github.com/phihung13/Hitech-NDT-Website.git
+cd Hitech-NDT-Website/site_hitech
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py runserver
+```
+
+## 📋 Tính năng chính
+
+- 🏠 **Trang chủ**: Thông tin công ty, dịch vụ
+- 📊 **Quản lý dự án**: Hệ thống quản lý dự án NDT
+- 📈 **Báo cáo**: Tạo và quản lý báo cáo kỹ thuật
+- 📰 **Blog/Tin tức**: Hệ thống quản lý nội dung
+- 🔧 **Dịch vụ**: Quản lý các dịch vụ NDT
+- 👨‍💼 **Dashboard**: Giao diện quản trị toàn diện
+- 🔐 **Bảo mật**: Authentication, authorization
+- 📱 **Responsive**: Tương thích mobile
 
 ## 🏗️ Công Nghệ Sử Dụng
 - **Backend**: Django 4.2.7 + PostgreSQL 14
