@@ -257,30 +257,6 @@
                             <small class="text-muted">Mã tài liệu sẽ được tự động tạo dựa trên danh mục</small>
                         </div>
                     </div>
-                    <div class="col-md-6">
-                        <div class="form-floating">
-                            {{ form.access_level }}
-                            <label for="{{ form.access_level.id_for_label }}">Mức độ truy cập *</label>
-                            {% if form.access_level.errors %}
-                                <div class="text-danger small mt-1">{{ form.access_level.errors.0 }}</div>
-                            {% endif %}
-                        </div>
-                        <div class="access-level-info" id="accessInfo">
-                            <strong>Nội bộ:</strong> Chỉ nhân viên công ty có thể truy cập
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Allowed Roles (conditional) -->
-                <div class="form-floating" id="allowedRolesField" style="display: none;">
-                    {{ form.allowed_roles }}
-                    <label for="{{ form.allowed_roles.id_for_label }}">Vai trò được phép</label>
-                    <div class="form-help-text">
-                        Để trống để cho phép tất cả vai trò. Phân cách bằng dấu phẩy: admin,manager,staff
-                    </div>
-                    {% if form.allowed_roles.errors %}
-                        <div class="text-danger small mt-1">{{ form.allowed_roles.errors.0 }}</div>
-                    {% endif %}
                 </div>
                 
                 <!-- File Upload Area -->
@@ -425,44 +401,6 @@ $(document).ready(function() {
         fileInfo.hide();
         uploadArea.show();
     };
-    
-    // Access level info
-    const accessLevel = $('#{{ form.access_level.id_for_label }}');
-    const accessInfo = $('#accessInfo');
-    const allowedRolesField = $('#allowedRolesField');
-    
-    accessLevel.on('change', function() {
-        const level = $(this).val();
-        let info = '';
-        let showRoles = false;
-        
-        switch(level) {
-            case 'public':
-                info = '<strong>Công khai:</strong> Tất cả mọi người có thể truy cập';
-                break;
-            case 'internal':
-                info = '<strong>Nội bộ:</strong> Chỉ nhân viên công ty có thể truy cập';
-                break;
-            case 'restricted':
-                info = '<strong>Hạn chế:</strong> Chỉ Manager và Admin có thể truy cập';
-                showRoles = true;
-                break;
-            case 'confidential':
-                info = '<strong>Bí mật:</strong> Chỉ Admin có thể truy cập';
-                showRoles = true;
-                break;
-        }
-        
-        accessInfo.html(info);
-        if (showRoles) {
-            allowedRolesField.show();
-        } else {
-            allowedRolesField.hide();
-        }
-    });
-    
-    // Trigger on page load
-    accessLevel.trigger('change');
     
     // Category preview
     const categorySelect = $('#{{ form.category.id_for_label }}');

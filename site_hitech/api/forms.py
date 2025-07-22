@@ -479,8 +479,7 @@ class DocumentForm(forms.ModelForm):
     class Meta:
         model = Document
         fields = [
-            'title', 'category', 'description', 'file', 
-            'access_level', 'allowed_roles', 'tags', 'version'
+            'title', 'category', 'description', 'file', 'tags', 'version'
         ]
         widgets = {
             'title': forms.TextInput(attrs={
@@ -493,11 +492,6 @@ class DocumentForm(forms.ModelForm):
                 'placeholder': 'Mô tả tài liệu...'
             }),
             'category': forms.Select(attrs={'class': 'form-select'}),
-            'access_level': forms.Select(attrs={'class': 'form-select'}),
-            'allowed_roles': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'admin,manager,staff (phân cách bằng dấu phẩy)'
-            }),
             'file': forms.FileInput(attrs={
                 'class': 'form-control',
                 'accept': '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.jpg,.jpeg,.png,.zip,.rar'
@@ -511,7 +505,7 @@ class DocumentForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['category'].queryset = DocumentCategory.objects.filter(is_active=True)
-        
+    
     def clean_file(self):
         file = self.cleaned_data.get('file')
         if file:
@@ -550,6 +544,10 @@ class DocumentForm(forms.ModelForm):
                 new_num = 1
                 
             document.document_code = f"{category_code}-{new_num:03d}"
+        
+        # Đặt access_level mặc định là 'internal' (nội bộ)
+        document.access_level = 'internal'
+        document.allowed_roles = ''
         
         if commit:
             document.save()
