@@ -4,328 +4,845 @@
 {% block title %}Chấm công - Dashboard{% endblock %}
 
 {% block page_title %}
-<i class="fas fa-calendar-check text-primary me-2"></i>Chấm công
+<i class="fas fa-calendar-check text-primary me-2"></i>Chấm công - {{ user.get_full_name|default:user.username }}
+<small class="text-muted ms-2">({{ user.user_profile.role|default:"Nhân viên" }})</small>
 {% endblock %}
 
 {% block extra_css %}
 <style>
-    .attendance-card {
+    /* Reset và Base Styles */
+    * {
+        box-sizing: border-box;
+    }
+    
+    .container-fluid {
+        padding: 0 15px !important;
+        width: 100% !important;
+        max-width: none !important;
+    }
+    
+    .row {
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+    }
+    
+    [class*="col-"] {
+        padding-left: 15px !important;
+        padding-right: 15px !important;
+    }
+    
+    /* Modern Card System */
+    .modern-card {
+        background: #ffffff;
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        transition: all 0.3s ease;
+        margin-bottom: 1.5rem;
+        width: 100%;
+    }
+    
+    .modern-card:hover {
+        box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+        transform: translateY(-2px);
+    }
+    
+    .modern-card-header {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
-        border-radius: 15px;
-        padding: 25px;
-        margin-bottom: 20px;
+        padding: 1rem 1.5rem;
+        border-radius: 12px 12px 0 0;
+        border: none;
     }
     
-    .form-section {
-        background: #f8f9fa;
-        border-radius: 15px;
-        padding: 25px;
-        border: 2px dashed #dee2e6;
-        margin-bottom: 20px;
+    .modern-card-body {
+        padding: 1.5rem;
     }
     
-    .action-btn {
-        padding: 12px 25px;
-        border-radius: 10px;
-        font-weight: 600;
+    /* Button System */
+    .modern-btn {
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 500;
+        font-size: 0.95rem;
         transition: all 0.3s ease;
-        margin: 5px;
+        border: none;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        margin-right: 0.5rem;
+        margin-bottom: 0.5rem;
     }
     
-    .action-btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+    .modern-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        text-decoration: none;
     }
     
-    .stats-box {
-        background: white;
-        border-radius: 12px;
-        padding: 20px;
+    .modern-btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    .modern-btn-success {
+        background: linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%);
+        color: white;
+    }
+    
+    .modern-btn-outline {
+        background: transparent;
+        border: 2px solid #667eea;
+        color: #667eea;
+    }
+    
+    .modern-btn-outline:hover {
+        background: #667eea;
+        color: white;
+    }
+    
+    /* Selection Cards */
+    .selection-card {
+        background: #f8fafc;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 1rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
         text-align: center;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        margin-bottom: 15px;
+        height: 100%;
+        margin-bottom: 1rem;
     }
     
-    .work-badge {
-        font-size: 0.9rem;
-        padding: 8px 15px;
-        border-radius: 20px;
-        font-weight: 600;
+    .selection-card:hover {
+        border-color: #667eea;
+        background: #f0f4ff;
+        transform: translateY(-2px);
     }
     
-    .method-badge {
-        font-size: 0.8rem;
-        padding: 5px 10px;
-        border-radius: 15px;
+    .selection-card.active {
+        border-color: #667eea;
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+    }
+    
+    /* Stats Cards */
+    .stats-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        text-align: center;
+        transition: all 0.3s ease;
+        height: 100%;
+        margin-bottom: 1rem;
+    }
+    
+    .stats-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+    }
+    
+    .stats-card.success {
+        background: linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%);
+    }
+    
+    .stats-card.info {
+        background: linear-gradient(135deg, #3498db 0%, #85c1e9 100%);
+    }
+    
+    .stats-card.warning {
+        background: linear-gradient(135deg, #f39c12 0%, #f7dc6f 100%);
+    }
+    
+    /* Text Gradient */
+    .text-gradient {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+        .container-fluid {
+            padding: 0 10px !important;
+        }
+        
+        .modern-card-body {
+            padding: 1rem;
+        }
+        
+        .modern-btn {
+            padding: 0.6rem 1rem;
+            font-size: 0.9rem;
+        }
+        
+        .stats-card {
+            padding: 1rem;
+        }
+    }
+    
+    @media (max-width: 576px) {
+        .container-fluid {
+            padding: 0 5px !important;
+        }
+        
+        .modern-card-header {
+            padding: 0.75rem 1rem;
+        }
+        
+        .modern-card-body {
+            padding: 0.75rem;
+        }
+    }
+    
+    /* Approval Status Styles */
+    .approval-status {
+        border-top: 1px solid #e9ecef;
+        padding-top: 15px;
+    }
+    
+    .approval-item {
+        text-align: center;
+        padding: 8px;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+    }
+    
+    .approval-item.approved {
+        background-color: rgba(40, 167, 69, 0.1);
+        border: 1px solid rgba(40, 167, 69, 0.3);
+    }
+    
+    .approval-item.rejected {
+        background-color: rgba(220, 53, 69, 0.1);
+        border: 1px solid rgba(220, 53, 69, 0.3);
+    }
+    
+    .approval-item.pending {
+        background-color: rgba(108, 117, 125, 0.1);
+        border: 1px solid rgba(108, 117, 125, 0.3);
+    }
+    
+    .approval-item small {
+        font-size: 0.7rem;
         font-weight: 500;
     }
     
-    .hidden { display: none; }
-    .show { display: block; }
-    
-    .filter-section {
-        background: white;
-        border-radius: 12px;
-        padding: 20px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        margin-bottom: 20px;
+    .approval-item .badge {
+        font-size: 0.8rem;
+        padding: 4px 8px;
     }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid">
-    <!-- Top Actions -->
-    <div class="row mb-4">
-        <div class="col-lg-8">
-            <!-- Chấm công hôm nay -->
-            <div class="card">
-                <div class="card-body">
-                    <div class="attendance-card text-center">
-                        <h5 class="mb-3">
-                            <i class="fas fa-calendar-day me-2"></i>
-                            Chấm công hôm nay: {{ "now"|date:"d/m/Y" }}
-                        </h5>
-                        <div id="todayAttendanceForm">
-                            <!-- Nút sẽ render động bằng JS -->
+    <!-- Statistics - Đặt lên đầu -->
+    <div class="row">
+        <div class="col-12">
+            <div class="modern-card">
+                <div class="modern-card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-chart-bar me-2"></i>Thống kê tháng <span id="currentMonth">{{ "now"|date:"m/Y" }}</span>
+                    </h6>
+                </div>
+                <div class="modern-card-body">
+                    <div class="row">
+                        <div class="col-lg-3 col-md-6 col-sm-6">
+                            <div class="stats-card">
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-grow-1">
+                                        <h3 class="mb-1" id="totalWorkDays">0/0</h3>
+                                        <small>Ngày đi làm</small>
+                                    </div>
+                                    <div class="stats-icon">
+                                        <i class="fas fa-calendar-check fa-2x opacity-75"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-md-6 col-sm-6">
+                            <div class="stats-card success">
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-grow-1">
+                                        <h3 class="mb-1" id="constructionDays">0</h3>
+                                        <small>Công trường</small>
+                                    </div>
+                                    <div class="stats-icon">
+                                        <i class="fas fa-hard-hat fa-2x opacity-75"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-md-6 col-sm-6">
+                            <div class="stats-card info">
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-grow-1">
+                                        <h3 class="mb-1" id="officeDays">0</h3>
+                                        <small>Văn phòng</small>
+                                    </div>
+                                    <div class="stats-icon">
+                                        <i class="fas fa-building fa-2x opacity-75"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-md-6 col-sm-6">
+                            <div class="stats-card primary">
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-grow-1">
+                                        <h3 class="mb-1" id="trainingDays">0</h3>
+                                        <small>Đào tạo</small>
+                                    </div>
+                                    <div class="stats-icon">
+                                        <i class="fas fa-graduation-cap fa-2x opacity-75"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-lg-3 col-md-6 col-sm-6">
+                            <div class="stats-card warning">
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-grow-1">
+                                        <h3 class="mb-1" id="leaveWithPermission">0</h3>
+                                        <small>Nghỉ có phép</small>
+                                    </div>
+                                    <div class="stats-icon">
+                                        <i class="fas fa-calendar-minus fa-2x opacity-75"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-md-6 col-sm-6">
+                            <div class="stats-card danger">
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-grow-1">
+                                        <h3 class="mb-1" id="leaveWithoutPermission">0</h3>
+                                        <small>Nghỉ không phép</small>
+                                    </div>
+                                    <div class="stats-icon">
+                                        <i class="fas fa-calendar-times fa-2x opacity-75"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-md-6 col-sm-6">
+                            <div class="stats-card secondary">
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-grow-1">
+                                        <h3 class="mb-1" id="overtimeHours">0h</h3>
+                                        <small>Tổng tăng ca</small>
+                                    </div>
+                                    <div class="stats-icon">
+                                        <i class="fas fa-clock fa-2x opacity-75"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-md-6 col-sm-6">
+                            <div class="stats-card dark">
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-grow-1">
+                                        <h3 class="mb-1" id="totalExpenses">0đ</h3>
+                                        <small>Tổng chi phí</small>
+                                    </div>
+                                    <div class="stats-icon">
+                                        <i class="fas fa-money-bill-wave fa-2x opacity-75"></i>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        
-        <div class="col-lg-4">
-            <!-- Quick Export -->
-            <div class="card h-100">
-                <div class="card-body text-center">
-                    <h5 class="mb-3">
-                        <i class="fas fa-file-excel text-success me-2"></i>
-                        Xuất báo cáo
+    </div>
+
+    <!-- Chấm công hôm nay -->
+    <div class="row">
+        <div class="col-12">
+            <div class="modern-card">
+                <div class="modern-card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-calendar-check me-2"></i>
+                        Chấm công hôm nay - {{ "now"|date:"d/m/Y" }}
                     </h5>
-                    <button class="btn btn-success action-btn w-100" onclick="exportMonthlyReport()" id="exportBtn">
-                        <i class="fas fa-download me-2"></i>Xuất báo cáo Excel <span id="currentMonth"></span>
-                                </button>
                 </div>
+                <div class="modern-card-body">
+                    <div class="row">
+                        <div class="col-12">
+                            <div id="todayAttendanceForm" class="d-flex flex-wrap">
+                                <!-- Buttons sẽ render động -->
                             </div>
                         </div>
                     </div>
-
-    <!-- Attendance Form (Hidden) -->
-    <div class="row mb-4 hidden" id="attendanceFormSection">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0" id="formTitle">
-                        <i class="fas fa-edit text-primary me-2"></i>
-                        Chấm công
-                    </h5>
                 </div>
-                <div class="card-body">
-                    <div class="form-section">
-                        <div class="row g-3">
-                            <div class="col-md-3">
-                                <label class="form-label">Ngày chấm công</label>
-                                <input type="date" class="form-control" id="attendanceDate" value="{{ "now"|date:"Y-m-d" }}">
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">Loại công việc</label>
-                                <select class="form-select" id="workType" onchange="toggleConstructionFields()">
-                                    <option value="">-- Chọn loại --</option>
-                                    <option value="office">Văn phòng</option>
-                                    <option value="construction">Đi công trình</option>
-                                    <option value="off">Nghỉ</option>
-                                </select>
-                            </div>
-                            <div class="col-md-6" id="constructionFields" style="display: none;">
-                                <div class="row">
-                                    <div class="col-6">
-                                    <label class="form-label">Tên công trình/Khách hàng</label>
-                                        <input type="text" class="form-control" id="constructionName" placeholder="VD: HEINEKEN, PetroVietnam...">
+            </div>
+        </div>
+    </div>
+
+    <!-- Attendance Form Section -->
+    <div class="row" id="attendanceFormSection" style="display: none;">
+        <div class="col-12">
+            <div class="modern-card">
+                <div class="modern-card-header">
+                    <h6 class="mb-0" id="formTitle">
+                        <i class="fas fa-edit me-2"></i>Chấm công
+                    </h6>
+                </div>
+                <div class="modern-card-body">
+                    <form id="attendanceForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Ngày chấm công</label>
+                                    <input type="date" class="form-control" id="attendanceDate" required>
                                 </div>
-                                    <div class="col-6">
-                                    <label class="form-label">Phương pháp NDT</label>
-                                    <select class="form-select" id="ndtMethod">
-                                        <option value="">-- Chọn phương pháp --</option>
-                                        <option value="UT">UT (Siêu âm)</option>
-                                        <option value="MT">MT (Từ tính)</option>
-                                        <option value="PT">PT (Thẩm thấu)</option>
-                                        <option value="RT">RT (X-quang)</option>
-                                        <option value="VT">VT (Mục thi)</option>
-                                        <option value="ET">ET (Dòng xoáy)</option>
-                                        <option value="multiple">Nhiều phương pháp</option>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Loại công việc</label>
+                                    <select class="form-select" id="workType" onchange="toggleConstructionFields()" required>
+                                        <option value="">Chọn loại công việc</option>
+                                        <option value="W">Công trường</option>
+                                        <option value="O">Văn phòng</option>
+                                        <option value="T">Đào tạo</option>
+                                        <option value="P">Nghỉ có phép</option>
+                                        <option value="N">Nghỉ không phép</option>
                                     </select>
                                 </div>
                             </div>
                         </div>
-                    </div>
+                        
+                        <div id="constructionFields" style="display: none;">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">Tên công trình</label>
+                                        <input type="text" class="form-control" id="constructionName" placeholder="Nhập tên công trình">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">Phương pháp NDT</label>
+                                        <select class="form-select" id="ndtMethod">
+                                            <option value="">Chọn phương pháp</option>
+                                            <option value="MT">MT - Từ tính</option>
+                                            <option value="UT">UT - Siêu âm</option>
+                                            <option value="RT">RT - Chụp X-quang</option>
+                                            <option value="VT">VT - Kiểm tra mắt</option>
+                                            <option value="PAUT">PAUT - Siêu âm mảng pha</option>
+                                            <option value="TOFD">TOFD - Siêu âm truyền sóng</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="shiftSection" style="display: none;">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">
+                                    <i class="fas fa-clock me-2"></i>Ca làm việc
+                                </label>
+                                <div class="row g-3">
+                                    <div class="col-6">
+                                        <div class="selection-card" onclick="handleCardClick(event, 'dayShift')">
+                                            <div class="d-flex align-items-center justify-content-center mb-2">
+                                                <input class="form-check-input me-2" type="checkbox" id="dayShift" value="day" checked onchange="updateOvertimeSections()">
+                                                <label class="form-check-label fw-bold mb-0" for="dayShift">
+                                                    <i class="fas fa-sun text-warning me-2"></i>Ca ngày
+                                                </label>
+                                            </div>
+                                            <div class="small text-muted">7h30-11h30, 13h-17h</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="selection-card" onclick="handleCardClick(event, 'nightShift')">
+                                            <div class="d-flex align-items-center justify-content-center mb-2">
+                                                <input class="form-check-input me-2" type="checkbox" id="nightShift" value="night" onchange="updateOvertimeSections()">
+                                                <label class="form-check-label fw-bold mb-0" for="nightShift">
+                                                    <i class="fas fa-moon text-info me-2"></i>Ca đêm
+                                                </label>
+                                            </div>
+                                            <div class="small text-muted">19h-23h, 0h-4h</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="overtimeSection" style="display: none;">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">
+                                    <i class="fas fa-clock me-2"></i>Tăng ca
+                                </label>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div id="dayOvertimeSection" style="display: none;">
+                                            <div class="mb-3">
+                                                <label class="form-label">Giờ kết thúc (ca ngày)</label>
+                                                <input type="time" class="form-control" id="dayOvertimeEnd" onchange="calculateOvertime()" placeholder="VD: 20:00">
+                                                <small class="text-muted">Tính tăng ca từ 17:00</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div id="nightOvertimeSection" style="display: none;">
+                                            <div class="mb-3">
+                                                <label class="form-label">Giờ kết thúc (ca đêm)</label>
+                                                <input type="time" class="form-control" id="nightOvertimeEnd" onchange="calculateOvertime()" placeholder="VD: 06:00">
+                                                <small class="text-muted">Tính tăng ca từ 04:00</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Tổng giờ tăng ca</label>
+                                            <input type="text" class="form-control" id="overtimeHours" readonly>
+                                            <small class="text-muted">Tự động tính từ giờ kết thúc ca</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="expenseSection" style="display: none;">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">
+                                    <i class="fas fa-money-bill me-2"></i>Chi phí
+                                </label>
+                                <div class="row g-2 mb-3">
+                                    <div class="col-3">
+                                        <div class="selection-card" onclick="handleCardClick(event, 'hotelExpense')">
+                                            <div class="d-flex align-items-center justify-content-center mb-1">
+                                                <input class="form-check-input me-1" type="checkbox" id="hotelExpense" value="hotel" onchange="toggleExpenseAmount()">
+                                                <label class="form-check-label small fw-bold mb-0" for="hotelExpense">
+                                                    <i class="fas fa-bed text-primary me-1"></i>KS
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-3">
+                                        <div class="selection-card" onclick="handleCardClick(event, 'shoppingExpense')">
+                                            <div class="d-flex align-items-center justify-content-center mb-1">
+                                                <input class="form-check-input me-1" type="checkbox" id="shoppingExpense" value="shopping" onchange="toggleExpenseAmount()">
+                                                <label class="form-check-label small fw-bold mb-0" for="shoppingExpense">
+                                                    <i class="fas fa-shopping-cart text-primary me-1"></i>MS
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-3">
+                                        <div class="selection-card" onclick="handleCardClick(event, 'phoneExpense')">
+                                            <div class="d-flex align-items-center justify-content-center mb-1">
+                                                <input class="form-check-input me-1" type="checkbox" id="phoneExpense" value="phone" onchange="toggleExpenseAmount()">
+                                                <label class="form-check-label small fw-bold mb-0" for="phoneExpense">
+                                                    <i class="fas fa-phone text-info me-1"></i>ĐT
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-3">
+                                        <div class="selection-card" onclick="handleCardClick(event, 'otherExpense')">
+                                            <div class="d-flex align-items-center justify-content-center mb-1">
+                                                <input class="form-check-input me-1" type="checkbox" id="otherExpense" value="other" onchange="toggleOtherExpense()">
+                                                <label class="form-check-label small fw-bold mb-0" for="otherExpense">
+                                                    <i class="fas fa-plus text-warning me-1"></i>Khác
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3" style="display: none;">
+                                            <label class="form-label">Số tiền</label>
+                                            <input type="number" class="form-control" id="expenseAmount" placeholder="Nhập số tiền">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3" id="otherExpenseField" style="display: none;">
+                                            <label class="form-label">Mô tả chi phí khác</label>
+                                            <input type="text" class="form-control" id="otherExpenseDesc" placeholder="Mô tả chi phí">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-sticky-note me-2"></i>Ghi chú
+                            </label>
+                            <textarea class="form-control" id="workNote" rows="3" placeholder="Ghi chú công việc..."></textarea>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="d-flex gap-2">
+                                    <button type="button" class="modern-btn modern-btn-primary" onclick="saveAttendance()">
+                                        <i class="fas fa-save me-2"></i>Lưu chấm công
+                                    </button>
+                                    <button type="button" class="modern-btn modern-btn-outline" onclick="hideAttendanceForm()">
+                                        <i class="fas fa-times me-2"></i>Hủy
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 
-                        <!-- Optional fields -->
-                        <div class="row g-3 mt-3">
-                            <div class="col-md-3">
-                                <label class="form-label">Tăng ca đến (nếu có)</label>
-                                <input type="time" class="form-control" id="overtimeUntil">
-                        </div>
-                            <div class="col-md-3">
-                                <label class="form-label">Chi phí (VNĐ)</label>
-                                <input type="number" class="form-control" id="expenseAmount" placeholder="0">
-                    </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Ghi chú</label>
-                                <input type="text" class="form-control" id="workNote" placeholder="Mô tả công việc...">
-            </div>
-        </div>
-        
-                        <div class="text-end mt-3">
-                            <button class="btn btn-secondary me-2" onclick="hideAttendanceForm()">
-                                <i class="fas fa-times me-2"></i>Hủy
-                            </button>
-                            <button class="btn btn-primary" onclick="saveAttendance()">
-                                <i class="fas fa-save me-2"></i>Lưu chấm công
-                            </button>
-                    </div>
-                            </div>
-                        </div>
-                            </div>
-                        </div>
-                            </div>
-    
-    <!-- Filter Section -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="filter-section">
-                <div class="row align-items-end g-3">
-                    <div class="col-md-2">
-                        <label class="form-label">Tháng/Năm</label>
-                        <input type="month" class="form-control" id="filterMonth" value="{{ "now"|date:"Y-m" }}" onchange="loadAttendanceData()">
-                        </div>
-                    <div class="col-md-2">
-                        <label class="form-label">Loại công việc</label>
-                        <select class="form-select" id="filterWorkType" onchange="loadAttendanceData()">
-                            <option value="">Tất cả</option>
-                            <option value="office">Văn phòng</option>
-                            <option value="construction">Công trình</option>
-                            <option value="off">Nghỉ</option>
-                        </select>
-                            </div>
-                    <div class="col-md-2">
-                        <label class="form-label">Phương pháp NDT</label>
-                        <select class="form-select" id="filterNDTMethod" onchange="loadAttendanceData()">
-                            <option value="">Tất cả</option>
-                            <option value="UT">UT</option>
-                            <option value="MT">MT</option>
-                            <option value="PT">PT</option>
-                            <option value="RT">RT</option>
-                            <option value="VT">VT</option>
-                            <option value="ET">ET</option>
-                        </select>
-                        </div>
-                    <div class="col-md-3">
-                        <label class="form-label">Tìm kiếm</label>
-                        <input type="text" class="form-control" id="searchKeyword" placeholder="Tên công trình, ghi chú..." onkeyup="loadAttendanceData()">
-                    </div>
-                    <div class="col-md-3">
-                        <button class="btn btn-primary" onclick="loadAttendanceData()">
-                            <i class="fas fa-search me-2"></i>Lọc
-                        </button>
-                        <button class="btn btn-outline-secondary ms-2" onclick="clearFilter()">
-                            <i class="fas fa-eraser me-2"></i>Xóa lọc
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Statistics -->
-    <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="stats-box">
-                <h4 class="text-primary mb-1" id="totalWorkDays">0</h4>
-                <small class="text-muted">Ngày đi làm</small>
-                </div>
-                    </div>
-        <div class="col-md-3">
-            <div class="stats-box">
-                <h4 class="text-success mb-1" id="constructionDays">0</h4>
-                <small>Công trình</small>
-                </div>
-        </div>
-        <div class="col-md-3">
-            <div class="stats-box">
-                <h4 class="text-info mb-1" id="officeDays">0</h4>
-                <small>Văn phòng</small>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="stats-box">
-                <h4 class="text-warning mb-1" id="overtimeDays">0</h4>
-                <small>Ngày tăng ca</small>
-            </div>
-        </div>
-    </div>
-    
     <!-- Attendance Data -->
     <div class="row">
         <div class="col-12">
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">
-                        <i class="fas fa-table text-primary me-2"></i>
-                        Dữ liệu chấm công <span id="currentMonthDisplay"></span>
-                    </h5>
-                    <div>
-                        <button class="btn btn-outline-success btn-sm" onclick="exportCurrentView()">
-                            <i class="fas fa-file-excel me-1"></i>
-                            Xuất dữ liệu hiện tại
-                        </button>
+            <div class="modern-card">
+                <div class="modern-card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-table me-2"></i>Dữ liệu chấm công
+                    </h6>
+                </div>
+                <div class="modern-card-body">
+                    <div id="attendanceTableContainer">
+                        <p class="text-center text-muted">
+                            <i class="fas fa-spinner fa-spin me-2"></i>
+                            Đang tải dữ liệu...
+                        </p>
                     </div>
                 </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Ngày</th>
-                                    <th>Loại công việc</th>
-                                    <th>Công trình/Mô tả</th>
-                                    <th>Phương pháp NDT</th>
-                                    <th>Tăng ca</th>
-                                    <th>Chi phí</th>
-                                    <th>Ghi chú</th>
-                                    <th>Thao tác</th>
-                                </tr>
-                            </thead>
-                            <tbody id="attendanceTableBody">
-                                <tr>
-                                    <td colspan="8" class="text-center text-muted py-4">
-                                        <i class="fas fa-spinner fa-spin fa-2x mb-2 d-block"></i>
-                                        Đang tải dữ liệu...
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leave Request Section -->
+    <div class="row">
+        <div class="col-12">
+            <div class="modern-card">
+                <div class="modern-card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-calendar-times me-2"></i>Xin nghỉ phép
+                    </h6>
+                </div>
+                <div class="modern-card-body">
+                    <div id="leaveRequestContainer">
+                        <p class="text-center text-muted">
+                            <i class="fas fa-spinner fa-spin me-2"></i>
+                            Đang tải dữ liệu...
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Leave Approval Section (for managers/admins) -->
+    <div class="row" id="leaveApprovalSection" style="display: none;">
+        <div class="col-12">
+            <div class="modern-card">
+                <div class="modern-card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-user-check me-2"></i>Phê duyệt nghỉ phép
+                    </h6>
+                    <!-- Test buttons hidden for production -->
+                    <!--
+                    <button class="btn btn-outline-light btn-sm" onclick="testUserPermissions()">
+                        <i class="fas fa-bug me-1"></i>Test Quyền
+                    </button>
+                    <button class="btn btn-outline-info btn-sm" onclick="testLeaveData()">
+                        <i class="fas fa-database me-1"></i>Test Data
+                    </button>
+                    -->
+                </div>
+                <div class="modern-card-body">
+                    <div id="leaveApprovalContainer">
+                        <p class="text-center text-muted">
+                            <i class="fas fa-spinner fa-spin me-2"></i>
+                            Đang tải dữ liệu...
+                        </p>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
-{% endblock %}
 
-{% block extra_js %}
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<!-- Leave Request Modal -->
+<div class="modal fade" id="leaveRequestModal" tabindex="-1" aria-labelledby="leaveRequestModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="leaveRequestModalLabel">
+                    <i class="fas fa-calendar-times me-2"></i>Xin nghỉ phép
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="leaveRequestForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Ngày bắt đầu nghỉ *</label>
+                                <input type="date" class="form-control" id="leaveStartDate" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Ngày kết thúc nghỉ *</label>
+                                <input type="date" class="form-control" id="leaveEndDate" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Lý do nghỉ phép *</label>
+                        <input type="text" class="form-control" id="leaveReason" placeholder="Nhập lý do nghỉ phép" required>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Người bàn giao công việc *</label>
+                                <input type="text" class="form-control" id="handoverPerson" placeholder="Tên người nhận bàn giao" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Công việc bàn giao</label>
+                                <textarea class="form-control" id="handoverTasks" rows="3" placeholder="Mô tả công việc cần bàn giao..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-primary" onclick="submitLeaveRequest()">
+                    <i class="fas fa-paper-plane me-2"></i>Gửi yêu cầu
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
-// Global data
-let attendanceData = [];
-let currentMode = 'today'; // 'today' or 'makeup'
+// Global variables
+let currentMode = 'today';
+let isLoadingData = false;
+let CURRENT_USER = null;
 
-// Show attendance form
+// Initialize user data from global dashboard system
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOMContentLoaded triggered');
+    
+    // Initialize immediately and also after a delay
+    initializeAttendanceModule();
+    
+    setTimeout(() => {
+        console.log('Delayed initialization...');
+        initializeAttendanceModule();
+    }, 500); // Increased delay
+});
+
+function initializeAttendanceModule() {
+    try {
+        console.log('Initializing attendance module...');
+        
+        // Get user from global dashboard system
+        if (window.DASHBOARD_USER) {
+            CURRENT_USER = window.DASHBOARD_USER;
+            
+            // Create demo data for testing
+            createDemoLeaveRequests();
+            console.log('Using global dashboard user:', CURRENT_USER);
+        } else {
+            // Fallback to basic user info
+            CURRENT_USER = {
+                id: '{{ user.id }}',
+                username: '{{ user.username }}',
+                full_name: '{{ user.get_full_name|default:user.username }}',
+                role: '{{ user.user_profile.role|default:"staff" }}'
+            };
+            console.log('Using fallback user:', CURRENT_USER);
+        }
+        
+        // Initialize the module
+        renderTodayAttendanceButton();
+        loadAttendanceData();
+        loadLeaveHistory();
+        updateCurrentMonthDisplay();
+        
+        console.log('Attendance module initialized successfully');
+    } catch (error) {
+        console.error('Error during initialization:', error);
+    }
+}
+
+// Helper functions using global dashboard storage with fallback
+function getUserAttendanceData() {
+    if (window.getUserData) {
+        return window.getUserData('attendance', 'data', []);
+    } else {
+        // Fallback to direct localStorage
+        const key = `attendance_${CURRENT_USER.id}_data`;
+        return JSON.parse(localStorage.getItem(key) || '[]');
+    }
+}
+
+function setUserAttendanceData(data) {
+    if (window.setUserData) {
+        return window.setUserData('attendance', 'data', data);
+    } else {
+        // Fallback to direct localStorage
+        const key = `attendance_${CURRENT_USER.id}_data`;
+        localStorage.setItem(key, JSON.stringify(data));
+    }
+}
+
+function getUserLeaveRequests() {
+    if (window.getUserData) {
+        return window.getUserData('attendance', 'leaveRequests', []);
+    } else {
+        // Fallback to direct localStorage
+        const key = `attendance_${CURRENT_USER.id}_leaveRequests`;
+        return JSON.parse(localStorage.getItem(key) || '[]');
+    }
+}
+
+function setUserLeaveRequests(requests) {
+    if (window.setUserData) {
+        return window.setUserData('attendance', 'leaveRequests', requests);
+    } else {
+        // Fallback to direct localStorage
+        const key = `attendance_${CURRENT_USER.id}_leaveRequests`;
+        localStorage.setItem(key, JSON.stringify(requests));
+    }
+}
+
+
+
+function showMakeupForm() {
+    console.log('showMakeupForm called');
+    showAttendanceForm('makeup');
+}
+
 function showAttendanceForm(mode) {
+    console.log('showAttendanceForm called with mode:', mode);
     currentMode = mode;
     const formSection = document.getElementById('attendanceFormSection');
     const formTitle = document.getElementById('formTitle');
     const dateInput = document.getElementById('attendanceDate');
+    
+    if (!formSection || !formTitle || !dateInput) {
+        console.error('Required form elements not found!');
+        return;
+    }
     
     if (mode === 'today') {
         formTitle.innerHTML = '<i class="fas fa-edit text-primary me-2"></i>Chấm công hôm nay';
@@ -336,17 +853,15 @@ function showAttendanceForm(mode) {
         dateInput.disabled = false;
     }
     
-    formSection.classList.remove('hidden');
-    formSection.classList.add('show');
-}
-
-function showMakeupForm() {
-    showAttendanceForm('makeup');
+    formSection.style.display = 'block';
+    console.log('Form section shown');
 }
 
 function hideAttendanceForm() {
-    document.getElementById('attendanceFormSection').classList.add('hidden');
-    document.getElementById('attendanceFormSection').classList.remove('show');
+    const formSection = document.getElementById('attendanceFormSection');
+    if (formSection) {
+        formSection.style.display = 'none';
+    }
     clearForm();
 }
 
@@ -354,420 +869,1570 @@ function clearForm() {
     document.getElementById('workType').value = '';
     document.getElementById('constructionName').value = '';
     document.getElementById('ndtMethod').value = '';
-    document.getElementById('overtimeUntil').value = '';
-    document.getElementById('expenseAmount').value = '';
+    document.getElementById('dayShift').checked = true;
+    document.getElementById('nightShift').checked = false;
+    
+    // Reset overtime fields
+    const dayOvertimeEnd = document.getElementById('dayOvertimeEnd');
+    const nightOvertimeEnd = document.getElementById('nightOvertimeEnd');
+    const overtimeHours = document.getElementById('overtimeHours');
+    if (dayOvertimeEnd) dayOvertimeEnd.value = '';
+    if (nightOvertimeEnd) nightOvertimeEnd.value = '';
+    if (overtimeHours) overtimeHours.value = '';
+    
+    // Reset expense checkboxes
+    document.getElementById('hotelExpense').checked = false;
+    document.getElementById('shoppingExpense').checked = false;
+    document.getElementById('phoneExpense').checked = false;
+    document.getElementById('otherExpense').checked = false;
+    
+    const expenseAmount = document.getElementById('expenseAmount');
+    const otherExpenseDesc = document.getElementById('otherExpenseDesc');
+    const otherExpenseField = document.getElementById('otherExpenseField');
+    
+    if (expenseAmount) expenseAmount.value = '';
+    if (otherExpenseDesc) otherExpenseDesc.value = '';
+    if (otherExpenseField) otherExpenseField.style.display = 'none';
+    if (expenseAmount && expenseAmount.parentElement) {
+        expenseAmount.parentElement.style.display = 'none';
+    }
+    
     document.getElementById('workNote').value = '';
     document.getElementById('constructionFields').style.display = 'none';
+    document.getElementById('shiftSection').style.display = 'none';
+    document.getElementById('overtimeSection').style.display = 'none';
+    document.getElementById('expenseSection').style.display = 'none';
 }
 
-function toggleConstructionFields() {
-    const workType = document.getElementById('workType').value;
-    const constructionFields = document.getElementById('constructionFields');
+// Smart card click handler
+function handleCardClick(event, checkboxId) {
+    // Check if the click was on the checkbox or its label
+    const target = event.target;
+    const checkbox = document.getElementById(checkboxId);
     
-    if (workType === 'construction') {
-        constructionFields.style.display = 'block';
+    // If click was on checkbox or label, let the default behavior handle it
+    if (target === checkbox || target.tagName === 'LABEL' || target.closest('label')) {
+        return; // Let the checkbox handle its own click
+    }
+    
+    // If click was elsewhere on the card, toggle the checkbox
+    event.preventDefault();
+    event.stopPropagation();
+    checkbox.checked = !checkbox.checked;
+    
+    // Trigger the appropriate action based on checkbox type
+    if (checkboxId === 'dayShift' || checkboxId === 'nightShift') {
+        updateOvertimeSections();
+    } else if (checkboxId === 'otherExpense') {
+        toggleOtherExpense();
     } else {
-        constructionFields.style.display = 'none';
+        toggleExpenseAmount();
     }
 }
 
 function renderTodayAttendanceButton() {
+    console.log('renderTodayAttendanceButton called');
     const today = new Date().toISOString().slice(0, 10);
-    const data = JSON.parse(localStorage.getItem('attendanceData') || '[]');
+    const data = getUserAttendanceData();
     const todayRecord = data.find(r => r.date === today);
+    
+    console.log('Today:', today);
+    console.log('Today record found:', !!todayRecord);
+    console.log('Data:', data);
+    
     let html = '';
     if (todayRecord) {
-        html += `<button class="btn btn-secondary action-btn" disabled style="opacity:0.8;cursor:not-allowed;">
-            <i class="fas fa-check-double me-2"></i>Đã chấm công hôm nay
+        html += `<button class="modern-btn modern-btn-outline" disabled style="opacity:0.6;cursor:not-allowed;">
+            <i class="fas fa-check-circle me-2"></i>Đã chấm công hôm nay
         </button>`;
     } else {
-        html += `<button class="btn btn-success action-btn" onclick="showAttendanceForm('today')">
+        html += `<button class="modern-btn modern-btn-primary" onclick="showAttendanceForm('today')">
             <i class="fas fa-check me-2"></i>Chấm công hôm nay
         </button>`;
     }
-    html += `<button class="btn btn-warning action-btn" onclick="showMakeupForm()">
+    html += `<button class="modern-btn modern-btn-success" onclick="showMakeupForm()">
         <i class="fas fa-calendar-plus me-2"></i>Chấm công bù
     </button>`;
-    document.getElementById('todayAttendanceForm').innerHTML = html;
+    html += `<button class="modern-btn modern-btn-outline" onclick="showLeaveRequestForm()">
+        <i class="fas fa-calendar-times me-2"></i>Xin nghỉ phép
+    </button>`;
+    
+    const formElement = document.getElementById('todayAttendanceForm');
+    console.log('todayAttendanceForm element:', formElement);
+    console.log('HTML to render:', html);
+    
+    if (formElement) {
+        formElement.innerHTML = html;
+        console.log('Buttons rendered successfully');
+        
+        // Test click handlers
+        const buttons = formElement.querySelectorAll('button');
+        console.log('Found buttons:', buttons.length);
+        buttons.forEach((btn, index) => {
+            console.log(`Button ${index}:`, btn.textContent.trim(), 'onclick:', btn.onclick);
+        });
+    } else {
+        console.error('todayAttendanceForm element not found!');
+    }
+}
+
+// Additional functions
+// Work schedule configuration
+const WORK_SCHEDULE = {
+    day: {
+        morning: { start: '07:30', end: '11:30' },
+        afternoon: { start: '13:00', end: '17:00' }
+    },
+    night: {
+        shift1: { start: '19:00', end: '23:00' },
+        shift2: { start: '00:00', end: '04:00' }
+    }
+};
+
+function toggleConstructionFields() {
+    console.log('toggleConstructionFields called');
+    const workType = document.getElementById('workType').value;
+    console.log('Work type selected:', workType);
+    
+    const constructionFields = document.getElementById('constructionFields');
+    const shiftSection = document.getElementById('shiftSection');
+    const overtimeSection = document.getElementById('overtimeSection');
+    const expenseSection = document.getElementById('expenseSection');
+    
+    console.log('Elements found:', {
+        constructionFields: !!constructionFields,
+        shiftSection: !!shiftSection,
+        overtimeSection: !!overtimeSection,
+        expenseSection: !!expenseSection
+    });
+    
+    if (workType === 'W') {
+        // Công trường - hiển thị tất cả
+        if (constructionFields) constructionFields.style.display = 'block';
+        if (shiftSection) shiftSection.style.display = 'block';
+        if (overtimeSection) overtimeSection.style.display = 'block';
+        if (expenseSection) expenseSection.style.display = 'block';
+        console.log('Showing all sections for work type W (Công trường)');
+    } else if (workType === 'O') {
+        // Văn phòng - không cần công trình, có ca làm việc và tăng ca
+        if (constructionFields) constructionFields.style.display = 'none';
+        if (shiftSection) shiftSection.style.display = 'block';
+        if (overtimeSection) overtimeSection.style.display = 'block';
+        if (expenseSection) expenseSection.style.display = 'block';
+        console.log('Showing shift/overtime/expense sections for O (Văn phòng)');
+    } else if (workType === 'T') {
+        // Đào tạo - không cần công trình, có ca làm việc và tăng ca
+        if (constructionFields) constructionFields.style.display = 'none';
+        if (shiftSection) shiftSection.style.display = 'block';
+        if (overtimeSection) overtimeSection.style.display = 'block';
+        if (expenseSection) expenseSection.style.display = 'block';
+        console.log('Showing shift/overtime/expense sections for T (Đào tạo)');
+    } else if (workType === 'P' || workType === 'N') {
+        // Nghỉ có phép/không phép - chỉ hiển thị ghi chú
+        if (constructionFields) constructionFields.style.display = 'none';
+        if (shiftSection) shiftSection.style.display = 'none';
+        if (overtimeSection) overtimeSection.style.display = 'none';
+        if (expenseSection) expenseSection.style.display = 'none';
+        console.log('Hiding all sections for P/N (Nghỉ)');
+    } else {
+        // Chưa chọn - ẩn tất cả
+        if (constructionFields) constructionFields.style.display = 'none';
+        if (shiftSection) shiftSection.style.display = 'none';
+        if (overtimeSection) overtimeSection.style.display = 'none';
+        if (expenseSection) expenseSection.style.display = 'none';
+        console.log('Hiding all sections - no selection');
+    }
+    
+    // Cập nhật hiển thị section tăng ca theo ca được chọn
+    updateOvertimeSections();
+}
+
+function updateOvertimeSections() {
+    console.log('updateOvertimeSections called');
+    const dayShift = document.getElementById('dayShift').checked;
+    const nightShift = document.getElementById('nightShift').checked;
+    
+    console.log('Shift selection:', { dayShift, nightShift });
+    
+    // Ẩn tất cả section trước
+    const dayOvertimeSection = document.getElementById('dayOvertimeSection');
+    const nightOvertimeSection = document.getElementById('nightOvertimeSection');
+    
+    console.log('Overtime sections found:', {
+        dayOvertimeSection: !!dayOvertimeSection,
+        nightOvertimeSection: !!nightOvertimeSection
+    });
+    
+    if (dayOvertimeSection) {
+        dayOvertimeSection.style.display = 'none';
+        console.log('Hidden day overtime section');
+    }
+    if (nightOvertimeSection) {
+        nightOvertimeSection.style.display = 'none';
+        console.log('Hidden night overtime section');
+    }
+    
+    // Hiển thị section theo ca được chọn
+    if (dayShift && dayOvertimeSection) {
+        dayOvertimeSection.style.display = 'block';
+        console.log('Showing day overtime section');
+    }
+    
+    if (nightShift && nightOvertimeSection) {
+        nightOvertimeSection.style.display = 'block';
+        console.log('Showing night overtime section');
+    }
+    
+    // Tính lại tăng ca
+    calculateOvertime();
+}
+
+function calculateOvertime() {
+    const dayShift = document.getElementById('dayShift').checked;
+    const nightShift = document.getElementById('nightShift').checked;
+    
+    let totalOvertimeHours = 0;
+    let overtimeDetails = [];
+    
+    // Tính tăng ca ngày (từ 17h00)
+    if (dayShift) {
+        const dayOvertimeEnd = document.getElementById('dayOvertimeEnd');
+        if (dayOvertimeEnd && dayOvertimeEnd.value) {
+            const standardEnd = new Date(`2000-01-01T17:00:00`);
+            const overtimeEnd = new Date(`2000-01-01T${dayOvertimeEnd.value}`);
+            
+            if (overtimeEnd > standardEnd) {
+                const overtimeHours = (overtimeEnd - standardEnd) / (1000 * 60 * 60);
+                totalOvertimeHours += overtimeHours;
+                overtimeDetails.push(`Ca ngày: ${overtimeHours.toFixed(1)}h (17:00 → ${dayOvertimeEnd.value})`);
+                console.log('Tăng ca ngày:', overtimeHours.toFixed(1), 'giờ');
+            }
+        }
+    }
+    
+    // Tính tăng ca đêm (từ 04h00)
+    if (nightShift) {
+        const nightOvertimeEnd = document.getElementById('nightOvertimeEnd');
+        if (nightOvertimeEnd && nightOvertimeEnd.value) {
+            const standardEnd = new Date(`2000-01-01T04:00:00`);
+            const overtimeEnd = new Date(`2000-01-01T${nightOvertimeEnd.value}`);
+            
+            if (overtimeEnd > standardEnd) {
+                const overtimeHours = (overtimeEnd - standardEnd) / (1000 * 60 * 60);
+                totalOvertimeHours += overtimeHours;
+                overtimeDetails.push(`Ca đêm: ${overtimeHours.toFixed(1)}h (04:00 → ${nightOvertimeEnd.value})`);
+                console.log('Tăng ca đêm:', overtimeHours.toFixed(1), 'giờ');
+            }
+        }
+    }
+    
+    const overtimeHoursField = document.getElementById('overtimeHours');
+    if (overtimeHoursField) {
+        overtimeHoursField.value = totalOvertimeHours.toFixed(1);
+        
+        // Thêm tooltip hoặc hiển thị chi tiết
+        if (overtimeDetails.length > 0) {
+            overtimeHoursField.title = overtimeDetails.join('\n');
+        }
+    }
+    
+    console.log('Tổng tăng ca:', totalOvertimeHours.toFixed(1), 'giờ');
+    console.log('Chi tiết:', overtimeDetails);
+}
+
+function toggleExpenseAmount() {
+    const hotelChecked = document.getElementById('hotelExpense').checked;
+    const shoppingChecked = document.getElementById('shoppingExpense').checked;
+    const phoneChecked = document.getElementById('phoneExpense').checked;
+    const otherChecked = document.getElementById('otherExpense').checked;
+    
+    const expenseAmountField = document.getElementById('expenseAmount');
+    
+    // Hiển thị input số tiền nếu có ít nhất 1 loại chi phí được chọn
+    if (hotelChecked || shoppingChecked || phoneChecked || otherChecked) {
+        if (expenseAmountField) {
+            expenseAmountField.style.display = 'block';
+            if (expenseAmountField.parentElement) {
+                expenseAmountField.parentElement.style.display = 'block';
+            }
+        }
+    } else {
+        if (expenseAmountField) {
+            expenseAmountField.style.display = 'none';
+            if (expenseAmountField.parentElement) {
+                expenseAmountField.parentElement.style.display = 'none';
+            }
+        }
+    }
+}
+
+function toggleOtherExpense() {
+    const otherChecked = document.getElementById('otherExpense').checked;
+    const otherField = document.getElementById('otherExpenseField');
+    
+    if (otherField) {
+        if (otherChecked) {
+            otherField.style.display = 'block';
+        } else {
+            otherField.style.display = 'none';
+            const otherExpenseDesc = document.getElementById('otherExpenseDesc');
+            if (otherExpenseDesc) {
+                otherExpenseDesc.value = '';
+            }
+        }
+    }
 }
 
 function saveAttendance() {
-    const date = document.getElementById('attendanceDate').value;
-    const workType = document.getElementById('workType').value;
-        const constructionName = document.getElementById('constructionName').value;
-        const ndtMethod = document.getElementById('ndtMethod').value;
-    const overtimeUntil = document.getElementById('overtimeUntil').value;
-    const expenseAmount = document.getElementById('expenseAmount').value;
-    const workNote = document.getElementById('workNote').value;
-        
-    if (!date || !workType) {
-        Swal.fire('Lỗi', 'Vui lòng nhập đầy đủ ngày và loại công việc!', 'error');
-            return;
-        }
+    const form = document.getElementById('attendanceForm');
+    if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+    }
     
-    if (workType === 'construction' && (!constructionName || !ndtMethod)) {
-        Swal.fire('Lỗi', 'Vui lòng nhập tên công trình và phương pháp NDT!', 'error');
-            return;
-        }
-        
-    // Create attendance record
-    const record = {
-        date: date,
-        workType: workType,
-        constructionName: constructionName || '',
-        ndtMethod: ndtMethod || '',
-        overtimeUntil: overtimeUntil || '',
-        expenseAmount: expenseAmount || '',
-        workNote: workNote || '',
+    const attendanceData = {
+        date: document.getElementById('attendanceDate').value,
+        workType: document.getElementById('workType').value,
+        constructionName: document.getElementById('constructionName').value,
+        ndtMethod: document.getElementById('ndtMethod').value,
+        dayShift: document.getElementById('dayShift').checked,
+        nightShift: document.getElementById('nightShift').checked,
+        dayOvertimeEnd: document.getElementById('dayOvertimeEnd')?.value || '',
+        nightOvertimeEnd: document.getElementById('nightOvertimeEnd')?.value || '',
+        overtimeHours: document.getElementById('overtimeHours')?.value || '0',
+        hotelExpense: document.getElementById('hotelExpense').checked,
+        shoppingExpense: document.getElementById('shoppingExpense').checked,
+        phoneExpense: document.getElementById('phoneExpense').checked,
+        otherExpense: document.getElementById('otherExpense').checked,
+        expenseAmount: document.getElementById('expenseAmount')?.value || '',
+        otherExpenseDesc: document.getElementById('otherExpenseDesc')?.value || '',
+        workNote: document.getElementById('workNote')?.value || '',
         timestamp: new Date().toISOString()
     };
     
-    // Save to localStorage (in real app, this would be sent to server)
-    let existingData = JSON.parse(localStorage.getItem('attendanceData') || '[]');
+    const data = getUserAttendanceData();
+    data.push(attendanceData);
+    setUserAttendanceData(data);
     
-    // Remove existing record for same date if exists
-    existingData = existingData.filter(item => item.date !== date);
-    
-    // Add new record
-    existingData.push(record);
-    localStorage.setItem('attendanceData', JSON.stringify(existingData));
-    
-    // Show success message
-    Swal.fire({
-        title: 'Thành công!',
-        text: `Đã lưu chấm công ngày ${new Date(date).toLocaleDateString('vi-VN')}`,
-        icon: 'success',
-        timer: 1500,
-        showConfirmButton: false
-    });
-    
+    // Update UI
     hideAttendanceForm();
     loadAttendanceData();
     renderTodayAttendanceButton();
-}
-
-function loadAttendanceData() {
-    const filterMonth = document.getElementById('filterMonth').value;
-    const filterWorkType = document.getElementById('filterWorkType').value;
-    const filterNDTMethod = document.getElementById('filterNDTMethod').value;
-    const searchKeyword = document.getElementById('searchKeyword').value.toLowerCase();
+    updateDetailedStatistics();
     
-    // Load data from localStorage
-    let data = JSON.parse(localStorage.getItem('attendanceData') || '[]');
-    
-    // Filter by month
-    if (filterMonth) {
-        data = data.filter(item => item.date.startsWith(filterMonth));
-    }
-    
-    // Filter by work type
-    if (filterWorkType) {
-        data = data.filter(item => item.workType === filterWorkType);
-    }
-    
-    // Filter by NDT method
-    if (filterNDTMethod) {
-        data = data.filter(item => item.ndtMethod === filterNDTMethod);
-    }
-    
-    // Filter by search keyword
-    if (searchKeyword) {
-        data = data.filter(item => 
-            item.constructionName.toLowerCase().includes(searchKeyword) ||
-            item.workNote.toLowerCase().includes(searchKeyword)
-        );
-    }
-    
-    // Sort by date descending
-    data.sort((a, b) => new Date(b.date) - new Date(a.date));
-    
-    attendanceData = data;
-    renderAttendanceTable();
-    updateStatistics();
-    updateCurrentMonthDisplay(filterMonth);
-}
-
-function renderAttendanceTable() {
-    const tbody = document.getElementById('attendanceTableBody');
-    
-    if (attendanceData.length === 0) {
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="8" class="text-center text-muted py-4">
-                    <i class="fas fa-calendar-times fa-2x mb-2 d-block opacity-50"></i>
-                    Không có dữ liệu chấm công
-                </td>
-            </tr>
-        `;
-        return;
-    }
-    
-    tbody.innerHTML = attendanceData.map(record => {
-        const formattedDate = new Date(record.date).toLocaleDateString('vi-VN');
-        
-        let workTypeBadge = '';
-        switch(record.workType) {
-            case 'office':
-                workTypeBadge = '<span class="work-badge bg-secondary text-white"><i class="fas fa-home me-1"></i>Văn phòng</span>';
-                break;
-            case 'construction':
-                workTypeBadge = '<span class="work-badge bg-primary text-white"><i class="fas fa-industry me-1"></i>Công trình</span>';
-                break;
-            case 'off':
-                workTypeBadge = '<span class="work-badge bg-light text-dark"><i class="fas fa-bed me-1"></i>Nghỉ</span>';
-                break;
-        }
-        
-        const methodBadge = record.ndtMethod ? 
-            `<span class="method-badge bg-warning text-dark">${record.ndtMethod}</span>` : '--';
-        
-        const overtimeBadge = record.overtimeUntil ? 
-            `<span class="badge bg-warning">Đến ${record.overtimeUntil}</span>` : '--';
-            
-        const expenseFormatted = record.expenseAmount ? 
-            parseInt(record.expenseAmount).toLocaleString('vi-VN') + ' VNĐ' : '--';
-        
-        return `
-            <tr>
-                <td><strong>${formattedDate}</strong></td>
-                <td>${workTypeBadge}</td>
-                <td>${record.constructionName || (record.workType === 'office' ? 'Hành chính' : '--')}</td>
-                <td>${methodBadge}</td>
-                <td>${overtimeBadge}</td>
-                <td>${expenseFormatted}</td>
-                <td>${record.workNote || '--'}</td>
-                <td>
-                    <button class="btn btn-sm btn-outline-primary" onclick="editRecord('${record.date}')" title="Sửa">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    <button class="btn btn-sm btn-outline-danger ms-1" onclick="deleteRecord('${record.date}')" title="Xóa">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </td>
-            </tr>
-        `;
-    }).join('');
-}
-
-function updateStatistics() {
-    const totalWorkDays = attendanceData.filter(r => r.workType !== 'off').length;
-    const constructionDays = attendanceData.filter(r => r.workType === 'construction').length;
-    const officeDays = attendanceData.filter(r => r.workType === 'office').length;
-    const overtimeDays = attendanceData.filter(r => r.overtimeUntil).length;
-    
-    document.getElementById('totalWorkDays').textContent = totalWorkDays;
-    document.getElementById('constructionDays').textContent = constructionDays;
-    document.getElementById('officeDays').textContent = officeDays;
-    document.getElementById('overtimeDays').textContent = overtimeDays;
-}
-
-function updateCurrentMonthDisplay(filterMonth) {
-    if (filterMonth) {
-        const [year, month] = filterMonth.split('-');
-        document.getElementById('currentMonth').textContent = `${month.padStart(2, '0')}/${year}`;
-    } else {
-    const now = new Date();
-        document.getElementById('currentMonth').textContent = `${(now.getMonth() + 1).toString().padStart(2, '0')}/${now.getFullYear()}`;
-    }
-}
-
-function clearFilter() {
-    document.getElementById('filterMonth').value = new Date().toISOString().slice(0, 7);
-    document.getElementById('filterWorkType').value = '';
-    document.getElementById('filterNDTMethod').value = '';
-    document.getElementById('searchKeyword').value = '';
-    loadAttendanceData();
-}
-
-function editRecord(date) {
-    const record = attendanceData.find(r => r.date === date);
-    if (!record) return;
-    
-    // Show form with existing data
-    showAttendanceForm('makeup');
-    
-    document.getElementById('attendanceDate').value = record.date;
-    document.getElementById('workType').value = record.workType;
-    document.getElementById('constructionName').value = record.constructionName;
-    document.getElementById('ndtMethod').value = record.ndtMethod;
-    document.getElementById('overtimeUntil').value = record.overtimeUntil;
-    document.getElementById('expenseAmount').value = record.expenseAmount;
-    document.getElementById('workNote').value = record.workNote;
-    
-    toggleConstructionFields();
-}
-
-function deleteRecord(date) {
-    Swal.fire({
-        title: 'Xác nhận xóa?',
-        text: `Bạn có chắc muốn xóa chấm công ngày ${new Date(date).toLocaleDateString('vi-VN')}?`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#d33',
-        cancelButtonColor: '#6c757d',
-        confirmButtonText: 'Xóa',
-        cancelButtonText: 'Hủy'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            let data = JSON.parse(localStorage.getItem('attendanceData') || '[]');
-            data = data.filter(item => item.date !== date);
-            localStorage.setItem('attendanceData', JSON.stringify(data));
-            
-            Swal.fire('Đã xóa!', 'Dữ liệu chấm công đã được xóa.', 'success');
-            loadAttendanceData();
-            renderTodayAttendanceButton();
-        }
-    });
-}
-
-function exportMonthlyReport() {
-    const filterMonth = document.getElementById('filterMonth').value;
-    console.log('Selected month:', filterMonth); // Debug log
-    
-    // Kiểm tra và set giá trị mặc định nếu chưa có
-    if (!filterMonth) {
-        const now = new Date();
-        const defaultMonth = now.toISOString().slice(0, 7); // Format YYYY-MM
-        document.getElementById('filterMonth').value = defaultMonth;
-        console.log('Setting default month:', defaultMonth); // Debug log
-    }
-    
-    const [year, month] = (filterMonth || document.getElementById('filterMonth').value).split('-');
-    if (!year || !month) {
-        Swal.fire('Lỗi', 'Tháng không hợp lệ!', 'error');
-        return;
-    }
-    // Generate all days of the month
-    const daysInMonth = new Date(year, month, 0).getDate();
-    const monthData = [
-        ['Ngày', 'Loại công việc', 'Công trình/Mô tả', 'Phương pháp NDT', 'Tăng ca', 'Chi phí (VNĐ)', 'Ghi chú']
-    ];
-    // Get attendance data for the month
-    const monthAttendanceData = JSON.parse(localStorage.getItem('attendanceData') || '[]')
-        .filter(item => item.date.startsWith(filterMonth));
-    let hasData = false;
-    for (let day = 1; day <= daysInMonth; day++) {
-        const dateStr = `${year}-${month.padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
-        const record = monthAttendanceData.find(r => r.date === dateStr);
-        if (record) hasData = true;
-        if (record) {
-            let workTypeText = '';
-            switch(record.workType) {
-                case 'office': workTypeText = 'Văn phòng'; break;
-                case 'construction': workTypeText = 'Công trình'; break;
-                case 'off': workTypeText = 'Nghỉ'; break;
-            }
-            monthData.push([
-                new Date(dateStr).toLocaleDateString('vi-VN'),
-                workTypeText,
-                record.constructionName || (record.workType === 'office' ? 'Hành chính' : ''),
-                record.ndtMethod || '',
-                record.overtimeUntil ? `Đến ${record.overtimeUntil}` : '',
-                record.expenseAmount || '',
-                record.workNote || ''
-            ]);
-        } else {
-            // Empty row for days not attended
-            monthData.push([
-                new Date(dateStr).toLocaleDateString('vi-VN'),
-                '', '', '', '', '', ''
-            ]);
-        }
-    }
-    if (!hasData) {
-        Swal.fire('Thông báo', 'Không có dữ liệu chấm công nào trong tháng này!', 'info');
-        return;
-    }
-    // Create and download Excel file
-    try {
-        const wb = XLSX.utils.book_new();
-        const ws = XLSX.utils.aoa_to_sheet(monthData);
-        ws['!cols'] = [
-            { width: 12 }, { width: 15 }, { width: 25 }, 
-            { width: 15 }, { width: 12 }, { width: 15 }, { width: 30 }
-        ];
-        XLSX.utils.book_append_sheet(wb, ws, `Chấm công ${month}-${year}`);
-        const shortYear = year.slice(-2);
-        const filename = `Bảng chấm công Nhân viên ${month.padStart(2, '0')}-${shortYear}.xlsx`;
-        XLSX.writeFile(wb, filename);
-        console.log('Đã xuất file:', filename);
+    // Show success message
+    if (typeof Swal !== 'undefined') {
         Swal.fire({
-            title: 'Xuất Excel thành công!',
-            text: `File đã được lưu: ${filename}`,
             icon: 'success',
+            title: 'Thành công!',
+            text: 'Đã lưu chấm công thành công.',
             timer: 2000,
             showConfirmButton: false
         });
-    } catch (err) {
-        console.error('Lỗi xuất Excel:', err);
-        Swal.fire('Lỗi', 'Không thể xuất file Excel. Vui lòng thử lại hoặc kiểm tra trình duyệt!', 'error');
     }
 }
 
-function exportCurrentView() {
-    if (attendanceData.length === 0) {
-        Swal.fire('Thông báo', 'Không có dữ liệu để xuất!', 'info');
+function loadAttendanceData() {
+    console.log('loadAttendanceData called');
+    const data = getUserAttendanceData();
+    const container = document.getElementById('attendanceTableContainer');
+    
+    if (data.length === 0) {
+        container.innerHTML = '<p class="text-center text-muted">Chưa có dữ liệu chấm công</p>';
         return;
     }
     
-    const exportData = [
-        ['Ngày', 'Loại công việc', 'Công trình/Mô tả', 'Phương pháp NDT', 'Tăng ca', 'Chi phí (VNĐ)', 'Ghi chú']
-    ];
+    let html = '<div class="table-responsive"><table class="table table-hover">';
+    html += '<thead><tr><th>Ngày</th><th>Loại công việc</th><th>Công trình</th><th>Phương pháp</th><th>Ca làm việc</th><th>Tăng ca</th><th>Chi phí</th></tr></thead><tbody>';
     
-    attendanceData.forEach(record => {
-        let workTypeText = '';
-        switch(record.workType) {
-            case 'office': workTypeText = 'Văn phòng'; break;
-            case 'construction': workTypeText = 'Công trình'; break;
-            case 'off': workTypeText = 'Nghỉ'; break;
+    data.forEach(record => {
+        const workTypeMap = {
+            'W': 'Công trường',
+            'O': 'Văn phòng',
+            'T': 'Đào tạo',
+            'P': 'Nghỉ có phép',
+            'N': 'Nghỉ không phép'
+        };
+        const workTypeText = workTypeMap[record.workType] || record.workType;
+        const workTypeClass = record.workType === 'W' ? 'success' : 
+                             record.workType === 'O' ? 'info' : 
+                             record.workType === 'T' ? 'primary' : 
+                             record.workType === 'P' ? 'warning' : 'danger';
+        
+        const date = new Date(record.date).toLocaleDateString('vi-VN');
+        const time = new Date(record.timestamp).toLocaleTimeString('vi-VN');
+        
+        // Ca làm việc
+        let shiftText = '';
+        if (record.dayShift && record.nightShift) {
+            shiftText = 'Ca ngày + Ca đêm';
+        } else if (record.dayShift) {
+            shiftText = 'Ca ngày';
+        } else if (record.nightShift) {
+            shiftText = 'Ca đêm';
+        } else {
+            shiftText = '-';
         }
         
-        exportData.push([
-            new Date(record.date).toLocaleDateString('vi-VN'),
-            workTypeText,
-            record.constructionName || (record.workType === 'office' ? 'Hành chính' : ''),
-            record.ndtMethod || '',
-            record.overtimeUntil ? `Đến ${record.overtimeUntil}` : '',
-            record.expenseAmount || '',
-            record.workNote || ''
-        ]);
+        // Tăng ca
+        const overtimeText = record.overtimeHours && parseFloat(record.overtimeHours) > 0 ? 
+            `${record.overtimeHours}h` : '-';
+        
+        // Chi phí
+        let expenseText = '';
+        if (record.hotelExpense || record.shoppingExpense || record.phoneExpense || record.otherExpense) {
+            const expenses = [];
+            if (record.hotelExpense) expenses.push('KS');
+            if (record.shoppingExpense) expenses.push('MS');
+            if (record.phoneExpense) expenses.push('ĐT');
+            if (record.otherExpense) expenses.push('Khác');
+            expenseText = expenses.join(', ');
+            if (record.expenseAmount) {
+                expenseText += ` (${record.expenseAmount}đ)`;
+            }
+        } else {
+            expenseText = '-';
+        }
+        
+        html += `<tr>
+            <td>${date}</td>
+            <td><span class="badge bg-${workTypeClass}">${workTypeText}</span></td>
+            <td>${record.constructionName || '-'}</td>
+            <td>${record.ndtMethod || '-'}</td>
+            <td>${shiftText}</td>
+            <td>${overtimeText}</td>
+            <td>${expenseText}</td>
+        </tr>`;
     });
     
-    const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.aoa_to_sheet(exportData);
+    html += '</tbody></table></div>';
+    container.innerHTML = html;
     
-    ws['!cols'] = [
-        { width: 12 }, { width: 15 }, { width: 25 }, 
-        { width: 15 }, { width: 12 }, { width: 15 }, { width: 30 }
-    ];
+    // Cập nhật thống kê sau khi load dữ liệu
+    updateDetailedStatistics();
     
-    XLSX.utils.book_append_sheet(wb, ws, 'Dữ liệu lọc');
+    // Hiển thị leave approval nếu user có quyền
+    if (CURRENT_USER && (CURRENT_USER.role === 'admin' || CURRENT_USER.role === 'manager')) {
+        showLeaveApprovalSection();
+    }
+}
+
+function loadLeaveHistory() {
+    console.log('loadLeaveHistory called');
+    const requests = getAllLeaveRequests(); // Sử dụng getAllLeaveRequests thay vì getUserLeaveRequests
+    console.log('Loading leave history with requests:', requests);
+    const container = document.getElementById('leaveRequestContainer');
     
-    const now = new Date();
-    const filename = `ChamCong_Loc_${now.getDate()}_${now.getMonth() + 1}_${now.getFullYear()}.xlsx`;
-    XLSX.writeFile(wb, filename);
+    if (requests.length === 0) {
+        container.innerHTML = '<p class="text-center text-muted">Chưa có yêu cầu nghỉ phép</p>';
+        return;
+    }
+    
+    let html = '<div class="row">';
+    requests.forEach(request => {
+        console.log('Processing request:', request);
+        console.log('Request ID:', request.id, 'Type:', typeof request.id);
+        
+        // Lấy trạng thái cuối cùng và lý do
+        const finalStatus = getFinalLeaveStatus(request);
+        const statusClass = finalStatus.status === 'approved' ? 'success' : 
+                          finalStatus.status === 'rejected' ? 'danger' : 'warning';
+        const statusText = finalStatus.status === 'approved' ? 'Đã duyệt' : 
+                          finalStatus.status === 'rejected' ? 'Từ chối' : 'Chờ phê duyệt';
+        
+        html += `<div class="col-md-6 mb-3">
+            <div class="modern-card">
+                <div class="modern-card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h6 class="mb-0">${request.reason}</h6>
+                        <span class="badge bg-${statusClass}">${statusText}</span>
+                    </div>
+                    <p class="text-muted mb-2">
+                        <i class="fas fa-calendar me-1"></i>
+                        ${new Date(request.startDate).toLocaleDateString('vi-VN')} - ${new Date(request.endDate).toLocaleDateString('vi-VN')}
+                    </p>
+                    <p class="text-muted mb-1">
+                        <i class="fas fa-user me-1"></i>
+                        Bàn giao: ${request.handoverPerson}
+                    </p>
+                    
+                    <!-- Hiển thị trạng thái phê duyệt 3 cấp -->
+                    <div class="approval-status mt-3">
+                        <div class="row">
+                            <div class="col-4">
+                                <div class="approval-item ${request.teamLeadApproval === 'approved' ? 'approved' : request.teamLeadApproval === 'rejected' ? 'rejected' : 'pending'}">
+                                    <small class="d-block text-muted">Trưởng nhóm</small>
+                                    <span class="badge bg-${request.teamLeadApproval === 'approved' ? 'success' : request.teamLeadApproval === 'rejected' ? 'danger' : 'secondary'}">
+                                        ${request.teamLeadApproval === 'approved' ? '✓' : request.teamLeadApproval === 'rejected' ? '✗' : '...'}
+                                    </span>
+                                    ${request.teamLeadApprovedBy && request.teamLeadApprovedBy.includes('Auto-') ? 
+                                        '<small class="text-info d-block"><i class="fas fa-robot me-1"></i>Tự động</small>' : ''}
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="approval-item ${request.managerApproval === 'approved' ? 'approved' : request.managerApproval === 'rejected' ? 'rejected' : 'pending'}">
+                                    <small class="d-block text-muted">Quản lý</small>
+                                    <span class="badge bg-${request.managerApproval === 'approved' ? 'success' : request.managerApproval === 'rejected' ? 'danger' : 'secondary'}">
+                                        ${request.managerApproval === 'approved' ? '✓' : request.managerApproval === 'rejected' ? '✗' : '...'}
+                                    </span>
+                                    ${request.managerApprovedBy && request.managerApprovedBy.includes('Auto-') ? 
+                                        '<small class="text-info d-block"><i class="fas fa-robot me-1"></i>Tự động</small>' : ''}
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="approval-item ${request.companyApproval === 'approved' ? 'approved' : request.companyApproval === 'rejected' ? 'rejected' : 'pending'}">
+                                    <small class="d-block text-muted">Công ty</small>
+                                    <span class="badge bg-${request.companyApproval === 'approved' ? 'success' : request.companyApproval === 'rejected' ? 'danger' : 'secondary'}">
+                                        ${request.companyApproval === 'approved' ? '✓' : request.companyApproval === 'rejected' ? '✗' : '...'}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    ${finalStatus.reason ? `<p class="text-danger mt-2 mb-0"><small><i class="fas fa-exclamation-triangle me-1"></i>${finalStatus.reason}</small></p>` : ''}
+                    
+                    <!-- Nút xóa yêu cầu -->
+                    <div class="mt-3 pt-2 border-top">
+                        <button class="btn btn-outline-danger btn-sm" onclick="deleteLeaveRequest('${request.id}')" data-request-id="${request.id}">
+                            <i class="fas fa-trash me-1"></i>Xóa yêu cầu
+                        </button>
+                        <!-- Debug info hidden for production -->
+                        <!--
+                        <small class="text-muted d-block mt-1">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Debug: request.id = "${request.id}"
+                        </small>
+                        -->
+                        ${canDeleteLeaveRequest(request) ? `
+                            <small class="text-muted d-block mt-1">
+                                <i class="fas fa-clock me-1"></i>
+                                Có thể xóa trong vòng ${getTimeRemainingForDelete(request)} nữa
+                            </small>
+                        ` : needsExtraConfirmation(request) ? `
+                            <small class="text-warning d-block mt-1">
+                                <i class="fas fa-exclamation-triangle me-1"></i>
+                                Sau 3 tiếng cần xác thực thêm
+                            </small>
+                        ` : ''}
+                    </div>
+                </div>
+            </div>
+        </div>`;
+    });
+    
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+function getFinalLeaveStatus(request) {
+    // Logic phân cấp: cấp cao từ chối thì từ chối
+    if (request.companyApproval === 'rejected') {
+        return {
+            status: 'rejected',
+            reason: request.companyRejectionReason || 'Công ty từ chối'
+        };
+    } else if (request.managerApproval === 'rejected') {
+        return {
+            status: 'rejected',
+            reason: request.managerRejectionReason || 'Quản lý từ chối'
+        };
+    } else if (request.teamLeadApproval === 'rejected') {
+        return {
+            status: 'rejected',
+            reason: request.teamLeadRejectionReason || 'Trưởng nhóm từ chối'
+        };
+    }
+    
+    // Nếu tất cả cấp đã duyệt thì duyệt
+    if (request.teamLeadApproval === 'approved' && 
+        request.managerApproval === 'approved' && 
+        request.companyApproval === 'approved') {
+        return {
+            status: 'approved',
+            reason: ''
+        };
+    }
+    
+    // Chờ phê duyệt
+    return {
+        status: 'pending',
+        reason: ''
+    };
+}
+
+// Kiểm tra xem có thể xóa yêu cầu nghỉ phép không (trong vòng 3 tiếng)
+function canDeleteLeaveRequest(request) {
+    if (!request.submittedAt) return false;
+    
+    const submittedTime = new Date(request.submittedAt);
+    const currentTime = new Date();
+    const timeDiff = currentTime - submittedTime;
+    const threeHoursInMs = 3 * 60 * 60 * 1000; // 3 tiếng
+    
+    return timeDiff <= threeHoursInMs;
+}
+
+// Kiểm tra xem có cần xác thực thêm không (sau 3 tiếng)
+function needsExtraConfirmation(request) {
+    if (!request.submittedAt) return false;
+    
+    const submittedTime = new Date(request.submittedAt);
+    const currentTime = new Date();
+    const timeDiff = currentTime - submittedTime;
+    const threeHoursInMs = 3 * 60 * 60 * 1000; // 3 tiếng
+    
+    return timeDiff > threeHoursInMs;
+}
+
+// Lấy thời gian còn lại để có thể xóa
+function getTimeRemainingForDelete(request) {
+    if (!request.submittedAt) return '0 phút';
+    
+    const submittedTime = new Date(request.submittedAt);
+    const currentTime = new Date();
+    const timeDiff = currentTime - submittedTime;
+    const threeHoursInMs = 3 * 60 * 60 * 1000;
+    const remainingTime = threeHoursInMs - timeDiff;
+    
+    if (remainingTime <= 0) return '0 phút';
+    
+    const hours = Math.floor(remainingTime / (60 * 60 * 1000));
+    const minutes = Math.floor((remainingTime % (60 * 60 * 1000)) / (60 * 1000));
+    
+    if (hours > 0) {
+        return `${hours} giờ ${minutes} phút`;
+    } else {
+        return `${minutes} phút`;
+    }
+}
+
+// Xóa yêu cầu nghỉ phép
+function deleteLeaveRequest(requestId) {
+    console.log('deleteLeaveRequest called with ID:', requestId);
+    console.log('Type of requestId:', typeof requestId);
+    console.log('requestId value:', JSON.stringify(requestId));
+    
+    const requests = getAllLeaveRequests();
+    console.log('All requests:', requests);
+    console.log('Looking for request with ID:', requestId);
+    
+    const request = requests.find(r => r.id === requestId);
+    console.log('Found request:', request);
+    
+    if (!request) {
+        console.error('Request not found. Available IDs:', requests.map(r => r.id));
+        console.error('Available IDs types:', requests.map(r => ({id: r.id, type: typeof r.id})));
+        console.error('Comparison test:');
+        requests.forEach((r, index) => {
+            console.error(`Request ${index}: id="${r.id}" (${typeof r.id}) === "${requestId}" (${typeof requestId}) = ${r.id === requestId}`);
+        });
+        Swal.fire('Lỗi!', 'Không tìm thấy yêu cầu nghỉ phép.', 'error');
+        return;
+    }
+    
+    // Kiểm tra xem có cần xác thực thêm không
+    if (needsExtraConfirmation(request)) {
+        // Xác thực thêm bằng cách nhập "xóa"
+        Swal.fire({
+            title: 'Xác thực thêm',
+            text: 'Yêu cầu này đã quá 3 tiếng. Vui lòng nhập "xóa" để xác nhận.',
+            input: 'text',
+            inputPlaceholder: 'Nhập "xóa"',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Xóa',
+            cancelButtonText: 'Hủy',
+            inputValidator: (value) => {
+                if (value !== 'xóa') {
+                    return 'Vui lòng nhập chính xác "xóa"';
+                }
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                performDelete(requestId);
+            }
+        });
+    } else {
+        // Xác nhận bình thường
+        Swal.fire({
+            title: 'Xác nhận xóa',
+            text: 'Bạn có chắc chắn muốn xóa yêu cầu nghỉ phép này? Hành động này không thể hoàn tác.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Xóa',
+            cancelButtonText: 'Hủy'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                performDelete(requestId);
+            }
+        });
+    }
+}
+
+function performDelete(requestId) {
+    // Xóa khỏi allLeaveRequests (shared storage)
+    let allRequests = getAllLeaveRequests();
+    allRequests = allRequests.filter(r => r.id !== requestId);
+    localStorage.setItem('allLeaveRequests', JSON.stringify(allRequests));
+    
+    // Xóa khỏi userLeaveRequests (user-specific storage)
+    let userRequests = getUserLeaveRequests();
+    userRequests = userRequests.filter(r => r.id !== requestId);
+    setUserLeaveRequests(userRequests);
+    
+    // Refresh displays
+    loadLeaveHistory();
+    showLeaveApprovalSection();
+    
+    Swal.fire(
+        'Đã xóa!',
+        'Yêu cầu nghỉ phép đã được xóa thành công.',
+        'success'
+    );
+}
+
+// Hàm test để kiểm tra dữ liệu leave requests
+function testLeaveData() {
+    console.log('=== TEST LEAVE DATA ===');
+    console.log('localStorage allLeaveRequests:', localStorage.getItem('allLeaveRequests'));
+    console.log('getAllLeaveRequests():', getAllLeaveRequests());
+    console.log('getUserLeaveRequests():', getUserLeaveRequests());
+    
+    const allRequests = getAllLeaveRequests();
+    if (allRequests.length === 0) {
+        console.log('No leave requests found. Creating demo data...');
+        createDemoLeaveRequests();
+        console.log('After creating demo data:', getAllLeaveRequests());
+    } else {
+        console.log('Found', allRequests.length, 'leave requests');
+        allRequests.forEach((req, index) => {
+            console.log(`Request ${index + 1}:`, req);
+        });
+    }
     
     Swal.fire({
-        title: 'Xuất Excel thành công!',
-        text: `File đã được lưu: ${filename}`,
+        title: 'Test Leave Data',
+        html: `
+            <div class="text-left">
+                <p><strong>All Leave Requests:</strong> ${getAllLeaveRequests().length}</p>
+                <p><strong>User Leave Requests:</strong> ${getUserLeaveRequests().length}</p>
+                <p><strong>localStorage Data:</strong> ${localStorage.getItem('allLeaveRequests') ? 'Exists' : 'Empty'}</p>
+            </div>
+        `,
+        icon: 'info'
+    });
+}
+
+function showLeaveApprovalSection() {
+    console.log('showLeaveApprovalSection called');
+    const section = document.getElementById('leaveApprovalSection');
+    const container = document.getElementById('leaveApprovalContainer');
+    
+    if (!section || !container) {
+        console.error('Leave approval elements not found');
+        return;
+    }
+    
+    // Hiển thị section
+    section.style.display = 'block';
+    
+    // Lấy tất cả leave requests
+    const allRequests = getAllLeaveRequests();
+    const pendingRequests = allRequests.filter(request => {
+        // Hiển thị tất cả request (cả pending và đã xử lý)
+        return true;
+    });
+    
+    if (pendingRequests.length === 0) {
+        container.innerHTML = '<p class="text-center text-muted">Không có yêu cầu nghỉ phép nào</p>';
+        return;
+    }
+    
+    let html = '<div class="row">';
+    pendingRequests.forEach(request => {
+        const canApprove = canUserApproveLeave(request);
+        const approvalLevel = getCurrentUserApprovalLevel();
+        
+        console.log('Request:', request);
+        console.log('Can approve:', canApprove);
+        console.log('Approval level:', approvalLevel);
+        
+        html += `<div class="col-md-6 mb-3">
+            <div class="modern-card">
+                <div class="modern-card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h6 class="mb-0">${request.employeeName}</h6>
+                        ${getRequestStatusBadge(request)}
+                    </div>
+                    <p class="text-muted mb-2">
+                        <i class="fas fa-calendar me-1"></i>
+                        ${new Date(request.startDate).toLocaleDateString('vi-VN')} - ${new Date(request.endDate).toLocaleDateString('vi-VN')}
+                    </p>
+                    <p class="text-muted mb-2">
+                        <i class="fas fa-file-alt me-1"></i>
+                        ${request.reason}
+                    </p>
+                    <p class="text-muted mb-3">
+                        <i class="fas fa-user me-1"></i>
+                        Bàn giao: ${request.handoverPerson}
+                    </p>
+                    
+                    <!-- Hiển thị trạng thái phê duyệt 3 cấp -->
+                    <div class="approval-status mb-3">
+                        <div class="row">
+                            <div class="col-4">
+                                <div class="approval-item ${request.teamLeadApproval === 'approved' ? 'approved' : request.teamLeadApproval === 'rejected' ? 'rejected' : 'pending'}">
+                                    <small class="d-block text-muted">Trưởng nhóm</small>
+                                    <span class="badge bg-${request.teamLeadApproval === 'approved' ? 'success' : request.teamLeadApproval === 'rejected' ? 'danger' : 'secondary'}">
+                                        ${request.teamLeadApproval === 'approved' ? '✓' : request.teamLeadApproval === 'rejected' ? '✗' : '...'}
+                                    </span>
+                                    ${request.teamLeadApprovedBy && request.teamLeadApprovedBy.includes('Auto-') ? 
+                                        '<small class="text-info d-block"><i class="fas fa-robot me-1"></i>Tự động</small>' : ''}
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="approval-item ${request.managerApproval === 'approved' ? 'approved' : request.managerApproval === 'rejected' ? 'rejected' : 'pending'}">
+                                    <small class="d-block text-muted">Quản lý</small>
+                                    <span class="badge bg-${request.managerApproval === 'approved' ? 'success' : request.managerApproval === 'rejected' ? 'danger' : 'secondary'}">
+                                        ${request.managerApproval === 'approved' ? '✓' : request.managerApproval === 'rejected' ? '✗' : '...'}
+                                    </span>
+                                    ${request.managerApprovedBy && request.managerApprovedBy.includes('Auto-') ? 
+                                        '<small class="text-info d-block"><i class="fas fa-robot me-1"></i>Tự động</small>' : ''}
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="approval-item ${request.companyApproval === 'approved' ? 'approved' : request.companyApproval === 'rejected' ? 'rejected' : 'pending'}">
+                                    <small class="d-block text-muted">Công ty</small>
+                                    <span class="badge bg-${request.companyApproval === 'approved' ? 'success' : request.companyApproval === 'rejected' ? 'danger' : 'secondary'}">
+                                        ${request.companyApproval === 'approved' ? '✓' : request.companyApproval === 'rejected' ? '✗' : '...'}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    ${canApprove ? `
+                    <div class="approval-actions">
+                        <div class="row">
+                            <div class="col-6">
+                                <button class="btn btn-success btn-sm w-100" onclick="approveLeave('${request.id}', '${approvalLevel}')">
+                                    <i class="fas fa-check me-1"></i>Duyệt
+                                </button>
+                            </div>
+                            <div class="col-6">
+                                <button class="btn btn-danger btn-sm w-100" onclick="rejectLeave('${request.id}', '${approvalLevel}')">
+                                    <i class="fas fa-times me-1"></i>Từ chối
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    ` : getApprovalStatusMessage(request, approvalLevel)}
+                </div>
+            </div>
+        </div>`;
+    });
+    
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+function canUserApproveLeave(request) {
+    if (!CURRENT_USER) {
+        console.log('No current user found');
+        return false;
+    }
+    
+    const userRole = CURRENT_USER.role;
+    console.log('Current user role:', userRole);
+    console.log('Current user:', CURRENT_USER);
+    
+    // Kiểm tra xem user có quyền phê duyệt không
+    let hasPermission = false;
+    let canApproveAtLevel = false;
+    
+    if (userRole === 'company' || userRole === 'admin') {
+        hasPermission = true;
+        canApproveAtLevel = request.companyApproval === 'pending';
+    } else if (userRole === 'manager') {
+        hasPermission = true;
+        canApproveAtLevel = request.managerApproval === 'pending';
+    } else if (userRole === 'team_lead') {
+        hasPermission = true;
+        canApproveAtLevel = request.teamLeadApproval === 'pending';
+    }
+    
+    console.log('Has permission:', hasPermission);
+    console.log('Can approve at level:', canApproveAtLevel);
+    console.log('Request approval status:', {
+        teamLead: request.teamLeadApproval,
+        manager: request.managerApproval,
+        company: request.companyApproval
+    });
+    
+    return hasPermission && canApproveAtLevel;
+}
+
+function getApprovalStatusMessage(request, userLevel) {
+    if (!CURRENT_USER) return '<p class="text-muted small">Bạn không có quyền phê duyệt yêu cầu này</p>';
+    
+    const userRole = CURRENT_USER.role;
+    
+    // Kiểm tra xem user đã phê duyệt chưa
+    if (userRole === 'company' || userRole === 'admin') {
+        if (request.companyApproval === 'approved') {
+            return '<p class="text-success small"><i class="fas fa-check me-1"></i>Bạn đã phê duyệt yêu cầu này</p>';
+        } else if (request.companyApproval === 'rejected') {
+            return '<p class="text-danger small"><i class="fas fa-times me-1"></i>Bạn đã từ chối yêu cầu này</p>';
+        }
+    } else if (userRole === 'manager') {
+        if (request.managerApproval === 'approved') {
+            return '<p class="text-success small"><i class="fas fa-check me-1"></i>Bạn đã phê duyệt yêu cầu này</p>';
+        } else if (request.managerApproval === 'rejected') {
+            return '<p class="text-danger small"><i class="fas fa-times me-1"></i>Bạn đã từ chối yêu cầu này</p>';
+        }
+    } else if (userRole === 'team_lead') {
+        if (request.teamLeadApproval === 'approved') {
+            return '<p class="text-success small"><i class="fas fa-check me-1"></i>Bạn đã phê duyệt yêu cầu này</p>';
+        } else if (request.teamLeadApproval === 'rejected') {
+            return '<p class="text-danger small"><i class="fas fa-times me-1"></i>Bạn đã từ chối yêu cầu này</p>';
+        }
+    }
+    
+    return '<p class="text-muted small">Bạn không có quyền phê duyệt yêu cầu này</p>';
+}
+
+function getRequestStatusBadge(request) {
+    // Kiểm tra xem có bị từ chối không
+    if (request.teamLeadApproval === 'rejected' || 
+        request.managerApproval === 'rejected' || 
+        request.companyApproval === 'rejected') {
+        return '<span class="badge bg-danger">Bị từ chối</span>';
+    }
+    
+    // Kiểm tra xem đã được phê duyệt hoàn toàn chưa
+    if (request.teamLeadApproval === 'approved' && 
+        request.managerApproval === 'approved' && 
+        request.companyApproval === 'approved') {
+        return '<span class="badge bg-success">Đã phê duyệt</span>';
+    }
+    
+    // Kiểm tra xem có cấp nào đã phê duyệt chưa
+    const approvedCount = [request.teamLeadApproval, request.managerApproval, request.companyApproval]
+        .filter(status => status === 'approved').length;
+    
+    if (approvedCount > 0) {
+        return `<span class="badge bg-info">Đã phê duyệt ${approvedCount}/3</span>`;
+    }
+    
+    // Mặc định là chờ phê duyệt
+    return '<span class="badge bg-warning">Chờ phê duyệt</span>';
+}
+
+function getCurrentUserApprovalLevel() {
+    if (!CURRENT_USER) return null;
+    
+    const userRole = CURRENT_USER.role;
+    console.log('Getting approval level for role:', userRole);
+    
+    if (userRole === 'company' || userRole === 'admin') return 'company';
+    if (userRole === 'manager') return 'manager';
+    if (userRole === 'team_lead') return 'team_lead';
+    if (userRole === 'staff') return null; // Staff không có quyền phê duyệt
+    
+    console.log('Unknown role, returning null');
+    return null;
+}
+
+function getAllLeaveRequests() {
+    // Trong thực tế, đây sẽ là API call
+    // Hiện tại dùng localStorage để demo
+    const stored = localStorage.getItem('allLeaveRequests');
+    console.log('Raw localStorage data:', stored);
+    
+    const requests = JSON.parse(stored || '[]');
+    console.log('Parsed requests:', requests);
+    
+    return requests;
+}
+
+function approveLeave(requestId, level) {
+    console.log(`Approving leave ${requestId} at level ${level}`);
+    
+    // Trong thực tế, đây sẽ là API call
+    // Hiện tại cập nhật localStorage để demo
+    const requests = getAllLeaveRequests();
+    const request = requests.find(r => r.id === requestId);
+    
+    if (request) {
+        if (level === 'team_lead') {
+            request.teamLeadApproval = 'approved';
+            request.teamLeadApprovedBy = CURRENT_USER.full_name;
+            request.teamLeadApprovedAt = new Date().toISOString();
+        } else if (level === 'manager') {
+            // Manager phê duyệt thì team lead cũng tự động đồng ý
+            request.teamLeadApproval = 'approved';
+            request.teamLeadApprovedBy = 'Auto-approved by Manager';
+            request.teamLeadApprovedAt = new Date().toISOString();
+            
+            request.managerApproval = 'approved';
+            request.managerApprovedBy = CURRENT_USER.full_name;
+            request.managerApprovedAt = new Date().toISOString();
+        } else if (level === 'company') {
+            // Company phê duyệt thì tất cả cấp thấp hơn tự động đồng ý
+            request.teamLeadApproval = 'approved';
+            request.teamLeadApprovedBy = 'Auto-approved by Company';
+            request.teamLeadApprovedAt = new Date().toISOString();
+            
+            request.managerApproval = 'approved';
+            request.managerApprovedBy = 'Auto-approved by Company';
+            request.managerApprovedAt = new Date().toISOString();
+            
+            request.companyApproval = 'approved';
+            request.companyApprovedBy = CURRENT_USER.full_name;
+            request.companyApprovedAt = new Date().toISOString();
+        }
+        
+        localStorage.setItem('allLeaveRequests', JSON.stringify(requests));
+        
+        // Refresh display
+        showLeaveApprovalSection();
+        loadLeaveHistory();
+        
+        Swal.fire('Thành công!', 'Đã phê duyệt yêu cầu nghỉ phép.', 'success');
+    }
+}
+
+function rejectLeave(requestId, level) {
+    Swal.fire({
+        title: 'Lý do từ chối',
+        input: 'text',
+        inputLabel: 'Nhập lý do từ chối',
+        inputPlaceholder: 'Lý do từ chối...',
+        showCancelButton: true,
+        confirmButtonText: 'Từ chối',
+        cancelButtonText: 'Hủy',
+        inputValidator: (value) => {
+            if (!value) {
+                return 'Vui lòng nhập lý do từ chối!';
+            }
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            console.log(`Rejecting leave ${requestId} at level ${level} with reason: ${result.value}`);
+            
+            // Trong thực tế, đây sẽ là API call
+            // Hiện tại cập nhật localStorage để demo
+            const requests = getAllLeaveRequests();
+            const request = requests.find(r => r.id === requestId);
+            
+            if (request) {
+                if (level === 'team_lead') {
+                    request.teamLeadApproval = 'rejected';
+                    request.teamLeadRejectionReason = result.value;
+                    request.teamLeadApprovedBy = CURRENT_USER.full_name;
+                    request.teamLeadApprovedAt = new Date().toISOString();
+                } else if (level === 'manager') {
+                    // Manager từ chối thì team lead cũng tự động từ chối
+                    request.teamLeadApproval = 'rejected';
+                    request.teamLeadRejectionReason = 'Auto-rejected by Manager';
+                    request.teamLeadApprovedBy = 'Auto-rejected by Manager';
+                    request.teamLeadApprovedAt = new Date().toISOString();
+                    
+                    request.managerApproval = 'rejected';
+                    request.managerRejectionReason = result.value;
+                    request.managerApprovedBy = CURRENT_USER.full_name;
+                    request.managerApprovedAt = new Date().toISOString();
+                } else if (level === 'company') {
+                    // Company từ chối thì tất cả cấp thấp hơn tự động từ chối
+                    request.teamLeadApproval = 'rejected';
+                    request.teamLeadRejectionReason = 'Auto-rejected by Company';
+                    request.teamLeadApprovedBy = 'Auto-rejected by Company';
+                    request.teamLeadApprovedAt = new Date().toISOString();
+                    
+                    request.managerApproval = 'rejected';
+                    request.managerRejectionReason = 'Auto-rejected by Company';
+                    request.managerApprovedBy = 'Auto-rejected by Company';
+                    request.managerApprovedAt = new Date().toISOString();
+                    
+                    request.companyApproval = 'rejected';
+                    request.companyRejectionReason = result.value;
+                    request.companyApprovedBy = CURRENT_USER.full_name;
+                    request.companyApprovedAt = new Date().toISOString();
+                }
+                
+                localStorage.setItem('allLeaveRequests', JSON.stringify(requests));
+                
+                // Refresh display
+                showLeaveApprovalSection();
+                loadLeaveHistory();
+                
+                Swal.fire('Đã từ chối!', 'Yêu cầu nghỉ phép đã bị từ chối.', 'info');
+            }
+        }
+    });
+}
+
+function createDemoLeaveRequests() {
+    // Chỉ tạo demo data nếu chưa có
+    const existingRequests = getAllLeaveRequests();
+    console.log('Existing requests count:', existingRequests.length);
+    
+    if (existingRequests.length > 0) {
+        console.log('Demo data already exists, skipping creation');
+        return;
+    }
+    
+    console.log('Creating demo leave requests...');
+    
+    const currentTime = new Date();
+    const demoRequests = [
+        {
+            id: 'demo1',
+            startDate: '2024-12-25',
+            endDate: '2024-12-27',
+            reason: 'Nghỉ lễ Giáng sinh',
+            handoverPerson: 'Nguyễn Văn A',
+            handoverTasks: 'Bàn giao công việc dự án X',
+            status: 'pending',
+            submittedAt: new Date(currentTime.getTime() - 30 * 60 * 1000).toISOString(), // 30 phút trước
+            submittedBy: 'Nguyễn Văn B',
+            userId: 'user1',
+            employeeName: 'Nguyễn Văn B',
+            
+            teamLeadApproval: 'pending',
+            managerApproval: 'pending',
+            companyApproval: 'pending',
+            
+            teamLeadApprovedBy: '',
+            teamLeadApprovedAt: null,
+            teamLeadRejectionReason: '',
+            
+            managerApprovedBy: '',
+            managerApprovedAt: null,
+            managerRejectionReason: '',
+            
+            companyApprovedBy: '',
+            companyApprovedAt: null,
+            companyRejectionReason: ''
+        },
+        {
+            id: 'demo2',
+            startDate: '2024-12-30',
+            endDate: '2025-01-02',
+            reason: 'Nghỉ Tết Dương lịch',
+            handoverPerson: 'Trần Thị C',
+            handoverTasks: 'Bàn giao báo cáo tháng 12',
+            status: 'pending',
+            submittedAt: new Date(currentTime.getTime() - 2 * 60 * 60 * 1000).toISOString(), // 2 giờ trước
+            submittedBy: 'Lê Văn D',
+            userId: 'user2',
+            employeeName: 'Lê Văn D',
+            
+            teamLeadApproval: 'approved',
+            managerApproval: 'pending',
+            companyApproval: 'pending',
+            
+            teamLeadApprovedBy: 'Trưởng nhóm A',
+            teamLeadApprovedAt: new Date().toISOString(),
+            teamLeadRejectionReason: '',
+            
+            managerApprovedBy: '',
+            managerApprovedAt: null,
+            managerRejectionReason: '',
+            
+            companyApprovedBy: '',
+            companyApprovedAt: null,
+            companyRejectionReason: ''
+        },
+        {
+            id: 'demo3',
+            startDate: '2025-01-05',
+            endDate: '2025-01-07',
+            reason: 'Nghỉ du lịch',
+            handoverPerson: 'Hoàng Văn F',
+            handoverTasks: 'Bàn giao dự án kiểm tra VT',
+            status: 'approved',
+            submittedAt: new Date(currentTime.getTime() - 1 * 60 * 60 * 1000).toISOString(), // 1 giờ trước
+            submittedBy: 'Hoàng Văn E',
+            userId: 'user3',
+            employeeName: 'Hoàng Văn E',
+            
+            teamLeadApproval: 'approved',
+            managerApproval: 'approved',
+            companyApproval: 'approved',
+            
+            teamLeadApprovedBy: 'Trưởng nhóm B',
+            teamLeadApprovedAt: new Date().toISOString(),
+            teamLeadRejectionReason: '',
+            
+            managerApprovedBy: 'Quản lý A',
+            managerApprovedAt: new Date().toISOString(),
+            managerRejectionReason: '',
+            
+            companyApprovedBy: 'Admin',
+            companyApprovedAt: new Date().toISOString(),
+            companyRejectionReason: ''
+        },
+        {
+            id: 'demo4',
+            startDate: '2025-01-10',
+            endDate: '2025-01-12',
+            reason: 'Nghỉ học tập',
+            handoverPerson: 'Lê Văn D',
+            handoverTasks: 'Bàn giao dự án kiểm tra PT',
+            status: 'rejected',
+            submittedAt: new Date(currentTime.getTime() - 4 * 60 * 60 * 1000).toISOString(), // 4 giờ trước (quá hạn xóa)
+            submittedBy: 'Lê Văn C',
+            userId: 'user4',
+            employeeName: 'Lê Văn C',
+            
+            teamLeadApproval: 'approved',
+            managerApproval: 'rejected',
+            companyApproval: 'pending',
+            
+            teamLeadApprovedBy: 'Trưởng nhóm C',
+            teamLeadApprovedAt: new Date().toISOString(),
+            teamLeadRejectionReason: '',
+            
+            managerApprovedBy: 'Quản lý B',
+            managerApprovedAt: new Date().toISOString(),
+            managerRejectionReason: 'Không đủ nhân sự trong thời gian này',
+            
+            companyApprovedBy: '',
+            companyApprovedAt: null,
+            companyRejectionReason: ''
+        },
+        {
+            id: 'demo5',
+            startDate: '2025-01-15',
+            endDate: '2025-01-17',
+            reason: 'Nghỉ ốm',
+            handoverPerson: 'Phạm Thị E',
+            handoverTasks: 'Bàn giao công việc kiểm tra MT',
+            status: 'pending',
+            submittedAt: new Date(currentTime.getTime() - 10 * 60 * 1000).toISOString(), // 10 phút trước
+            submittedBy: 'Phạm Thị D',
+            userId: 'user5',
+            employeeName: 'Phạm Thị D',
+            
+            teamLeadApproval: 'pending',
+            managerApproval: 'pending',
+            companyApproval: 'pending',
+            
+            teamLeadApprovedBy: '',
+            teamLeadApprovedAt: null,
+            teamLeadRejectionReason: '',
+            
+            managerApprovedBy: '',
+            managerApprovedAt: null,
+            managerRejectionReason: '',
+            
+            companyApprovedBy: '',
+            companyApprovedAt: null,
+            companyRejectionReason: ''
+        }
+    ];
+    
+    localStorage.setItem('allLeaveRequests', JSON.stringify(demoRequests));
+    console.log('Created demo leave requests:', demoRequests);
+    console.log('Saved to localStorage. Current data:', getAllLeaveRequests());
+}
+
+function updateCurrentMonthDisplay() {
+    console.log('updateCurrentMonthDisplay called');
+    const currentMonth = new Date().toLocaleDateString('vi-VN', { month: 'long', year: 'numeric' });
+    const elements = document.querySelectorAll('#currentMonth');
+    elements.forEach(el => {
+        el.textContent = currentMonth;
+    });
+    
+    // Cập nhật thống kê chi tiết
+    updateDetailedStatistics();
+}
+
+function updateDetailedStatistics() {
+    console.log('updateDetailedStatistics called');
+    const data = getUserAttendanceData();
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1;
+    
+    // Tính tổng số ngày làm việc trong tháng (trừ chủ nhật)
+    const totalWorkingDaysInMonth = getWorkingDaysInMonth(currentYear, currentMonth);
+    
+    // Thống kê theo loại công việc
+    const stats = {
+        construction: 0,    // Công trường
+        office: 0,         // Văn phòng
+        training: 0,       // Đào tạo
+        leaveWithPermission: 0,    // Nghỉ có phép
+        leaveWithoutPermission: 0, // Nghỉ không phép
+        totalWorkDays: 0,  // Tổng ngày đi làm
+        totalOvertimeHours: 0,     // Tổng giờ tăng ca
+        totalExpenses: 0   // Tổng chi phí
+    };
+    
+    // Lọc dữ liệu theo tháng hiện tại
+    const currentMonthData = data.filter(record => {
+        const recordDate = new Date(record.date);
+        return recordDate.getFullYear() === currentYear && 
+               recordDate.getMonth() + 1 === currentMonth;
+    });
+    
+    currentMonthData.forEach(record => {
+        switch(record.workType) {
+            case 'W':
+                stats.construction++;
+                stats.totalWorkDays++;
+                break;
+            case 'O':
+                stats.office++;
+                stats.totalWorkDays++;
+                break;
+            case 'T':
+                stats.training++;
+                stats.totalWorkDays++;
+                break;
+            case 'P':
+                stats.leaveWithPermission++;
+                break;
+            case 'N':
+                stats.leaveWithoutPermission++;
+                break;
+        }
+        
+        // Tính tổng tăng ca
+        if (record.overtimeHours && parseFloat(record.overtimeHours) > 0) {
+            stats.totalOvertimeHours += parseFloat(record.overtimeHours);
+        }
+        
+        // Tính tổng chi phí
+        if (record.expenseAmount && parseFloat(record.expenseAmount) > 0) {
+            stats.totalExpenses += parseFloat(record.expenseAmount);
+        }
+    });
+    
+    // Cập nhật UI
+    document.getElementById('totalWorkDays').textContent = `${stats.totalWorkDays}/${totalWorkingDaysInMonth}`;
+    document.getElementById('constructionDays').textContent = stats.construction;
+    document.getElementById('officeDays').textContent = stats.office;
+    document.getElementById('trainingDays').textContent = stats.training;
+    document.getElementById('leaveWithPermission').textContent = stats.leaveWithPermission;
+    document.getElementById('leaveWithoutPermission').textContent = stats.leaveWithoutPermission;
+    document.getElementById('overtimeHours').textContent = `${stats.totalOvertimeHours}h`;
+    document.getElementById('totalExpenses').textContent = `${stats.totalExpenses.toLocaleString()}đ`;
+}
+
+function getWorkingDaysInMonth(year, month) {
+    const daysInMonth = new Date(year, month, 0).getDate();
+    let workingDays = 0;
+    
+    for (let day = 1; day <= daysInMonth; day++) {
+        const date = new Date(year, month - 1, day);
+        const dayOfWeek = date.getDay();
+        
+        // Chủ nhật = 0, không tính vào ngày làm việc
+        if (dayOfWeek !== 0) {
+            workingDays++;
+        }
+    }
+    
+    return workingDays;
+}
+
+// Leave Request Functions
+function showLeaveRequestForm() {
+    const modal = new bootstrap.Modal(document.getElementById('leaveRequestModal'));
+    modal.show();
+}
+
+function calculateLeaveDays(startDate, endDate) {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const diffTime = Math.abs(end - start);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays + 1; // Include both start and end date
+}
+
+function validateLeaveRequest(startDate, endDate) {
+    const today = new Date();
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    // Check if dates are valid
+    if (start < today) {
+        return { valid: false, message: 'Ngày bắt đầu nghỉ không thể là ngày trong quá khứ!' };
+    }
+    
+    if (end < start) {
+        return { valid: false, message: 'Ngày kết thúc phải sau ngày bắt đầu!' };
+    }
+    
+    const leaveDays = calculateLeaveDays(startDate, endDate);
+    const daysUntilStart = Math.ceil((start - today) / (1000 * 60 * 60 * 24));
+    
+    // Validate based on leave rules
+    if (leaveDays <= 1) {
+        if (daysUntilStart < 1) {
+            return { valid: false, message: 'Nghỉ nửa ngày - 1 ngày: phải xin phép trước 24h ngày hôm trước!' };
+        }
+    } else if (leaveDays <= 3) {
+        if (daysUntilStart < 2) {
+            return { valid: false, message: 'Nghỉ từ 1,5 đến 3 ngày: phải xin phép trước 2 ngày!' };
+        }
+    } else if (leaveDays <= 5) {
+        if (daysUntilStart < 7) {
+            return { valid: false, message: 'Nghỉ 3,5 ngày đến 5 ngày: phải xin phép trước 1 tuần!' };
+        }
+    } else {
+        if (daysUntilStart < 14) {
+            return { valid: false, message: 'Nghỉ hơn 5 ngày: phải xin phép trước 2 tuần!' };
+        }
+    }
+    
+    return { valid: true, message: 'Yêu cầu hợp lệ!' };
+}
+
+function submitLeaveRequest() {
+    const startDate = document.getElementById('leaveStartDate').value;
+    const endDate = document.getElementById('leaveEndDate').value;
+    const reason = document.getElementById('leaveReason').value.trim();
+    const handoverPerson = document.getElementById('handoverPerson').value;
+    const handoverTasks = document.getElementById('handoverTasks').value.trim();
+    
+    if (!startDate || !endDate || !reason || !handoverPerson) {
+        Swal.fire('Lỗi', 'Vui lòng điền đầy đủ thông tin bắt buộc!', 'error');
+        return;
+    }
+    
+    // Validate leave request
+    const validation = validateLeaveRequest(startDate, endDate);
+    if (!validation.valid) {
+        Swal.fire('Từ chối yêu cầu', validation.message, 'error');
+        return;
+    }
+    
+    // Create leave request
+    const leaveRequest = {
+        id: Date.now().toString(),
+        startDate: startDate,
+        endDate: endDate,
+        reason: reason,
+        handoverPerson: handoverPerson,
+        handoverTasks: handoverTasks,
+        status: 'pending', // pending, approved, rejected
+        submittedAt: new Date().toISOString(),
+        submittedBy: CURRENT_USER.full_name || CURRENT_USER.username,
+        userId: CURRENT_USER.id,
+        employeeName: CURRENT_USER.full_name || CURRENT_USER.username,
+        
+        // 3 cấp phê duyệt
+        teamLeadApproval: 'pending',
+        managerApproval: 'pending', 
+        companyApproval: 'pending',
+        
+        // Thông tin phê duyệt
+        teamLeadApprovedBy: '',
+        teamLeadApprovedAt: null,
+        teamLeadRejectionReason: '',
+        
+        managerApprovedBy: '',
+        managerApprovedAt: null,
+        managerRejectionReason: '',
+        
+        companyApprovedBy: '',
+        companyApprovedAt: null,
+        companyRejectionReason: ''
+    };
+    
+    // Save to allLeaveRequests (shared storage)
+    let allRequests = getAllLeaveRequests();
+    allRequests.push(leaveRequest);
+    localStorage.setItem('allLeaveRequests', JSON.stringify(allRequests));
+    
+    // Also save to user-specific storage for history
+    let leaveRequests = getUserLeaveRequests();
+    leaveRequests.push(leaveRequest);
+    setUserLeaveRequests(leaveRequests);
+    
+    // Close modal and show success
+    const modal = bootstrap.Modal.getInstance(document.getElementById('leaveRequestModal'));
+    if (modal) modal.hide();
+    
+    Swal.fire({
+        title: 'Gửi yêu cầu thành công!',
+        text: 'Yêu cầu xin nghỉ phép đã được gửi và chờ phê duyệt.',
         icon: 'success',
         timer: 2000,
         showConfirmButton: false
     });
+    
+    // Clear form
+    document.getElementById('leaveStartDate').value = '';
+    document.getElementById('leaveEndDate').value = '';
+    document.getElementById('leaveReason').value = '';
+    document.getElementById('handoverPerson').value = '';
+    document.getElementById('handoverTasks').value = '';
+    
+    // Refresh leave requests and history display
+    loadLeaveHistory(); // Show leave history after submitting request
+    
+    // Refresh approval section if user has permission
+    if (CURRENT_USER && (CURRENT_USER.role === 'admin' || CURRENT_USER.role === 'manager')) {
+        showLeaveApprovalSection();
+    }
 }
 
-// Initialize page
-document.addEventListener('DOMContentLoaded', function() {
-    const filterMonth = document.getElementById('filterMonth').value;
-    updateCurrentMonthDisplay(filterMonth);
-    renderTodayAttendanceButton();
-    loadAttendanceData();
-});
+function exportMonthlyReport() {
+    console.log('exportMonthlyReport called');
+    // Placeholder - sẽ implement sau
+    if (typeof Swal !== 'undefined') {
+        Swal.fire({
+            icon: 'info',
+            title: 'Tính năng đang phát triển',
+            text: 'Xuất báo cáo Excel sẽ được thêm vào phiên bản tiếp theo.'
+        });
+    }
+}
 
-// Update month display when filter changes
-document.getElementById('filterMonth').addEventListener('change', function() {
-    updateCurrentMonthDisplay(this.value);
-    loadAttendanceData();
-});
+// Test user permissions function
+function testUserPermissions() {
+    console.log('=== TESTING USER PERMISSIONS ===');
+    console.log('CURRENT_USER:', CURRENT_USER);
+    console.log('User role:', CURRENT_USER?.role);
+    console.log('User ID:', CURRENT_USER?.id);
+    console.log('User name:', CURRENT_USER?.full_name || CURRENT_USER?.username);
+    
+    // Test approval permissions
+    const testRequest = { id: 'test', employeeName: 'Test User' };
+    const canApprove = canUserApproveLeave(testRequest);
+    const approvalLevel = getCurrentUserApprovalLevel();
+    
+    console.log('Can approve:', canApprove);
+    console.log('Approval level:', approvalLevel);
+    
+    // Show alert with results
+    Swal.fire({
+        title: 'Thông tin quyền người dùng',
+        html: `
+            <div class="text-start">
+                <p><strong>User ID:</strong> ${CURRENT_USER?.id || 'N/A'}</p>
+                <p><strong>User Name:</strong> ${CURRENT_USER?.full_name || CURRENT_USER?.username || 'N/A'}</p>
+                <p><strong>User Role:</strong> ${CURRENT_USER?.role || 'N/A'}</p>
+                <p><strong>Can Approve:</strong> ${canApprove ? 'Yes' : 'No'}</p>
+                <p><strong>Approval Level:</strong> ${approvalLevel || 'None'}</p>
+            </div>
+        `,
+        icon: 'info',
+        confirmButtonText: 'OK'
+    });
+}
+
+
 </script>
 {% endblock %} 

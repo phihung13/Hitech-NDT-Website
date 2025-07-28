@@ -89,6 +89,14 @@
             font-size: 24px;
             color: white;
             box-shadow: 0 8px 25px rgba(0, 212, 255, 0.3);
+            overflow: hidden;
+        }
+        
+        .brand-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            border-radius: 10px;
         }
 
         .brand-name {
@@ -371,9 +379,13 @@
                 <!-- Brand Info -->
                 <div class="brand-info">
                     <div class="brand-logo">
-                        <i class="fas fa-industry"></i>
+                        {% if site_settings and site_settings.logo %}
+                            <img src="{{ site_settings.logo.url }}" alt="{{ site_settings.company_name }} Logo" style="width: 100%; height: 100%; object-fit: contain;">
+                        {% else %}
+                            <i class="fas fa-microscope"></i>
+                        {% endif %}
                     </div>
-                    <div class="brand-name">Hitech NDT</div>
+                    <div class="brand-name">{{ site_settings.company_name|default:"Hitech NDT" }}</div>
                     <div class="brand-subtitle">Dashboard</div>
                 </div>
             </div>
@@ -585,6 +597,280 @@
         });
     </script>
 
-    {% block extra_js %}{% endblock %}
+    {% block extra_js %}
+<script>
+// Global User Management System for All Dashboard Modules
+window.DASHBOARD_USER = {
+    id: {{ user.id }},
+    username: '{{ user.username }}',
+    fullName: '{{ user.get_full_name|default:user.username }}',
+    role: '{% if user.user_profile.role %}{{ user.user_profile.role }}{% else %}staff{% endif %}',
+    email: '{{ user.email }}'
+};
+
+// Global storage management for user-specific data
+window.DashboardStorage = {
+    // Get user-specific storage key
+    getUserKey: function(module, dataType) {
+        return `dashboard_${DASHBOARD_USER.id}_${module}_${dataType}`;
+    },
+    
+    // User-specific localStorage operations
+    get: function(module, dataType, defaultValue = []) {
+        const key = this.getUserKey(module, dataType);
+        try {
+            return JSON.parse(localStorage.getItem(key) || JSON.stringify(defaultValue));
+        } catch (e) {
+            console.error('Error parsing storage data:', e);
+            return defaultValue;
+        }
+    },
+    
+    set: function(module, dataType, data) {
+        const key = this.getUserKey(module, dataType);
+        localStorage.setItem(key, JSON.stringify(data));
+    },
+    
+    remove: function(module, dataType) {
+        const key = this.getUserKey(module, dataType);
+        localStorage.removeItem(key);
+    },
+    
+    // Clear all data for current user
+    clearUserData: function() {
+        const prefix = `dashboard_${DASHBOARD_USER.id}_`;
+        Object.keys(localStorage).forEach(key => {
+            if (key.startsWith(prefix)) {
+                localStorage.removeItem(key);
+            }
+        });
+    },
+    
+    // Get all data for a specific module
+    getModuleData: function(module) {
+        const prefix = `dashboard_${DASHBOARD_USER.id}_${module}_`;
+        const moduleData = {};
+        Object.keys(localStorage).forEach(key => {
+            if (key.startsWith(prefix)) {
+                const dataType = key.replace(prefix, '');
+                moduleData[dataType] = this.get(module, dataType);
+            }
+        });
+        return moduleData;
+    }
+};
+
+// Global permission system
+window.DashboardPermissions = {
+    // Check if user can access specific module
+    canAccess: function(module) {
+        const rolePermissions = {
+            'admin': ['all'],
+            'manager': ['projects', 'staff', 'equipment', 'documents', 'quality', 'analytics', 'attendance'],
+            'staff': ['projects', 'documents', 'attendance'] // Limited access
+        };
+        
+        return rolePermissions[DASHBOARD_USER.role]?.includes(module) || 
+               rolePermissions[DASHBOARD_USER.role]?.includes('all');
+    },
+    
+    // Check if user can perform specific action
+    canPerform: function(action, module) {
+        const actionPermissions = {
+            'admin': ['create', 'read', 'update', 'delete', 'approve'],
+            'manager': ['create', 'read', 'update', 'delete', 'approve'],
+            'staff': ['read', 'create'] // Limited actions
+        };
+        
+        return actionPermissions[DASHBOARD_USER.role]?.includes(action);
+    },
+    
+    // Check if user can view other users' data
+    canViewAllData: function() {
+        return ['admin', 'manager'].includes(DASHBOARD_USER.role);
+    }
+};
+
+// Global UI utilities
+window.DashboardUI = {
+    // Show user info in page title
+    updatePageTitle: function(moduleTitle) {
+        const titleElement = document.querySelector('h1, .page-title');
+        if (titleElement) {
+            const userInfo = `<small class="text-muted ms-2">(${DASHBOARD_USER.fullName} - ${this.getRoleDisplayName()})</small>`;
+            titleElement.innerHTML = titleElement.innerHTML.replace(/<small.*<\/small>/, '') + userInfo;
+        }
+    },
+    
+    getRoleDisplayName: function() {
+        const roleNames = {
+            'admin': 'Quản trị viên',
+            'manager': 'Quản lý', 
+            'staff': 'Nhân viên'
+        };
+        return roleNames[DASHBOARD_USER.role] || 'Người dùng';
+    },
+    
+    // Show access denied message
+    showAccessDenied: function(module) {
+        const container = document.querySelector('.container-fluid, .container');
+        if (container) {
+            container.innerHTML = `
+                <div class="row justify-content-center">
+                    <div class="col-md-6">
+                        <div class="card border-warning">
+                            <div class="card-body text-center">
+                                <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+                                <h5>Không có quyền truy cập</h5>
+                                <p class="text-muted">Bạn không có quyền truy cập module <strong>${module}</strong>.</p>
+                                <a href="${window.location.origin}/dashboard/" class="btn btn-primary">
+                                    <i class="fas fa-arrow-left me-2"></i>Quay lại Dashboard
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+    }
+};
+
+// Global notification system
+window.DashboardNotifications = {
+    // Add notification from any module
+    add: function(type, title, message, user, action) {
+        const notification = {
+            type: type,
+            title: title,
+            message: message,
+            user: user || DASHBOARD_USER?.name || 'Hệ thống',
+            action: action
+        };
+        
+        // If notification system is available, add notification
+        if (window.NotificationSystem) {
+            window.NotificationSystem.addNotification(notification);
+        } else {
+            // Store for later if notification system not loaded
+            const pendingNotifications = JSON.parse(localStorage.getItem('pendingNotifications') || '[]');
+            pendingNotifications.push(notification);
+            localStorage.setItem('pendingNotifications', JSON.stringify(pendingNotifications));
+        }
+    },
+    
+    // Add project notification
+    addProjectNotification: function(action, projectName, userName) {
+        const notifications = {
+            'created': {
+                title: 'Dự án mới được tạo',
+                message: `${userName} vừa tạo dự án "${projectName}"`,
+                action: { type: 'view', url: '/dashboard/projects/', text: 'Xem dự án' }
+            },
+            'updated': {
+                title: 'Dự án được cập nhật',
+                message: `${userName} vừa cập nhật dự án "${projectName}"`,
+                action: { type: 'view', url: '/dashboard/projects/', text: 'Xem dự án' }
+            },
+            'completed': {
+                title: 'Dự án hoàn thành',
+                message: `Dự án "${projectName}" đã được hoàn thành`,
+                action: { type: 'view', url: '/dashboard/projects/', text: 'Xem dự án' }
+            }
+        };
+        
+        const notification = notifications[action];
+        if (notification) {
+            this.add('project', notification.title, notification.message, userName, notification.action);
+        }
+    },
+    
+    // Add approval notification
+    addApprovalNotification: function(action, userName, details) {
+        const notifications = {
+            'requested': {
+                title: 'Yêu cầu phê duyệt',
+                message: `${userName} đang chờ phê duyệt ${details}`,
+                action: { type: 'approve', url: '/dashboard/attendance/', text: 'Xem chi tiết' }
+            },
+            'approved': {
+                title: 'Đã phê duyệt',
+                message: `${userName} đã được phê duyệt ${details}`,
+                action: { type: 'view', url: '/dashboard/attendance/', text: 'Xem lịch sử' }
+            },
+            'rejected': {
+                title: 'Đã từ chối',
+                message: `${userName} đã bị từ chối ${details}`,
+                action: { type: 'view', url: '/dashboard/attendance/', text: 'Xem chi tiết' }
+            }
+        };
+        
+        const notification = notifications[action];
+        if (notification) {
+            this.add('approval', notification.title, notification.message, 'Quản lý', notification.action);
+        }
+    },
+    
+    // Add document notification
+    addDocumentNotification: function(action, documentName, userName) {
+        const notifications = {
+            'uploaded': {
+                title: 'Tài liệu mới',
+                message: `${userName} vừa thêm tài liệu "${documentName}" vào hệ thống`,
+                action: { type: 'view', url: '/dashboard/documents/', text: 'Xem tài liệu' }
+            },
+            'updated': {
+                title: 'Tài liệu được cập nhật',
+                message: `${userName} vừa cập nhật tài liệu "${documentName}"`,
+                action: { type: 'view', url: '/dashboard/documents/', text: 'Xem tài liệu' }
+            }
+        };
+        
+        const notification = notifications[action];
+        if (notification) {
+            this.add('document', notification.title, notification.message, userName, notification.action);
+        }
+    },
+    
+    // Add staff notification
+    addStaffNotification: function(action, staffName, role) {
+        const notifications = {
+            'added': {
+                title: 'Nhân viên mới',
+                message: `${staffName} đã được thêm vào hệ thống với vai trò ${role}`,
+                action: { type: 'view', url: '/dashboard/staff/', text: 'Xem hồ sơ' }
+            },
+            'updated': {
+                title: 'Hồ sơ được cập nhật',
+                message: `Hồ sơ của ${staffName} đã được cập nhật`,
+                action: { type: 'view', url: '/dashboard/staff/', text: 'Xem hồ sơ' }
+            }
+        };
+        
+        const notification = notifications[action];
+        if (notification) {
+            this.add('staff', notification.title, notification.message, 'Admin', notification.action);
+        }
+    }
+};
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Dashboard initialized for user:', DASHBOARD_USER);
+    console.log('User permissions:', {
+        role: DASHBOARD_USER.role,
+        canViewAllData: DashboardPermissions.canViewAllData()
+    });
+});
+
+// Expose to global scope for module access
+window.getUserData = function(module, dataType, defaultValue) {
+    return DashboardStorage.get(module, dataType, defaultValue);
+};
+
+window.setUserData = function(module, dataType, data) {
+    return DashboardStorage.set(module, dataType, data);
+};
+</script>
+{% endblock %}
 </body>
 </html> 

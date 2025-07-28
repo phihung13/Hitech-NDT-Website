@@ -1,45 +1,1422 @@
-{% extends "dashboard/dashboard_base.html" %}
+{% extends 'dashboard/dashboard_base.html' %}
+{% load static %}
 
-{% block title %}Quản lý Nhân viên - Dashboard{% endblock %}
+{% block title %}Quản lý nhân viên - Hitech NDT{% endblock %}
 
-{% block page_title %}
-<i class="fas fa-users text-primary me-2"></i>Quản lý Nhân viên
-{% endblock %}
-
-{% block header_controls %}
-<div class="btn-group" role="group">
-    <a href="#" class="btn btn-success">
-        <i class="fas fa-user-plus me-1"></i>Thêm nhân viên
-    </a>
-    <a href="#" class="btn btn-outline-primary">
-        <i class="fas fa-download me-1"></i>Export Excel
-    </a>
-</div>
+{% block extra_css %}
+<style>
+    .staff-card {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+        overflow: hidden;
+        height: 100%;
+    }
+    
+    .staff-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+    }
+    
+    .staff-avatar {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 3px solid #fff;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+    
+    .staff-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+        transition: all 0.3s ease;
+        overflow: hidden;
+        height: 100%;
+        border: 1px solid #f0f0f0;
+    }
+    
+    .staff-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+        border-color: #667eea;
+    }
+    
+    .staff-avatar-upload {
+        position: relative;
+        display: inline-block;
+    }
+    
+    .staff-avatar-upload input[type="file"] {
+        position: absolute;
+        opacity: 0;
+        width: 100%;
+        height: 100%;
+        cursor: pointer;
+    }
+    
+    .staff-avatar-upload .upload-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.5);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+    
+    .staff-avatar-upload:hover .upload-overlay {
+        opacity: 1;
+    }
+    
+    .role-badge {
+        font-size: 0.8rem;
+        padding: 0.3rem 0.8rem;
+        border-radius: 20px;
+        font-weight: 600;
+    }
+    
+    .role-company { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+    .role-manager { background: linear-gradient(135deg, #f093fb, #f5576c); color: white; }
+    .role-team-lead { background: linear-gradient(135deg, #4facfe, #00f2fe); color: white; }
+    .role-staff { background: linear-gradient(135deg, #43e97b, #38f9d7); color: white; }
+    
+    .project-badge {
+        background: linear-gradient(135deg, #fa709a, #fee140);
+        color: white;
+        font-size: 0.75rem;
+        padding: 0.2rem 0.6rem;
+        border-radius: 12px;
+    }
+    
+    .certificate-item {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 0.5rem;
+        margin: 0.25rem 0;
+        font-size: 0.85rem;
+    }
+    
+    .skill-item {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        border-radius: 15px;
+        padding: 0.3rem 0.8rem;
+        margin: 0.2rem;
+        font-size: 0.8rem;
+        display: inline-block;
+    }
+    
+    .status-active {
+        background: linear-gradient(135deg, #56ab2f, #a8e6cf);
+        color: white;
+    }
+    
+    .status-inactive {
+        background: linear-gradient(135deg, #ff6b6b, #ffa07a);
+        color: white;
+    }
+    
+    .add-staff-btn {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        border: none;
+        color: white;
+        padding: 1rem 2rem;
+        border-radius: 12px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .add-staff-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        color: white;
+    }
+    
+    .filter-section {
+        background: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+    
+    .search-box {
+        border: 2px solid #e9ecef;
+        border-radius: 25px;
+        padding: 0.75rem 1.5rem;
+        transition: all 0.3s ease;
+    }
+    
+    .search-box:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+    
+    /* Upload Avatar Styles */
+    .upload-avatar-container {
+        display: inline-block;
+        text-align: center;
+    }
+    
+    .upload-avatar-wrapper {
+        position: relative;
+        display: inline-block;
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        overflow: hidden;
+        cursor: pointer;
+        border: 2px solid #e9ecef;
+        background: #f8f9fa;
+    }
+    
+    .upload-avatar-preview {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 50%;
+    }
+    
+    .upload-avatar-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+        border-radius: 50%;
+    }
+    
+    .upload-avatar-wrapper:hover .upload-avatar-overlay {
+        opacity: 1;
+    }
+    
+    .upload-icon-wrapper {
+        text-align: center;
+        color: #ffffff;
+    }
+    
+    .upload-icon-wrapper i {
+        font-size: 1rem;
+        color: #ffffff;
+    }
+    
+    .upload-avatar-info {
+        margin-top: 0.5rem;
+    }
+    
+    .upload-avatar-info small {
+        font-size: 0.7rem;
+        line-height: 1.2;
+        color: #6c757d;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h4 class="mb-1">
+                        <i class="fas fa-users me-2"></i>Quản lý nhân viên
+                    </h4>
+                    <p class="text-muted mb-0">Quản lý thông tin nhân viên, dự án và chứng chỉ</p>
+                </div>
+                <button class="btn add-staff-btn" onclick="showAddStaffModal()">
+                    <i class="fas fa-plus me-2"></i>Thêm nhân viên
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Section -->
     <div class="row">
         <div class="col-12">
-            <div class="card shadow">
-                <div class="card-body">
-                    <h5 class="text-center text-muted">
-                        <i class="fas fa-users fa-3x mb-3 d-block"></i>
-                        Trang Quản lý Nhân viên đang được phát triển
-                    </h5>
-                    <p class="text-center text-muted">
-                        Chức năng này sẽ bao gồm:
-                    </p>
-                    <ul class="list-unstyled text-center">
-                        <li><i class="fas fa-check text-success me-2"></i>Danh sách nhân viên</li>
-                        <li><i class="fas fa-check text-success me-2"></i>Thông tin cá nhân</li>
-                        <li><i class="fas fa-check text-success me-2"></i>Phân quyền truy cập</li>
-                        <li><i class="fas fa-check text-success me-2"></i>Lịch sử công việc</li>
-                        <li><i class="fas fa-check text-success me-2"></i>Đánh giá hiệu suất</li>
-                    </ul>
+            <div class="filter-section">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Tìm kiếm</label>
+                            <input type="text" class="form-control search-box" id="searchStaff" 
+                                   placeholder="Tìm theo tên, vị trí, dự án...">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Vai trò</label>
+                            <select class="form-select" id="filterRole">
+                                <option value="">Tất cả vai trò</option>
+                                <option value="company">Công ty</option>
+                                <option value="manager">Quản lý</option>
+                                <option value="team_lead">Trưởng nhóm</option>
+                                <option value="staff">Nhân viên</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Dự án</label>
+                            <select class="form-select" id="filterProject">
+                                <option value="">Tất cả dự án</option>
+                                <option value="project1">Dự án A</option>
+                                <option value="project2">Dự án B</option>
+                                <option value="project3">Dự án C</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Trạng thái</label>
+                            <select class="form-select" id="filterStatus">
+                                <option value="">Tất cả</option>
+                                <option value="active">Đang hoạt động</option>
+                                <option value="inactive">Không hoạt động</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Staff Cards -->
+    <div class="row" id="staffContainer">
+        <!-- Staff cards will be loaded here -->
+    </div>
 </div>
+
+<!-- Add Staff Modal -->
+<div class="modal fade" id="addStaffModal" tabindex="-1" aria-labelledby="addStaffModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addStaffModalLabel">
+                    <i class="fas fa-user-plus me-2"></i>Thêm nhân viên mới
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addStaffForm">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">Họ và tên *</label>
+                                        <input type="text" class="form-control" id="staffName" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">CCCD</label>
+                                        <input type="text" class="form-control" id="staffCCCD" placeholder="Số CCCD">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">MSNV</label>
+                                        <input type="text" class="form-control" id="staffMSNV" placeholder="Mã số nhân viên">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">Số điện thoại</label>
+                                        <input type="tel" class="form-control" id="staffPhone">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">Ngày sinh</label>
+                                        <input type="date" class="form-control" id="staffBirthDate">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">Quê quán</label>
+                                        <input type="text" class="form-control" id="staffHometown" placeholder="Nơi sinh">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">Chức vụ</label>
+                                        <select class="form-select" id="staffRole" required>
+                                            <option value="">Chọn chức vụ</option>
+                                            <option value="company">Công ty</option>
+                                            <option value="manager">Quản lý</option>
+                                            <option value="team_lead">Trưởng nhóm</option>
+                                            <option value="staff">Nhân viên</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">Trình độ học vấn</label>
+                                        <select class="form-select" id="staffEducation">
+                                            <option value="">Chọn trình độ</option>
+                                            <option value="high_school">Trung học phổ thông</option>
+                                            <option value="college">Cao đẳng</option>
+                                            <option value="university">Đại học</option>
+                                            <option value="master">Thạc sĩ</option>
+                                            <option value="phd">Tiến sĩ</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">Số người phụ thuộc</label>
+                                        <input type="number" class="form-control" id="staffDependents" min="0" placeholder="0">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">STK ngân hàng</label>
+                                        <input type="text" class="form-control" id="staffBankAccount" placeholder="Số tài khoản">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">Ngân hàng</label>
+                                        <input type="text" class="form-control" id="staffBank" placeholder="Tên ngân hàng">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">Ngày tham gia</label>
+                                        <input type="date" class="form-control" id="staffJoinDate">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Ảnh đại diện</label>
+                                <div class="text-center">
+                                    <div class="upload-avatar-container">
+                                        <div class="upload-avatar-wrapper" onclick="triggerFileInput('addStaffFileInput')">
+                                            <img src="{% static 'images/avatar-default.png' %}" 
+                                                 alt="Avatar" class="upload-avatar-preview" id="addStaffAvatar">
+                                            <div class="upload-avatar-overlay">
+                                                <div class="upload-icon-wrapper">
+                                                    <i class="fas fa-camera"></i>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <input type="file" id="addStaffFileInput" accept="image/*" 
+                                               onchange="uploadAddStaffAvatar(this)" style="display: none;">
+                                        <div class="upload-avatar-info">
+                                            <small class="text-muted">Click để chọn ảnh</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Chứng nhận có được</label>
+                        <textarea class="form-control" id="staffCertificates" rows="3" 
+                                  placeholder="Mỗi chứng chỉ một dòng&#10;VD:&#10;NDT Level II - UT&#10;NDT Level II - RT"></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Dự án hiện tại</label>
+                                <select class="form-select" id="staffProject">
+                                    <option value="">Chọn dự án</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Vị trí trong dự án</label>
+                                <input type="text" class="form-control" id="staffProjectPosition" 
+                                       placeholder="Vị trí trong dự án">
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-primary" onclick="addStaff()">
+                    <i class="fas fa-save me-2"></i>Lưu nhân viên
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Staff Detail Modal -->
+<div class="modal fade" id="staffDetailModal" tabindex="-1" aria-labelledby="staffDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="staffDetailModalLabel">
+                    <i class="fas fa-user me-2"></i>Chi tiết nhân viên
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-4 text-center">
+                        <div class="staff-avatar-upload mb-3">
+                            <img src="" alt="" class="staff-avatar" id="detailAvatar">
+                            <div class="upload-overlay">
+                                <i class="fas fa-camera"></i>
+                            </div>
+                            <input type="file" accept="image/*" onchange="uploadDetailAvatar(this)">
+                        </div>
+                        <h5 id="detailName" class="mb-2"></h5>
+                        <div class="mb-3">
+                            <span class="badge role-badge" id="detailRole"></span>
+                            <span class="badge ms-2" id="detailStatus"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-8">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold"><i class="fas fa-id-card me-2"></i>CCCD</label>
+                                    <p class="mb-0" id="detailCCCD"></p>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold"><i class="fas fa-user-tag me-2"></i>MSNV</label>
+                                    <p class="mb-0" id="detailMSNV"></p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold"><i class="fas fa-phone me-2"></i>Số điện thoại</label>
+                                    <p class="mb-0" id="detailPhone"></p>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold"><i class="fas fa-birthday-cake me-2"></i>Ngày sinh</label>
+                                    <p class="mb-0" id="detailBirthDate"></p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold"><i class="fas fa-map-marker-alt me-2"></i>Quê quán</label>
+                                    <p class="mb-0" id="detailHometown"></p>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold"><i class="fas fa-graduation-cap me-2"></i>Trình độ học vấn</label>
+                                    <p class="mb-0" id="detailEducation"></p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold"><i class="fas fa-users me-2"></i>Số người phụ thuộc</label>
+                                    <p class="mb-0" id="detailDependents"></p>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold"><i class="fas fa-credit-card me-2"></i>STK ngân hàng</label>
+                                    <p class="mb-0" id="detailBankAccount"></p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold"><i class="fas fa-university me-2"></i>Ngân hàng</label>
+                                    <p class="mb-0" id="detailBank"></p>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold"><i class="fas fa-calendar me-2"></i>Ngày tham gia</label>
+                                    <p class="mb-0" id="detailJoinDate"></p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold"><i class="fas fa-project-diagram me-2"></i>Dự án hiện tại</label>
+                                    <p class="mb-0" id="detailProject"></p>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold"><i class="fas fa-user-tie me-2"></i>Vị trí trong dự án</label>
+                                    <p class="mb-0" id="detailProjectPosition"></p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold"><i class="fas fa-certificate me-2"></i>Chứng chỉ</label>
+                            <div id="detailCertificates"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" class="btn btn-primary" onclick="editStaffFromDetail()">
+                    <i class="fas fa-edit me-2"></i>Chỉnh sửa
+                </button>
+                <button type="button" class="btn btn-danger" onclick="deleteStaffFromDetail()">
+                    <i class="fas fa-trash me-2"></i>Xóa
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Staff Modal -->
+<div class="modal fade" id="editStaffModal" tabindex="-1" aria-labelledby="editStaffModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editStaffModalLabel">
+                    <i class="fas fa-user-edit me-2"></i>Chỉnh sửa thông tin nhân viên
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editStaffForm">
+                    <input type="hidden" id="editStaffId">
+                    <!-- Same form fields as add staff, but with edit prefix -->
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">Họ và tên *</label>
+                                        <input type="text" class="form-control" id="editStaffName" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">CCCD</label>
+                                        <input type="text" class="form-control" id="editStaffCCCD" placeholder="Số CCCD">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">MSNV</label>
+                                        <input type="text" class="form-control" id="editStaffMSNV" placeholder="Mã số nhân viên">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">Số điện thoại</label>
+                                        <input type="tel" class="form-control" id="editStaffPhone">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">Ngày sinh</label>
+                                        <input type="date" class="form-control" id="editStaffBirthDate">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">Quê quán</label>
+                                        <input type="text" class="form-control" id="editStaffHometown" placeholder="Nơi sinh">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">Chức vụ</label>
+                                        <select class="form-select" id="editStaffRole" required>
+                                            <option value="">Chọn chức vụ</option>
+                                            <option value="company">Công ty</option>
+                                            <option value="manager">Quản lý</option>
+                                            <option value="team_lead">Trưởng nhóm</option>
+                                            <option value="staff">Nhân viên</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">Trình độ học vấn</label>
+                                        <select class="form-select" id="editStaffEducation">
+                                            <option value="">Chọn trình độ</option>
+                                            <option value="high_school">Trung học phổ thông</option>
+                                            <option value="college">Cao đẳng</option>
+                                            <option value="university">Đại học</option>
+                                            <option value="master">Thạc sĩ</option>
+                                            <option value="phd">Tiến sĩ</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">Số người phụ thuộc</label>
+                                        <input type="number" class="form-control" id="editStaffDependents" min="0" placeholder="0">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">STK ngân hàng</label>
+                                        <input type="text" class="form-control" id="editStaffBankAccount" placeholder="Số tài khoản">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">Ngân hàng</label>
+                                        <input type="text" class="form-control" id="editStaffBank" placeholder="Tên ngân hàng">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">Ngày tham gia</label>
+                                        <input type="date" class="form-control" id="editStaffJoinDate">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Ảnh đại diện</label>
+                                <div class="text-center">
+                                    <div class="upload-avatar-container">
+                                        <div class="upload-avatar-wrapper" onclick="triggerFileInput('editStaffFileInput')">
+                                            <img src="{% static 'images/avatar-default.png' %}" 
+                                                 alt="Avatar" class="upload-avatar-preview" id="editStaffAvatar">
+                                            <div class="upload-avatar-overlay">
+                                                <div class="upload-icon-wrapper">
+                                                    <i class="fas fa-camera"></i>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <input type="file" id="editStaffFileInput" accept="image/*" 
+                                               onchange="uploadEditStaffAvatar(this)" style="display: none;">
+                                        <div class="upload-avatar-info">
+                                            <small class="text-muted">Click để thay đổi ảnh</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Chứng nhận có được</label>
+                        <textarea class="form-control" id="editStaffCertificates" rows="3"></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Dự án hiện tại</label>
+                                <select class="form-select" id="editStaffProject">
+                                    <option value="">Chọn dự án</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Vị trí trong dự án</label>
+                                <input type="text" class="form-control" id="editStaffProjectPosition" 
+                                       placeholder="Vị trí trong dự án">
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-primary" onclick="updateStaff()">
+                    <i class="fas fa-save me-2"></i>Cập nhật
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Global variables
+let staffData = [];
+let filteredStaff = [];
+
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    loadStaffData();
+    loadProjectData();
+    setupEventListeners();
+});
+
+function setupEventListeners() {
+    // Search functionality
+    document.getElementById('searchStaff').addEventListener('input', function() {
+        filterStaff();
+    });
+    
+    // Filter functionality
+    document.getElementById('filterRole').addEventListener('change', filterStaff);
+    document.getElementById('filterProject').addEventListener('change', filterStaff);
+    document.getElementById('filterStatus').addEventListener('change', filterStaff);
+    
+    // Listen for project data changes
+    window.addEventListener('storage', function(e) {
+        if (e.key === 'projectData') {
+            loadProjectData();
+        }
+    });
+}
+
+function loadStaffData() {
+    // Load from localStorage or create demo data
+    const savedStaff = localStorage.getItem('staffData');
+    if (savedStaff) {
+        staffData = JSON.parse(savedStaff);
+    } else {
+        createDemoStaffData();
+    }
+    
+    filteredStaff = [...staffData];
+    renderStaffCards();
+}
+
+function loadProjectData() {
+    // Load projects from localStorage (from projects dashboard)
+    const projectData = localStorage.getItem('projectData');
+    let projects = [];
+    
+    if (projectData) {
+        try {
+            projects = JSON.parse(projectData);
+        } catch (e) {
+            console.log('Error parsing project data:', e);
+        }
+    }
+    
+    // Update project dropdowns
+    updateProjectDropdowns(projects);
+    
+    // Update filter dropdown
+    updateProjectFilter(projects);
+}
+
+function updateProjectDropdowns(projects) {
+    const addProjectSelect = document.getElementById('staffProject');
+    const editProjectSelect = document.getElementById('editStaffProject');
+    
+    if (addProjectSelect) {
+        addProjectSelect.innerHTML = '<option value="">Chọn dự án</option>';
+        projects.forEach(project => {
+            const option = document.createElement('option');
+            option.value = project.id;
+            option.textContent = project.name;
+            addProjectSelect.appendChild(option);
+        });
+    }
+    
+    if (editProjectSelect) {
+        editProjectSelect.innerHTML = '<option value="">Chọn dự án</option>';
+        projects.forEach(project => {
+            const option = document.createElement('option');
+            option.value = project.id;
+            option.textContent = project.name;
+            editProjectSelect.appendChild(option);
+        });
+    }
+}
+
+function updateProjectFilter(projects) {
+    const filterProjectSelect = document.getElementById('filterProject');
+    
+    if (filterProjectSelect) {
+        filterProjectSelect.innerHTML = '<option value="">Tất cả dự án</option>';
+        projects.forEach(project => {
+            const option = document.createElement('option');
+            option.value = project.id;
+            option.textContent = project.name;
+            filterProjectSelect.appendChild(option);
+        });
+    }
+}
+
+function createDemoStaffData() {
+    staffData = [
+        {
+            id: '1',
+            name: 'Nguyễn Văn A',
+            cccd: '123456789012',
+            msnv: 'NV001',
+            phone: '0901234567',
+            birthDate: '1980-05-15',
+            hometown: 'Hà Nội',
+            role: 'company',
+            education: 'university',
+            dependents: '2',
+            bankAccount: '1234567890',
+            bank: 'Vietcombank',
+            joinDate: '2020-01-15',
+            currentProject: 'project1',
+            projectPosition: 'Giám đốc dự án',
+            certificates: 'NDT Level III - UT\nNDT Level III - RT\nISO 9712 Lead Auditor',
+            avatar: null,
+            isActive: true
+        },
+        {
+            id: '2',
+            name: 'Trần Thị B',
+            cccd: '123456789013',
+            msnv: 'NV002',
+            phone: '0901234568',
+            birthDate: '1985-08-20',
+            hometown: 'TP.HCM',
+            role: 'manager',
+            education: 'university',
+            dependents: '1',
+            bankAccount: '1234567891',
+            bank: 'BIDV',
+            joinDate: '2021-03-20',
+            currentProject: 'project2',
+            projectPosition: 'Quản lý kỹ thuật',
+            certificates: 'NDT Level II - UT\nNDT Level II - RT\nNDT Level II - PT',
+            avatar: null,
+            isActive: true
+        },
+        {
+            id: '3',
+            name: 'Lê Văn C',
+            cccd: '123456789014',
+            msnv: 'NV003',
+            phone: '0901234569',
+            birthDate: '1990-03-10',
+            hometown: 'Đà Nẵng',
+            role: 'team_lead',
+            education: 'college',
+            dependents: '0',
+            bankAccount: '1234567892',
+            bank: 'Agribank',
+            joinDate: '2022-01-10',
+            currentProject: 'project3',
+            projectPosition: 'Trưởng nhóm kỹ thuật',
+            certificates: 'NDT Level II - UT\nNDT Level II - RT',
+            avatar: null,
+            isActive: true
+        },
+        {
+            id: '4',
+            name: 'Phạm Thị D',
+            cccd: '123456789015',
+            msnv: 'NV004',
+            phone: '0901234570',
+            birthDate: '1995-12-25',
+            hometown: 'Cần Thơ',
+            role: 'staff',
+            education: 'university',
+            dependents: '0',
+            bankAccount: '1234567893',
+            bank: 'Techcombank',
+            joinDate: '2023-06-15',
+            currentProject: 'project1',
+            projectPosition: 'Kỹ sư kiểm tra',
+            certificates: 'NDT Level I - UT\nNDT Level I - RT',
+            avatar: null,
+            isActive: true
+        }
+    ];
+    
+    localStorage.setItem('staffData', JSON.stringify(staffData));
+}
+
+function renderStaffCards() {
+    const container = document.getElementById('staffContainer');
+    
+    if (filteredStaff.length === 0) {
+        container.innerHTML = '<div class="col-12"><p class="text-center text-muted">Không tìm thấy nhân viên nào</p></div>';
+        return;
+    }
+    
+    let html = '';
+    filteredStaff.forEach(staff => {
+        const roleClass = `role-${staff.role}`;
+        const statusClass = staff.isActive ? 'status-active' : 'status-inactive';
+        const statusText = staff.isActive ? 'Đang hoạt động' : 'Không hoạt động';
+        
+        html += `
+        <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
+            <div class="staff-card" onclick="showStaffDetail('${staff.id}')" style="cursor: pointer;">
+                <div class="p-3 text-center">
+                    <div class="staff-avatar-upload mb-3">
+                        <img src="${staff.avatar || '{% static "images/avatar-default.png" %}'}" 
+                             alt="${staff.name}" class="staff-avatar" id="avatar-${staff.id}">
+                        <div class="upload-overlay">
+                            <i class="fas fa-eye"></i>
+                        </div>
+                        <input type="file" accept="image/*" onchange="uploadAvatar('${staff.id}', this)" onclick="event.stopPropagation()">
+                    </div>
+                    
+                    <h6 class="mb-1 fw-bold">${staff.name}</h6>
+                    <p class="text-muted small mb-2">MSNV: ${staff.msnv || 'N/A'}</p>
+                    
+                    <div class="mb-2">
+                        <span class="badge ${roleClass} role-badge">${getRoleDisplayName(staff.role)}</span>
+                    </div>
+                    
+                    <div class="text-start small">
+                        <p class="mb-1"><i class="fas fa-phone me-1"></i>${staff.phone || 'N/A'}</p>
+                        <p class="mb-1"><i class="fas fa-map-marker-alt me-1"></i>${staff.hometown || 'N/A'}</p>
+                        ${staff.currentProject ? `<p class="mb-1"><i class="fas fa-project-diagram me-1"></i>${getProjectName(staff.currentProject)}</p>` : ''}
+                    </div>
+                    
+                    <div class="mt-2">
+                        <span class="badge ${statusClass}">${statusText}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+function getRoleDisplayName(role) {
+    const roleNames = {
+        'company': 'Công ty',
+        'manager': 'Quản lý',
+        'team_lead': 'Trưởng nhóm',
+        'staff': 'Nhân viên'
+    };
+    return roleNames[role] || role;
+}
+
+function getEducationDisplayName(education) {
+    const educationNames = {
+        'high_school': 'Trung học phổ thông',
+        'college': 'Cao đẳng',
+        'university': 'Đại học',
+        'master': 'Thạc sĩ',
+        'phd': 'Tiến sĩ'
+    };
+    return educationNames[education] || education;
+}
+
+function getProjectName(projectId) {
+    const projectData = localStorage.getItem('projectData');
+    if (projectData) {
+        try {
+            const projects = JSON.parse(projectData);
+            const project = projects.find(p => p.id === projectId);
+            return project ? project.name : projectId;
+        } catch (e) {
+            return projectId;
+        }
+    }
+    return projectId;
+}
+
+function formatDate(dateString) {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString('vi-VN');
+}
+
+function filterStaff() {
+    const searchTerm = document.getElementById('searchStaff').value.toLowerCase();
+    const roleFilter = document.getElementById('filterRole').value;
+    const projectFilter = document.getElementById('filterProject').value;
+    const statusFilter = document.getElementById('filterStatus').value;
+    
+    filteredStaff = staffData.filter(staff => {
+        const matchesSearch = staff.name.toLowerCase().includes(searchTerm) ||
+                            staff.email.toLowerCase().includes(searchTerm) ||
+                            staff.position.toLowerCase().includes(searchTerm) ||
+                            (staff.currentProject && staff.currentProject.toLowerCase().includes(searchTerm));
+        
+        const matchesRole = !roleFilter || staff.role === roleFilter;
+        const matchesProject = !projectFilter || staff.currentProject === projectFilter;
+        const matchesStatus = !statusFilter || 
+                            (statusFilter === 'active' && staff.isActive) ||
+                            (statusFilter === 'inactive' && !staff.isActive);
+        
+        return matchesSearch && matchesRole && matchesProject && matchesStatus;
+    });
+    
+    renderStaffCards();
+}
+
+function showAddStaffModal() {
+    document.getElementById('addStaffForm').reset();
+    
+    // Reset avatar
+    const avatarImg = document.getElementById('addStaffAvatar');
+    avatarImg.src = '{% static "images/avatar-default.png" %}';
+    window.addStaffAvatar = null;
+    
+    const modal = new bootstrap.Modal(document.getElementById('addStaffModal'));
+    modal.show();
+}
+
+function addStaff() {
+    const form = document.getElementById('addStaffForm');
+    if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+    }
+    
+    const newStaff = {
+        id: Date.now().toString(),
+        name: document.getElementById('staffName').value,
+        cccd: document.getElementById('staffCCCD').value,
+        msnv: document.getElementById('staffMSNV').value,
+        phone: document.getElementById('staffPhone').value,
+        birthDate: document.getElementById('staffBirthDate').value,
+        hometown: document.getElementById('staffHometown').value,
+        role: document.getElementById('staffRole').value,
+        education: document.getElementById('staffEducation').value,
+        dependents: document.getElementById('staffDependents').value,
+        bankAccount: document.getElementById('staffBankAccount').value,
+        bank: document.getElementById('staffBank').value,
+        joinDate: document.getElementById('staffJoinDate').value,
+        currentProject: document.getElementById('staffProject').value,
+        projectPosition: document.getElementById('staffProjectPosition').value,
+        certificates: document.getElementById('staffCertificates').value,
+        avatar: window.addStaffAvatar || null,
+        isActive: true
+    };
+    
+    staffData.push(newStaff);
+    localStorage.setItem('staffData', JSON.stringify(staffData));
+    
+    // Reset avatar
+    window.addStaffAvatar = null;
+    
+    // Close modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('addStaffModal'));
+    modal.hide();
+    
+    // Refresh display
+    filterStaff();
+    
+    // Show success message
+    Swal.fire('Thành công!', 'Đã thêm nhân viên mới.', 'success');
+}
+
+function editStaff(staffId) {
+    const staff = staffData.find(s => s.id === staffId);
+    if (!staff) return;
+    
+    // Fill form with staff data
+    document.getElementById('editStaffId').value = staff.id;
+    document.getElementById('editStaffName').value = staff.name;
+    document.getElementById('editStaffCCCD').value = staff.cccd || '';
+    document.getElementById('editStaffMSNV').value = staff.msnv || '';
+    document.getElementById('editStaffPhone').value = staff.phone;
+    document.getElementById('editStaffBirthDate').value = staff.birthDate || '';
+    document.getElementById('editStaffHometown').value = staff.hometown || '';
+    document.getElementById('editStaffRole').value = staff.role;
+    document.getElementById('editStaffEducation').value = staff.education || '';
+    document.getElementById('editStaffDependents').value = staff.dependents || '';
+    document.getElementById('editStaffBankAccount').value = staff.bankAccount || '';
+    document.getElementById('editStaffBank').value = staff.bank || '';
+    document.getElementById('editStaffJoinDate').value = staff.joinDate;
+    document.getElementById('editStaffProject').value = staff.currentProject || '';
+    document.getElementById('editStaffProjectPosition').value = staff.projectPosition || '';
+    document.getElementById('editStaffCertificates').value = staff.certificates || '';
+    
+    // Set avatar
+    const avatarImg = document.getElementById('editStaffAvatar');
+    avatarImg.src = staff.avatar || '{% static "images/avatar-default.png" %}';
+    window.editStaffAvatar = staff.avatar || null;
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('editStaffModal'));
+    modal.show();
+}
+
+function updateStaff() {
+    const staffId = document.getElementById('editStaffId').value;
+    const staffIndex = staffData.findIndex(s => s.id === staffId);
+    
+    if (staffIndex === -1) return;
+    
+    // Update staff data
+    staffData[staffIndex] = {
+        ...staffData[staffIndex],
+        name: document.getElementById('editStaffName').value,
+        cccd: document.getElementById('editStaffCCCD').value,
+        msnv: document.getElementById('editStaffMSNV').value,
+        phone: document.getElementById('editStaffPhone').value,
+        birthDate: document.getElementById('editStaffBirthDate').value,
+        hometown: document.getElementById('editStaffHometown').value,
+        role: document.getElementById('editStaffRole').value,
+        education: document.getElementById('editStaffEducation').value,
+        dependents: document.getElementById('editStaffDependents').value,
+        bankAccount: document.getElementById('editStaffBankAccount').value,
+        bank: document.getElementById('editStaffBank').value,
+        joinDate: document.getElementById('editStaffJoinDate').value,
+        currentProject: document.getElementById('editStaffProject').value,
+        projectPosition: document.getElementById('editStaffProjectPosition').value,
+        certificates: document.getElementById('editStaffCertificates').value,
+        avatar: window.editStaffAvatar || staffData[staffIndex].avatar
+    };
+    
+    localStorage.setItem('staffData', JSON.stringify(staffData));
+    
+    // Reset avatar
+    window.editStaffAvatar = null;
+    
+    // Close modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('editStaffModal'));
+    modal.hide();
+    
+    // Refresh display
+    filterStaff();
+    
+    // Show success message
+    Swal.fire('Thành công!', 'Đã cập nhật thông tin nhân viên.', 'success');
+}
+
+function deleteStaff(staffId) {
+    Swal.fire({
+        title: 'Xác nhận xóa?',
+        text: 'Bạn có chắc muốn xóa nhân viên này?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Xóa',
+        cancelButtonText: 'Hủy'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            staffData = staffData.filter(s => s.id !== staffId);
+            localStorage.setItem('staffData', JSON.stringify(staffData));
+            filterStaff();
+            Swal.fire('Đã xóa!', 'Nhân viên đã được xóa.', 'success');
+        }
+    });
+}
+
+function showStaffDetail(staffId) {
+    const staff = staffData.find(s => s.id === staffId);
+    if (!staff) return;
+    
+    // Fill detail modal with staff data
+    document.getElementById('detailAvatar').src = staff.avatar || '{% static "images/avatar-default.png" %}';
+    document.getElementById('detailName').textContent = staff.name;
+    document.getElementById('detailCCCD').textContent = staff.cccd || 'N/A';
+    document.getElementById('detailMSNV').textContent = staff.msnv || 'N/A';
+    document.getElementById('detailPhone').textContent = staff.phone || 'N/A';
+    document.getElementById('detailBirthDate').textContent = staff.birthDate ? formatDate(staff.birthDate) : 'N/A';
+    document.getElementById('detailHometown').textContent = staff.hometown || 'N/A';
+    document.getElementById('detailEducation').textContent = getEducationDisplayName(staff.education) || 'N/A';
+    document.getElementById('detailDependents').textContent = staff.dependents || '0';
+    document.getElementById('detailBankAccount').textContent = staff.bankAccount || 'N/A';
+    document.getElementById('detailBank').textContent = staff.bank || 'N/A';
+    document.getElementById('detailJoinDate').textContent = formatDate(staff.joinDate);
+    document.getElementById('detailProject').textContent = getProjectName(staff.currentProject) || 'N/A';
+    document.getElementById('detailProjectPosition').textContent = staff.projectPosition || 'N/A';
+    
+    // Set role and status badges
+    const roleElement = document.getElementById('detailRole');
+    roleElement.textContent = getRoleDisplayName(staff.role);
+    roleElement.className = `badge role-${staff.role} role-badge`;
+    
+    const statusElement = document.getElementById('detailStatus');
+    const statusClass = staff.isActive ? 'status-active' : 'status-inactive';
+    const statusText = staff.isActive ? 'Đang hoạt động' : 'Không hoạt động';
+    statusElement.textContent = statusText;
+    statusElement.className = `badge ms-2 ${statusClass}`;
+    
+    // Set certificates
+    const certificatesElement = document.getElementById('detailCertificates');
+    if (staff.certificates) {
+        certificatesElement.innerHTML = staff.certificates.split('\n').map(cert => 
+            `<div class="certificate-item">${cert}</div>`
+        ).join('');
+    } else {
+        certificatesElement.innerHTML = '<p class="text-muted">Chưa có chứng chỉ</p>';
+    }
+    
+    // Store current staff ID for edit/delete functions
+    window.currentDetailStaffId = staffId;
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('staffDetailModal'));
+    modal.show();
+}
+
+function editStaffFromDetail() {
+    if (window.currentDetailStaffId) {
+        editStaff(window.currentDetailStaffId);
+        // Close detail modal
+        const detailModal = bootstrap.Modal.getInstance(document.getElementById('staffDetailModal'));
+        detailModal.hide();
+    }
+}
+
+function deleteStaffFromDetail() {
+    if (window.currentDetailStaffId) {
+        deleteStaff(window.currentDetailStaffId);
+        // Close detail modal
+        const detailModal = bootstrap.Modal.getInstance(document.getElementById('staffDetailModal'));
+        detailModal.hide();
+    }
+}
+
+function uploadDetailAvatar(input) {
+    const file = input.files[0];
+    if (!file || !window.currentDetailStaffId) return;
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const avatarImg = document.getElementById('detailAvatar');
+        avatarImg.src = e.target.result;
+        
+        // Update staff data
+        const staffIndex = staffData.findIndex(s => s.id === window.currentDetailStaffId);
+        if (staffIndex !== -1) {
+            staffData[staffIndex].avatar = e.target.result;
+            localStorage.setItem('staffData', JSON.stringify(staffData));
+            
+            // Update the card avatar too
+            const cardAvatar = document.getElementById(`avatar-${window.currentDetailStaffId}`);
+            if (cardAvatar) {
+                cardAvatar.src = e.target.result;
+            }
+        }
+    };
+    reader.readAsDataURL(file);
+}
+
+// Global variable to store uploaded avatar
+window.addStaffAvatar = null;
+window.editStaffAvatar = null;
+
+function triggerFileInput(inputId) {
+    document.getElementById(inputId).click();
+}
+
+function uploadAddStaffAvatar(input) {
+    const file = input.files[0];
+    if (!file) return;
+    
+    // Validate file size (2MB)
+    if (file.size > 2 * 1024 * 1024) {
+        Swal.fire('Lỗi!', 'File ảnh không được lớn hơn 2MB.', 'error');
+        return;
+    }
+    
+    // Validate file type
+    if (!file.type.match('image.*')) {
+        Swal.fire('Lỗi!', 'Vui lòng chọn file ảnh (JPG, PNG).', 'error');
+        return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const avatarImg = document.getElementById('addStaffAvatar');
+        avatarImg.src = e.target.result;
+        window.addStaffAvatar = e.target.result;
+        
+        // Show success message
+        Swal.fire({
+            icon: 'success',
+            title: 'Upload thành công!',
+            text: 'Ảnh đã được tải lên.',
+            timer: 1500,
+            showConfirmButton: false
+        });
+    };
+    reader.readAsDataURL(file);
+}
+
+function uploadEditStaffAvatar(input) {
+    const file = input.files[0];
+    if (!file) return;
+    
+    // Validate file size (2MB)
+    if (file.size > 2 * 1024 * 1024) {
+        Swal.fire('Lỗi!', 'File ảnh không được lớn hơn 2MB.', 'error');
+        return;
+    }
+    
+    // Validate file type
+    if (!file.type.match('image.*')) {
+        Swal.fire('Lỗi!', 'Vui lòng chọn file ảnh (JPG, PNG).', 'error');
+        return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const avatarImg = document.getElementById('editStaffAvatar');
+        avatarImg.src = e.target.result;
+        window.editStaffAvatar = e.target.result;
+        
+        // Show success message
+        Swal.fire({
+            icon: 'success',
+            title: 'Upload thành công!',
+            text: 'Ảnh đã được cập nhật.',
+            timer: 1500,
+            showConfirmButton: false
+        });
+    };
+    reader.readAsDataURL(file);
+}
+
+function uploadAvatar(staffId, input) {
+    const file = input.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const avatarImg = document.getElementById(`avatar-${staffId}`);
+        avatarImg.src = e.target.result;
+        
+        // Update staff data
+        const staffIndex = staffData.findIndex(s => s.id === staffId);
+        if (staffIndex !== -1) {
+            staffData[staffIndex].avatar = e.target.result;
+            localStorage.setItem('staffData', JSON.stringify(staffData));
+        }
+    };
+    reader.readAsDataURL(file);
+}
+</script>
 {% endblock %} 

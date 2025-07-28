@@ -858,7 +858,14 @@ def projects_management(request):
 
 @login_required  
 def staff_management(request):
-    """Trang quản lý nhân viên"""
+    """Trang quản lý nhân viên - Chỉ Manager/Admin"""
+    profile = getattr(request.user, 'user_profile', None)
+    
+    # Kiểm tra quyền truy cập
+    if not profile or profile.role not in ['admin', 'manager']:
+        messages.error(request, 'Bạn không có quyền truy cập module quản lý nhân viên.')
+        return redirect('dashboard_overview')
+    
     context = {
         'title': 'Quản lý nhân viên',
         'module_name': 'Quản lý nhân viên',
@@ -870,6 +877,7 @@ def staff_management(request):
             'Phân quyền hệ thống',
             'Đánh giá hiệu suất làm việc'
         ],
+        'user_role': profile.role,
         'coming_soon': True
     }
     return render(request, 'erp_modules/staff.html', context)
@@ -879,22 +887,25 @@ def attendance_management(request):
     """Trang quản lý chấm công"""
     context = {
         'title': 'Quản lý chấm công',
-        'module_name': 'Quản lý chấm công',
+        'module_name': 'Quản lý chấm công', 
         'description': 'Hệ thống chấm công tự động, theo dõi giờ làm việc và tính lương nhân viên.',
-        'features': [
-            'Chấm công bằng QR Code/NFC',
-            'Theo dõi giờ vào/ra',
-            'Tính toán giờ làm thêm',
-            'Báo cáo chấm công theo tháng',
-            'Quản lý nghỉ phép và nghỉ việc'
-        ],
-        'coming_soon': True
+        # Dữ liệu được lưu trong localStorage trên trình duyệt
     }
     return render(request, 'erp_modules/attendance.html', context)
 
 @login_required
 def equipment_management(request):
-    """Trang quản lý thiết bị"""
+    """Trang quản lý thiết bị - Manager/Admin có full access, Staff chỉ xem"""
+    profile = getattr(request.user, 'user_profile', None)
+    
+    # Kiểm tra quyền truy cập cơ bản
+    if not profile:
+        messages.error(request, 'Bạn cần có hồ sơ người dùng để truy cập trang này.')
+        return redirect('dashboard_overview')
+    
+    # Phân quyền theo role
+    can_manage = profile.role in ['admin', 'manager']
+    
     context = {
         'title': 'Quản lý thiết bị',
         'module_name': 'Quản lý thiết bị',
@@ -906,6 +917,8 @@ def equipment_management(request):
             'Quản lý phụ tùng thay thế',
             'Báo cáo hiệu suất thiết bị'
         ],
+        'user_role': profile.role,
+        'can_manage': can_manage,
         'coming_soon': True
     }
     return render(request, 'erp_modules/equipment.html', context)
@@ -1346,7 +1359,14 @@ def manage_tags(request):
 
 @login_required
 def quality_management(request):
-    """Trang quản lý chất lượng"""
+    """Trang quản lý chất lượng - Manager/Admin"""
+    profile = getattr(request.user, 'user_profile', None)
+    
+    # Kiểm tra quyền truy cập
+    if not profile or profile.role not in ['admin', 'manager']:
+        messages.error(request, 'Bạn không có quyền truy cập module quản lý chất lượng.')
+        return redirect('dashboard_overview')
+    
     context = {
         'title': 'Quản lý chất lượng',
         'module_name': 'Quản lý chất lượng',
@@ -1358,13 +1378,21 @@ def quality_management(request):
             'Báo cáo chất lượng định kỳ',
             'Cải tiến liên tục (Kaizen)'
         ],
+        'user_role': profile.role,
         'coming_soon': True
     }
     return render(request, 'erp_modules/quality.html', context)
 
 @login_required
 def analytics_management(request):
-    """Trang phân tích phát triển"""
+    """Trang phân tích phát triển - Manager/Admin"""
+    profile = getattr(request.user, 'user_profile', None)
+    
+    # Kiểm tra quyền truy cập
+    if not profile or profile.role not in ['admin', 'manager']:
+        messages.error(request, 'Bạn không có quyền truy cập module phân tích dữ liệu.')
+        return redirect('dashboard_overview')
+    
     context = {
         'title': 'Phân tích phát triển',
         'module_name': 'Phân tích & Business Intelligence',
@@ -1376,6 +1404,7 @@ def analytics_management(request):
             'Dự đoán và lập kế hoạch',
             'KPIs và metrics quan trọng'
         ],
+        'user_role': profile.role,
         'coming_soon': True
     }
     return render(request, 'erp_modules/analytics.html', context)

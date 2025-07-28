@@ -1,0 +1,2839 @@
+{% extends "dashboard/dashboard_base.html" %}
+{% load static %}
+
+{% block title %}Chấm công - Dashboard{% endblock %}
+
+{% block page_title %}
+<i class="fas fa-calendar-check text-primary me-2"></i>Chấm công - {{ user.get_full_name|default:user.username }}
+<small class="text-muted ms-2">({{ user.user_profile.role|default:"Nhân viên" }})</small>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Reset và Base Styles */
+    * {
+        box-sizing: border-box;
+    }
+    
+    .container-fluid {
+        padding: 0 1.5rem;
+        max-width: 100%;
+    }
+    
+    /* Card System */
+    .modern-card {
+        background: #ffffff;
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        transition: all 0.3s ease;
+        margin-bottom: 1.5rem;
+    }
+    
+    .modern-card:hover {
+        box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+        transform: translateY(-2px);
+    }
+    
+    .modern-card-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1rem 1.5rem;
+        border-radius: 12px 12px 0 0;
+        border: none;
+    }
+    
+    .modern-card-body {
+        padding: 1.5rem;
+    }
+    
+    /* Button System */
+    .modern-btn {
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 500;
+        font-size: 0.95rem;
+        transition: all 0.3s ease;
+        border: none;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+    }
+    
+    .modern-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        text-decoration: none;
+    }
+    
+    .modern-btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    .modern-btn-success {
+        background: linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%);
+        color: white;
+    }
+    
+    .modern-btn-outline {
+        background: transparent;
+        border: 2px solid #667eea;
+        color: #667eea;
+    }
+    
+    .modern-btn-outline:hover {
+        background: #667eea;
+        color: white;
+    }
+    
+    /* Form System */
+    .modern-form-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    .modern-form-label {
+        font-weight: 600;
+        color: #2d3748;
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+    
+    .modern-form-control {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        background: #ffffff;
+    }
+    
+    .modern-form-control:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    
+    /* Selection Cards */
+    .selection-card {
+        background: #f8fafc;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 1rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-align: center;
+        height: 100%;
+    }
+    
+    .selection-card:hover {
+        border-color: #667eea;
+        background: #f0f4ff;
+        transform: translateY(-2px);
+    }
+    
+    .selection-card.active {
+        border-color: #667eea;
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+    }
+    
+    /* Stats Cards */
+    .stats-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        text-align: center;
+        transition: all 0.3s ease;
+        height: 100%;
+    }
+    
+    .stats-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+    }
+    
+    .stats-card.success {
+        background: linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%);
+    }
+    
+    .stats-card.info {
+        background: linear-gradient(135deg, #3498db 0%, #85c1e9 100%);
+    }
+    
+    .stats-card.warning {
+        background: linear-gradient(135deg, #f39c12 0%, #f7dc6f 100%);
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+        .container-fluid {
+            padding: 0 1rem;
+        }
+        
+        .modern-card-body {
+            padding: 1rem;
+        }
+        
+        .modern-btn {
+            padding: 0.6rem 1rem;
+            font-size: 0.9rem;
+        }
+        
+        .stats-card {
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+    }
+    
+    @media (max-width: 576px) {
+        .container-fluid {
+            padding: 0 0.75rem;
+        }
+        
+        .modern-card-header {
+            padding: 0.75rem 1rem;
+        }
+        
+        .modern-card-body {
+            padding: 0.75rem;
+        }
+    }
+    
+    /* Layout Fix - Override Bootstrap conflicts */
+    .container-fluid {
+        padding: 0 15px !important;
+        width: 100% !important;
+        max-width: none !important;
+    }
+    
+    .row {
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+    }
+    
+    [class*="col-"] {
+        padding-left: 15px !important;
+        padding-right: 15px !important;
+    }
+    
+    /* Clean slate - no legacy styles */
+        background: #f8f9fa;
+        border-radius: 15px;
+        padding: 25px;
+        border: 2px dashed #dee2e6;
+        margin-bottom: 20px;
+    }
+    
+    .action-btn {
+        padding: 12px 25px;
+        border-radius: 10px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        margin: 5px;
+    }
+    
+    .action-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+    }
+    
+    /* Improved UI Styles */
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
+    }
+    
+    .card {
+        transition: all 0.3s ease;
+    }
+    
+    .card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    }
+    
+    .form-check {
+        transition: all 0.2s ease;
+    }
+    
+    .form-check:hover {
+        transform: scale(1.02);
+    }
+    
+    /* Card selection styles */
+    .card[onclick] {
+        transition: all 0.3s ease;
+        border: 2px solid transparent;
+    }
+    
+    .card[onclick]:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        border-color: #0d6efd;
+    }
+    
+    .card[onclick] input[type="checkbox"]:checked + label {
+        color: #0d6efd;
+    }
+    
+    .card[onclick] input[type="checkbox"]:checked {
+        background-color: #0d6efd;
+        border-color: #0d6efd;
+    }
+    
+    /* Gradient backgrounds */
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
+    }
+    
+    .bg-gradient-success {
+        background: linear-gradient(135deg, #198754 0%, #157347 100%);
+    }
+    
+    .bg-gradient-info {
+        background: linear-gradient(135deg, #0dcaf0 0%, #0aa2c0 100%);
+    }
+    
+    .bg-gradient-warning {
+        background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+    }
+    
+    .bg-gradient-secondary {
+        background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+    }
+    
+    .bg-gradient-dark {
+        background: linear-gradient(135deg, #212529 0%, #1a1d20 100%);
+    }
+    
+    /* Stats cards */
+    .stats-card {
+        transition: all 0.3s ease;
+        border: none;
+    }
+    
+    .stats-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+    
+    .stats-icon {
+        opacity: 0.8;
+    }
+    
+    /* Table improvements */
+    .table th {
+        font-weight: 600;
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .table td {
+        vertical-align: middle;
+        font-size: 14px;
+    }
+    
+    /* Form improvements */
+    .form-control:focus {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+    }
+    
+    .form-select:focus {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+    }
+    
+    /* Button improvements */
+    .btn {
+        font-weight: 500;
+        letter-spacing: 0.3px;
+    }
+    
+    .btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    
+    /* Responsive fixes */
+    @media (max-width: 768px) {
+        .container-fluid {
+            padding-left: 0.5rem;
+            padding-right: 0.5rem;
+        }
+        
+        .card-body {
+            padding: 1rem !important;
+        }
+        
+        .stats-card {
+            margin-bottom: 1rem;
+        }
+        
+        .btn {
+            font-size: 14px;
+            padding: 0.5rem 1rem;
+        }
+        
+        .form-control, .form-select {
+            font-size: 14px;
+            height: 40px;
+        }
+        
+        [class*="col-"] {
+            padding-left: 0.5rem;
+            padding-right: 0.5rem;
+        }
+    }
+    
+    @media (max-width: 576px) {
+        .row.g-3 > [class*="col-"] {
+            margin-bottom: 1rem;
+        }
+        
+        .d-flex.gap-2 {
+            flex-direction: column;
+        }
+        
+        .d-flex.gap-2 .btn {
+            margin-bottom: 0.5rem;
+        }
+    }
+    
+    /* Prevent layout overlap */
+    .container-fluid {
+        padding-left: 1rem;
+        padding-right: 1rem;
+        max-width: 100%;
+    }
+    
+    .row {
+        margin-left: 0;
+        margin-right: 0;
+    }
+    
+    [class*="col-"] {
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+    }
+    
+    .btn {
+        transition: all 0.3s ease;
+    }
+    
+    .btn:hover {
+        transform: translateY(-1px);
+    }
+    
+    /* Fix layout issues */
+    * {
+        box-sizing: border-box;
+    }
+    
+    .card {
+        width: 100%;
+        max-width: 100%;
+        overflow: hidden;
+    }
+    
+    .table-responsive {
+        width: 100%;
+        overflow-x: auto;
+    }
+    
+    .input-group-text {
+        background-color: #f8f9fa;
+        border-color: #dee2e6;
+    }
+    
+    /* Custom checkbox styling */
+    .form-check-input:checked {
+        background-color: #0d6efd;
+        border-color: #0d6efd;
+    }
+    
+    /* Responsive improvements */
+    @media (max-width: 768px) {
+        .d-flex.flex-wrap {
+            flex-direction: column;
+        }
+        
+        .d-flex.flex-wrap .btn {
+            margin-bottom: 0.5rem;
+        }
+    }
+    
+    .stats-box {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        text-align: center;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        margin-bottom: 15px;
+    }
+    
+    .work-badge {
+        font-size: 0.9rem;
+        padding: 8px 15px;
+        border-radius: 20px;
+        font-weight: 600;
+    }
+    
+    .method-badge {
+        font-size: 0.8rem;
+        padding: 5px 10px;
+        border-radius: 15px;
+        font-weight: 500;
+    }
+    
+    .hidden { display: none; }
+    .show { display: block; }
+    
+    .filter-section {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+    
+    /* Professional Leave Management Styles */
+    .leave-section {
+        background: white;
+        border-radius: 12px;
+        border: 1px solid #e9ecef;
+        margin-bottom: 20px;
+        overflow: hidden;
+    }
+    
+    .leave-section-header {
+        background: linear-gradient(135deg, #495057 0%, #6c757d 100%);
+        color: white;
+        padding: 15px 20px;
+        border: none;
+    }
+    
+    .leave-section-header.pending {
+        background: linear-gradient(135deg, #fd7e14 0%, #e55d00 100%);
+    }
+    
+    .leave-section-header.history {
+        background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
+    }
+    
+    .leave-card {
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        transition: all 0.2s ease;
+        background: white;
+    }
+    
+    .leave-card:hover {
+        border-color: #0d6efd;
+        box-shadow: 0 2px 8px rgba(13, 110, 253, 0.1);
+    }
+    
+    .leave-card.status-approved {
+        border-left: 4px solid #198754;
+    }
+    
+    .leave-card.status-rejected {
+        border-left: 4px solid #dc3545;
+    }
+    
+    .leave-card.status-pending {
+        border-left: 4px solid #fd7e14;
+    }
+    
+    .status-badge {
+        font-size: 0.75rem;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .approval-status {
+        display: inline-flex;
+        gap: 5px;
+    }
+    
+    .approval-status.justify-content-end {
+        justify-content: flex-end;
+    }
+    
+    .approval-badge {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.7rem;
+        color: white;
+        font-weight: 600;
+    }
+    
+    .approval-badge.pending {
+        background: #6c757d;
+    }
+    
+    .approval-badge.approved {
+        background: #198754;
+    }
+    
+    .approval-badge.rejected {
+        background: #dc3545;
+    }
+    
+    .leave-info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin-bottom: 15px;
+    }
+    
+    .leave-info-item {
+        font-size: 0.9rem;
+    }
+    
+    .leave-info-label {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 4px;
+    }
+    
+    .leave-info-value {
+        color: #6c757d;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Chấm công hôm nay - Full width -->
+    <div class="row">
+        <div class="col-12">
+            <!-- Chấm công hôm nay -->
+            <div class="modern-card">
+                <div class="modern-card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-calendar-check me-2"></i>
+                        Chấm công hôm nay - {{ "now"|date:"d/m/Y" }}
+                    </h5>
+                </div>
+                <div class="modern-card-body">
+                    <div class="row align-items-center">
+                        <div class="col-lg-8">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="selection-card">
+                                        <i class="fas fa-sun text-warning fa-2x mb-2"></i>
+                                        <h6 class="mb-1">Ca ngày</h6>
+                                        <small class="text-muted">7h30-11h30, 13h-17h</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="selection-card">
+                                        <i class="fas fa-moon text-info fa-2x mb-2"></i>
+                                        <h6 class="mb-1">Ca đêm</h6>
+                                        <small class="text-muted">19h-23h, 0h-4h</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="todayAttendanceForm" class="d-flex flex-wrap gap-2">
+                                <!-- Buttons sẽ render động -->
+                            </div>
+                        </div>
+                        <div class="col-lg-4 text-center">
+                            <i class="fas fa-clock fa-4x text-gradient mb-3"></i>
+                            <h6 class="text-gradient">Tăng ca tự động</h6>
+                            <p class="text-muted small">Chọn giờ kết thúc để tự động tính tăng ca</p>
+                        </div>
+                    </div>
+                            <div class="col-lg-4 text-center">
+                                <i class="fas fa-clock fa-4x text-gradient mb-3"></i>
+                                <h6 class="text-gradient">Tăng ca tự động</h6>
+                                <p class="text-muted small">Chọn giờ kết thúc để tự động tính tăng ca</p>
+                                <button class="modern-btn modern-btn-success mt-2" onclick="exportMonthlyReport()" id="exportBtn">
+                                    <i class="fas fa-download me-2"></i>Xuất Excel <span id="currentMonth"></span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Attendance Form (Hidden) -->
+    <div class="row mb-4 hidden" id="attendanceFormSection">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-gradient-primary text-white">
+                    <h5 class="mb-0" id="formTitle">
+                        <i class="fas fa-edit me-2"></i>
+                        Chấm công
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="form-section bg-light rounded p-3">
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label class="form-label">Ngày chấm công <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control" id="attendanceDate" value="{{ "now"|date:"Y-m-d" }}">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Loại công việc <span class="text-danger">*</span></label>
+                                <select class="form-select" id="workType" onchange="toggleConstructionFields()">
+                                    <option value="">-- Chọn loại --</option>
+                                    <option value="O">O - Văn phòng</option>
+                                    <option value="W">W - Công trường</option>
+                                    <option value="T">T - Đào tạo</option>
+                                    <option value="P">P - Nghỉ có phép</option>
+                                    <option value="N">N - Nghỉ không phép</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6" id="constructionFields" style="display: none;">
+                                <div class="row">
+                                    <div class="col-6">
+                                    <label class="form-label fw-bold">Tên công trình/Khách hàng <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="constructionName" placeholder="VD: HEINEKEN, PetroVietnam..." style="height: 45px; font-size: 16px;">
+                                </div>
+                                    <div class="col-6">
+                                    <label class="form-label fw-bold">Phương pháp NDT <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="ndtMethod" style="height: 45px; font-size: 16px;">
+                                        <option value="">-- Chọn phương pháp --</option>
+                                        <option value="UT">UT (Ultrasonic Testing)</option>
+                                        <option value="MT">MT (Magnetic Testing)</option>
+                                        <option value="RT">RT (Radiographic Testing)</option>
+                                        <option value="VT">VT (Visual Testing)</option>
+                                        <option value="PT">PT (Penetrant Testing)</option>
+                                        <option value="PAUT">PAUT (Phased Array Ultrasonic Testing)</option>
+                                        <option value="TOFD">TOFD (Time of Flight Diffraction)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                        <!-- Ca làm việc -->
+                        <div class="row g-3 mt-4" id="shiftSection">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">
+                                    <i class="fas fa-clock me-2"></i>Ca làm việc
+                                </label>
+                                <div class="row g-3">
+                                    <div class="col-6">
+                                        <div class="card border-0 h-100" style="background: rgba(255, 193, 7, 0.1); cursor: pointer;" onclick="handleCardClick(event, 'dayShift')">
+                                            <div class="card-body text-center p-3">
+                                                <div class="form-check d-flex align-items-center justify-content-center mb-2">
+                                                    <input class="form-check-input me-2" type="checkbox" id="dayShift" value="day" checked onchange="updateOvertimeSections()">
+                                                    <label class="form-check-label fw-bold mb-0" for="dayShift">
+                                                        <i class="fas fa-sun text-warning me-2"></i>Ca ngày
+                                                    </label>
+                                                </div>
+                                                <div class="small text-muted">7h30-11h30, 13h-17h</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="card border-0 h-100" style="background: rgba(13, 110, 253, 0.1); cursor: pointer;" onclick="handleCardClick(event, 'nightShift')">
+                                            <div class="card-body text-center p-3">
+                                                <div class="form-check d-flex align-items-center justify-content-center mb-2">
+                                                    <input class="form-check-input me-2" type="checkbox" id="nightShift" value="night" onchange="updateOvertimeSections()">
+                                                    <label class="form-check-label fw-bold mb-0" for="nightShift">
+                                                        <i class="fas fa-moon text-info me-2"></i>Ca đêm
+                                                    </label>
+                                                </div>
+                                                <div class="small text-muted">19h-23h, 0h-4h</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6" id="shiftTimeSection">
+                                <label class="form-label fw-bold">
+                                    <i class="fas fa-plus-circle me-2"></i>Tăng ca
+                                </label>
+                                <div class="card border-0 bg-light">
+                                    <div class="card-body">
+                                        <div class="row g-2">
+                                            <div class="col-6" id="dayOvertimeSection" style="display: none;">
+                                                <div class="p-2 rounded" style="background: rgba(255, 193, 7, 0.1);">
+                                                    <label class="form-label small fw-bold text-warning">
+                                                        <i class="fas fa-sun me-1"></i>Tăng ca ngày
+                                                    </label>
+                                                    <input type="time" class="form-control" id="dayOvertimeEnd" onchange="calculateOvertime()" placeholder="Sau 17h00" style="height: 45px; font-size: 16px;">
+                                                    <small class="text-muted">Tính từ 17h00</small>
+                                                </div>
+                                            </div>
+                                            <div class="col-6" id="nightOvertimeSection" style="display: none;">
+                                                <div class="p-2 rounded" style="background: rgba(13, 110, 253, 0.1);">
+                                                    <label class="form-label small fw-bold text-info">
+                                                        <i class="fas fa-moon me-1"></i>Tăng ca đêm
+                                                    </label>
+                                                    <input type="time" class="form-control" id="nightOvertimeEnd" onchange="calculateOvertime()" placeholder="Sau 04h00" style="height: 45px; font-size: 16px;">
+                                                    <small class="text-muted">Tính từ 04h00</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4" id="overtimeSection">
+                                <div class="card border-0 shadow-sm h-100">
+                                    <div class="card-header bg-gradient-primary text-white py-2">
+                                        <label class="form-label fw-bold mb-0">
+                                            <i class="fas fa-calculator me-2"></i>Tổng tăng ca
+                                        </label>
+                                    </div>
+                                    <div class="card-body p-3">
+                                        <div class="input-group">
+                                            <input type="number" class="form-control" id="overtimeHours" placeholder="0" min="0" step="0.5" readonly style="height: 45px; font-size: 16px; font-weight: 600; background-color: #f8f9fa;">
+                                            <span class="input-group-text" style="height: 45px; font-size: 16px; font-weight: 600;">giờ</span>
+                                        </div>
+                                        <small class="text-muted mt-2 d-block">
+                                            <i class="fas fa-info-circle me-1"></i>Tự động tính từ giờ tăng ca
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-8" id="expenseSection">
+                                <div class="card border-0 shadow-sm h-100">
+                                    <div class="card-header bg-gradient-success text-white py-2">
+                                        <label class="form-label fw-bold mb-0">
+                                            <i class="fas fa-money-bill me-2"></i>Chi phí
+                                        </label>
+                                    </div>
+                                    <div class="card-body p-3">
+                                <div class="row g-2 mb-3">
+                                    <div class="col-3">
+                                        <div class="card border-0 h-100" style="background: rgba(13, 110, 253, 0.1); cursor: pointer;" onclick="handleCardClick(event, 'hotelExpense')">
+                                            <div class="card-body text-center p-2">
+                                                <div class="form-check d-flex align-items-center justify-content-center mb-1">
+                                                    <input class="form-check-input me-1" type="checkbox" id="hotelExpense" value="hotel" onchange="toggleExpenseAmount()">
+                                                    <label class="form-check-label small fw-bold mb-0" for="hotelExpense">
+                                                        <i class="fas fa-bed text-primary me-1"></i>KS
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-3">
+                                        <div class="card border-0 h-100" style="background: rgba(25, 135, 84, 0.1); cursor: pointer;" onclick="handleCardClick(event, 'shoppingExpense')">
+                                            <div class="card-body text-center p-2">
+                                                <div class="form-check d-flex align-items-center justify-content-center mb-1">
+                                                    <input class="form-check-input me-1" type="checkbox" id="shoppingExpense" value="shopping" onchange="toggleExpenseAmount()">
+                                                    <label class="form-check-label small fw-bold mb-0" for="shoppingExpense">
+                                                        <i class="fas fa-shopping-cart text-primary me-1"></i>MS
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-3">
+                                        <div class="card border-0 h-100" style="background: rgba(13, 202, 240, 0.1); cursor: pointer;" onclick="handleCardClick(event, 'phoneExpense')">
+                                            <div class="card-body text-center p-2">
+                                                <div class="form-check d-flex align-items-center justify-content-center mb-1">
+                                                    <input class="form-check-input me-1" type="checkbox" id="phoneExpense" value="phone" onchange="toggleExpenseAmount()">
+                                                    <label class="form-check-label small fw-bold mb-0" for="phoneExpense">
+                                                        <i class="fas fa-phone text-info me-1"></i>ĐT
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-3">
+                                        <div class="card border-0 h-100" style="background: rgba(255, 193, 7, 0.1); cursor: pointer;" onclick="handleCardClick(event, 'otherExpense')">
+                                            <div class="card-body text-center p-2">
+                                                <div class="form-check d-flex align-items-center justify-content-center mb-1">
+                                                    <input class="form-check-input me-1" type="checkbox" id="otherExpense" value="other" onchange="toggleOtherExpense()">
+                                                    <label class="form-check-label small fw-bold mb-0" for="otherExpense">
+                                                        <i class="fas fa-plus text-warning me-1"></i>Khác
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                        <div class="row g-2">
+                                            <div class="col-6">
+                                                <label class="form-label fw-bold">Số tiền (VNĐ) <span class="text-danger">*</span></label>
+                                                <div class="input-group">
+                                                    <input type="number" class="form-control" id="expenseAmount" placeholder="Nhập số tiền..." min="0" style="height: 45px; font-size: 16px;">
+                                                    <span class="input-group-text" style="height: 45px; font-size: 16px; font-weight: 600;">VNĐ</span>
+                                                </div>
+                                            </div>
+                                            <div class="col-6" id="otherExpenseField" style="display: none;">
+                                                <label class="form-label fw-bold">Mô tả chi phí khác</label>
+                                                <input type="text" class="form-control" id="otherExpenseDesc" placeholder="Nhập mô tả chi phí..." style="height: 45px; font-size: 16px;">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row g-3 mt-3">
+                            <div class="col-md-12">
+                                <div class="card border-0 shadow-sm">
+                                    <div class="card-header bg-gradient-info text-white py-2">
+                                        <label class="form-label fw-bold mb-0">
+                                            <i class="fas fa-sticky-note me-2"></i>Ghi chú
+                                        </label>
+                                    </div>
+                                    <div class="card-body p-3">
+                                        <textarea class="form-control" id="workNote" placeholder="Mô tả công việc, ghi chú..." rows="3" style="font-size: 16px; border: none; resize: none;"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+        
+                        <div class="text-end mt-4">
+                            <div class="d-flex gap-2 justify-content-end">
+                                <button class="btn btn-outline-secondary" onclick="hideAttendanceForm()">
+                                    <i class="fas fa-times me-2"></i>Hủy
+                                </button>
+                                <button class="btn btn-primary px-4" onclick="saveAttendance()">
+                                    <i class="fas fa-save me-2"></i>Lưu chấm công
+                                </button>
+                            </div>
+                        </div>
+                            </div>
+                        </div>
+                            </div>
+                        </div>
+                            </div>
+    
+    <!-- Filter Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-gradient-secondary text-white py-3">
+                    <h6 class="mb-0">
+                        <i class="fas fa-filter me-2"></i>Bộ lọc dữ liệu
+                    </h6>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-3">
+                        <div class="col-lg-2 col-md-4 col-sm-6">
+                            <label class="form-label fw-bold">Tháng/Năm</label>
+                            <input type="month" class="form-control" id="filterMonth" value="{{ "now"|date:"Y-m" }}" onchange="loadAttendanceData()" style="height: 45px; font-size: 16px;">
+                        </div>
+                        <div class="col-lg-2 col-md-4 col-sm-6">
+                            <label class="form-label fw-bold">Loại công việc</label>
+                            <select class="form-select" id="filterWorkType" onchange="loadAttendanceData()" style="height: 45px; font-size: 16px;">
+                                <option value="">Tất cả</option>
+                                <option value="O">Văn phòng</option>
+                                <option value="W">Công trường</option>
+                                <option value="T">Đào tạo</option>
+                                <option value="P">Nghỉ có phép</option>
+                                <option value="N">Nghỉ không phép</option>
+                            </select>
+                        </div>
+                        <div class="col-lg-2 col-md-4 col-sm-6">
+                            <label class="form-label fw-bold">Phương pháp NDT</label>
+                            <select class="form-select" id="filterNDTMethod" onchange="loadAttendanceData()" style="height: 45px; font-size: 16px;">
+                                <option value="">Tất cả</option>
+                                <option value="UT">UT</option>
+                                <option value="MT">MT</option>
+                                <option value="RT">RT</option>
+                                <option value="VT">VT</option>
+                                <option value="PT">PT</option>
+                                <option value="PAUT">PAUT</option>
+                                <option value="TOFD">TOFD</option>
+                            </select>
+                        </div>
+                        <div class="col-lg-3 col-md-6 col-sm-12">
+                            <label class="form-label fw-bold">Tìm kiếm</label>
+                            <input type="text" class="form-control" id="searchKeyword" placeholder="Tên công trình, ghi chú..." onkeyup="debounceSearch()" style="height: 45px; font-size: 16px;">
+                        </div>
+                        <div class="col-lg-3 col-md-6 col-sm-12">
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-primary px-4 flex-fill" onclick="loadAttendanceData()" style="height: 45px;">
+                                    <i class="fas fa-search me-2"></i>Lọc
+                                </button>
+                                <button class="btn btn-outline-secondary px-4 flex-fill" onclick="clearFilter()" style="height: 45px;">
+                                    <i class="fas fa-eraser me-2"></i>Xóa lọc
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Statistics -->
+    <div class="modern-card spacing-md">
+        <div class="modern-card-header">
+            <h6 class="mb-0">
+                <i class="fas fa-chart-bar me-2"></i>Thống kê tháng <span id="currentMonth">{{ "now"|date:"m/Y" }}</span>
+            </h6>
+        </div>
+        <div class="modern-card-body">
+            <div class="row g-3">
+                <div class="col-lg-3 col-md-6 col-sm-6">
+                    <div class="stats-card">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-grow-1">
+                                <h3 class="mb-1" id="totalWorkDays">0</h3>
+                                <small>Ngày đi làm</small>
+                            </div>
+                            <div class="stats-icon">
+                                <i class="fas fa-calendar-check fa-2x opacity-75"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6 col-sm-6">
+                    <div class="stats-card success">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-grow-1">
+                                <h3 class="mb-1" id="constructionDays">0</h3>
+                                <small>Công trường</small>
+                            </div>
+                            <div class="stats-icon">
+                                <i class="fas fa-hard-hat fa-2x opacity-75"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6 col-sm-6">
+                    <div class="stats-card info">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-grow-1">
+                                <h3 class="mb-1" id="officeDays">0</h3>
+                                <small>Văn phòng</small>
+                            </div>
+                            <div class="stats-icon">
+                                <i class="fas fa-building fa-2x opacity-75"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6 col-sm-6">
+                    <div class="stats-card warning">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-grow-1">
+                                <h3 class="mb-1" id="overtimeDays">0</h3>
+                                <small>Tăng ca</small>
+                            </div>
+                            <div class="stats-icon">
+                                <i class="fas fa-clock fa-2x opacity-75"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Attendance Data -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-gradient-primary text-white py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">
+                            <i class="fas fa-table me-2"></i>
+                            Lịch sử chấm công <span id="currentMonthDisplay"></span>
+                        </h6>
+                        <div>
+                            <button class="btn btn-light btn-sm px-3" onclick="exportCurrentView()">
+                                <i class="fas fa-file-excel me-2"></i>
+                                Xuất Excel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="border-0">Ngày</th>
+                                    <th class="border-0">Loại công việc</th>
+                                    <th class="border-0">Ca</th>
+                                    <th class="border-0">Công trình/Mô tả</th>
+                                    <th class="border-0">Phương pháp NDT</th>
+                                    <th class="border-0">Chi tiết tăng ca</th>
+                                    <th class="border-0">Tổng tăng ca</th>
+                                    <th class="border-0">Chi phí</th>
+                                    <th class="border-0">Ghi chú</th>
+                                    <th class="border-0">Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody id="attendanceTableBody">
+                                <tr>
+                                    <td colspan="10" class="text-center text-muted py-5">
+                                        <i class="fas fa-spinner fa-spin fa-2x mb-3 d-block"></i>
+                                        <div class="fw-bold">Đang tải dữ liệu...</div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Leave Request Modal -->
+<div class="modal fade" id="leaveRequestModal" tabindex="-1" aria-labelledby="leaveRequestModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title" id="leaveRequestModalLabel">
+                    <i class="fas fa-calendar-times me-2"></i>Xin nghỉ phép
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Ngày bắt đầu nghỉ <span class="text-danger">*</span></label>
+                        <input type="date" class="form-control" id="leaveStartDate" min="{{ "now"|date:"Y-m-d" }}">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Ngày kết thúc nghỉ <span class="text-danger">*</span></label>
+                        <input type="date" class="form-control" id="leaveEndDate" min="{{ "now"|date:"Y-m-d" }}">
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Lý do xin nghỉ <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="leaveReason" rows="3" placeholder="Nhập lý do xin nghỉ..."></textarea>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Bàn giao công việc <span class="text-danger">*</span></label>
+                        <div class="row g-2">
+                            <div class="col-md-6">
+                                <label class="form-label">Người thay thế</label>
+                                <select class="form-select" id="handoverPerson">
+                                    <option value="">-- Chọn người thay thế --</option>
+                                    <option value="Nguyễn Văn A">Nguyễn Văn A</option>
+                                    <option value="Trần Thị B">Trần Thị B</option>
+                                    <option value="Lê Văn C">Lê Văn C</option>
+                                    <option value="Phạm Thị D">Phạm Thị D</option>
+                                    <option value="Hoàng Văn E">Hoàng Văn E</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Công việc cần bàn giao</label>
+                                <textarea class="form-control" id="handoverTasks" rows="2" placeholder="Mô tả công việc cần bàn giao..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="alert alert-info">
+                            <h6><i class="fas fa-info-circle me-2"></i>Quy tắc xin nghỉ phép:</h6>
+                            <ul class="mb-0">
+                                <li>Nghỉ nửa ngày - 1 ngày: xin phép trước 24h ngày hôm trước</li>
+                                <li>Nghỉ từ 1,5 đến 3 ngày: xin phép trước 2 ngày</li>
+                                <li>Nghỉ 3,5 ngày đến 5 ngày: được sự đồng ý trước 1 tuần</li>
+                                <li>Số ngày nghỉ phép hơn 5 ngày: xin phép trước 2 tuần</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Hủy
+                </button>
+                <button type="button" class="btn btn-info" onclick="submitLeaveRequest()">
+                    <i class="fas fa-paper-plane me-2"></i>Gửi yêu cầu
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+    <!-- Leave Requests Section -->
+    <div class="row mb-4" id="leaveRequestsSection" style="display: none;">
+        <div class="col-12">
+            <div class="leave-section">
+                <div class="leave-section-header pending">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-clock me-2"></i>
+                            Yêu cầu nghỉ phép chờ duyệt
+                        </h5>
+                        <div class="d-flex align-items-center">
+                            <label class="form-label me-2 mb-0 text-white">Vai trò duyệt:</label>
+                            <select class="form-select form-select-sm" id="currentUserRoleSelect" style="width: auto;" onchange="updateCurrentUserRole()">
+                                <option value="teamLead">Trưởng nhóm</option>
+                                <option value="manager">Quản lý</option>
+                                <option value="company">Công ty</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-3">
+                    <div id="leaveRequestsList">
+                        <!-- Leave requests will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leave History Section -->
+    <div class="row mb-4" id="leaveHistorySection" style="display: none;">
+        <div class="col-12">
+            <div class="leave-section">
+                <div class="leave-section-header history">
+                    <h5 class="mb-0">
+                        <i class="fas fa-history me-2"></i>
+                        Lịch sử nghỉ phép (10 gần nhất)
+                    </h5>
+                </div>
+                <div class="card-body p-3">
+                    <div id="leaveHistoryList">
+                        <!-- Leave history will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+// Global data
+let attendanceData = [];
+let currentMode = 'today'; // 'today' or 'makeup'
+
+// Use global dashboard system with fallback
+const CURRENT_USER = window.DASHBOARD_USER || {
+    id: {{ user.id }},
+    username: '{{ user.username }}',
+    fullName: '{{ user.get_full_name|default:user.username }}',
+    role: '{% if user.user_profile.role %}{{ user.user_profile.role }}{% else %}staff{% endif %}'
+};
+
+// Helper functions using global dashboard storage with fallback
+function getUserAttendanceData() {
+    if (window.getUserData) {
+        return window.getUserData('attendance', 'data', []);
+    } else {
+        // Fallback to direct localStorage
+        const key = `attendance_${CURRENT_USER.id}_data`;
+        return JSON.parse(localStorage.getItem(key) || '[]');
+    }
+}
+
+function setUserAttendanceData(data) {
+    if (window.setUserData) {
+        return window.setUserData('attendance', 'data', data);
+    } else {
+        // Fallback to direct localStorage
+        const key = `attendance_${CURRENT_USER.id}_data`;
+        localStorage.setItem(key, JSON.stringify(data));
+    }
+}
+
+function getUserLeaveRequests() {
+    if (window.getUserData) {
+        return window.getUserData('attendance', 'leaveRequests', []);
+    } else {
+        // Fallback to direct localStorage
+        const key = `attendance_${CURRENT_USER.id}_leaveRequests`;
+        return JSON.parse(localStorage.getItem(key) || '[]');
+    }
+}
+
+function setUserLeaveRequests(requests) {
+    if (window.setUserData) {
+        return window.setUserData('attendance', 'leaveRequests', requests);
+    } else {
+        // Fallback to direct localStorage
+        const key = `attendance_${CURRENT_USER.id}_leaveRequests`;
+        localStorage.setItem(key, JSON.stringify(requests));
+    }
+}
+
+// Show attendance form
+function showAttendanceForm(mode) {
+    currentMode = mode;
+    const formSection = document.getElementById('attendanceFormSection');
+    const formTitle = document.getElementById('formTitle');
+    const dateInput = document.getElementById('attendanceDate');
+    
+    if (mode === 'today') {
+        formTitle.innerHTML = '<i class="fas fa-edit text-primary me-2"></i>Chấm công hôm nay';
+        dateInput.value = new Date().toISOString().split('T')[0];
+        dateInput.disabled = true;
+    } else {
+        formTitle.innerHTML = '<i class="fas fa-calendar-plus text-warning me-2"></i>Chấm công bù';
+        dateInput.disabled = false;
+    }
+    
+    formSection.classList.remove('hidden');
+    formSection.classList.add('show');
+}
+
+function showMakeupForm() {
+    showAttendanceForm('makeup');
+}
+
+function hideAttendanceForm() {
+    document.getElementById('attendanceFormSection').classList.add('hidden');
+    document.getElementById('attendanceFormSection').classList.remove('show');
+    clearForm();
+}
+
+function clearForm() {
+    document.getElementById('workType').value = '';
+    document.getElementById('constructionName').value = '';
+    document.getElementById('ndtMethod').value = '';
+    document.getElementById('dayShift').checked = true;
+    document.getElementById('nightShift').checked = false;
+    
+    // Reset overtime fields
+    document.getElementById('dayOvertimeEnd').value = '';
+    document.getElementById('nightOvertimeEnd').value = '';
+    document.getElementById('overtimeHours').value = '';
+    
+    // Reset expense checkboxes
+    document.getElementById('hotelExpense').checked = false;
+    document.getElementById('shoppingExpense').checked = false;
+    document.getElementById('phoneExpense').checked = false;
+    document.getElementById('otherExpense').checked = false;
+    document.getElementById('expenseAmount').value = '';
+    document.getElementById('otherExpenseDesc').value = '';
+    document.getElementById('otherExpenseField').style.display = 'none';
+    document.getElementById('expenseAmount').parentElement.style.display = 'none';
+    
+    document.getElementById('workNote').value = '';
+    document.getElementById('constructionFields').style.display = 'none';
+    document.getElementById('shiftSection').style.display = 'none';
+    document.getElementById('shiftTimeSection').style.display = 'none';
+    document.getElementById('overtimeSection').style.display = 'none';
+    document.getElementById('expenseSection').style.display = 'none';
+    
+    // Reset overtime sections
+    updateOvertimeSections();
+}
+
+function toggleConstructionFields() {
+    const workType = document.getElementById('workType').value;
+    const constructionFields = document.getElementById('constructionFields');
+    const shiftSection = document.getElementById('shiftSection');
+    const shiftTimeSection = document.getElementById('shiftTimeSection');
+    const overtimeSection = document.getElementById('overtimeSection');
+    const expenseSection = document.getElementById('expenseSection');
+    
+    if (workType === 'W') {
+        constructionFields.style.display = 'block';
+        shiftSection.style.display = 'block';
+        shiftTimeSection.style.display = 'block';
+        overtimeSection.style.display = 'block';
+        expenseSection.style.display = 'block';
+    } else if (workType === 'O' || workType === 'T') {
+        constructionFields.style.display = 'none';
+        shiftSection.style.display = 'block';
+        shiftTimeSection.style.display = 'block';
+        overtimeSection.style.display = 'block';
+        expenseSection.style.display = 'block';
+    } else if (workType === 'P' || workType === 'N') {
+        // Nghỉ - chỉ hiển thị ghi chú
+        constructionFields.style.display = 'none';
+        shiftSection.style.display = 'none';
+        shiftTimeSection.style.display = 'none';
+        overtimeSection.style.display = 'none';
+        expenseSection.style.display = 'none';
+    } else {
+        // Chưa chọn - ẩn tất cả
+        constructionFields.style.display = 'none';
+        shiftSection.style.display = 'none';
+        shiftTimeSection.style.display = 'none';
+        overtimeSection.style.display = 'none';
+        expenseSection.style.display = 'none';
+    }
+    
+    // Cập nhật hiển thị section tăng ca theo ca được chọn
+    updateOvertimeSections();
+}
+
+// Quy định giờ làm việc
+const WORK_SCHEDULE = {
+    day: {
+        morning: { start: '07:30', end: '11:30' },
+        afternoon: { start: '13:00', end: '17:00' }
+    },
+    night: {
+        shift1: { start: '19:00', end: '23:00' },
+        shift2: { start: '00:00', end: '04:00' }
+    }
+};
+
+function updateOvertimeSections() {
+    const dayShift = document.getElementById('dayShift').checked;
+    const nightShift = document.getElementById('nightShift').checked;
+    
+    // Ẩn tất cả section trước
+    document.getElementById('dayOvertimeSection').style.display = 'none';
+    document.getElementById('nightOvertimeSection').style.display = 'none';
+    
+    // Hiển thị section theo ca được chọn
+    if (dayShift) {
+        document.getElementById('dayOvertimeSection').style.display = 'block';
+    }
+    
+    if (nightShift) {
+        document.getElementById('nightOvertimeSection').style.display = 'block';
+    }
+    
+    // Tính lại tăng ca
+    calculateOvertime();
+}
+
+function calculateOvertime() {
+    const dayShift = document.getElementById('dayShift').checked;
+    const nightShift = document.getElementById('nightShift').checked;
+    
+    let totalOvertimeHours = 0;
+    
+    // Tính tăng ca ngày (từ 17h00)
+    if (dayShift) {
+        const dayOvertimeEnd = document.getElementById('dayOvertimeEnd').value;
+        if (dayOvertimeEnd) {
+            const standardEnd = new Date(`2000-01-01T17:00:00`);
+            const overtimeEnd = new Date(`2000-01-01T${dayOvertimeEnd}`);
+            
+            if (overtimeEnd > standardEnd) {
+                const overtimeHours = (overtimeEnd - standardEnd) / (1000 * 60 * 60);
+                totalOvertimeHours += overtimeHours;
+                console.log('Tăng ca ngày:', overtimeHours.toFixed(1), 'giờ');
+            }
+        }
+    }
+    
+    // Tính tăng ca đêm (từ 04h00)
+    if (nightShift) {
+        const nightOvertimeEnd = document.getElementById('nightOvertimeEnd').value;
+        if (nightOvertimeEnd) {
+            const standardEnd = new Date(`2000-01-01T04:00:00`);
+            const overtimeEnd = new Date(`2000-01-01T${nightOvertimeEnd}`);
+            
+            if (overtimeEnd > standardEnd) {
+                const overtimeHours = (overtimeEnd - standardEnd) / (1000 * 60 * 60);
+                totalOvertimeHours += overtimeHours;
+                console.log('Tăng ca đêm:', overtimeHours.toFixed(1), 'giờ');
+            }
+        }
+    }
+    
+    document.getElementById('overtimeHours').value = totalOvertimeHours.toFixed(1);
+    
+    console.log('Tổng tăng ca:', totalOvertimeHours.toFixed(1), 'giờ');
+}
+
+function toggleExpenseAmount() {
+    const hotelChecked = document.getElementById('hotelExpense').checked;
+    const shoppingChecked = document.getElementById('shoppingExpense').checked;
+    const phoneChecked = document.getElementById('phoneExpense').checked;
+    const otherChecked = document.getElementById('otherExpense').checked;
+    
+    const expenseAmountField = document.getElementById('expenseAmount');
+    
+    // Hiển thị input số tiền nếu có ít nhất 1 loại chi phí được chọn
+    if (hotelChecked || shoppingChecked || phoneChecked || otherChecked) {
+        expenseAmountField.style.display = 'block';
+        expenseAmountField.parentElement.style.display = 'block';
+    } else {
+        expenseAmountField.style.display = 'none';
+        expenseAmountField.parentElement.style.display = 'none';
+    }
+}
+
+function toggleOtherExpense() {
+    const otherChecked = document.getElementById('otherExpense').checked;
+    const otherField = document.getElementById('otherExpenseField');
+    
+    if (otherChecked) {
+        otherField.style.display = 'block';
+    } else {
+        otherField.style.display = 'none';
+        document.getElementById('otherExpenseDesc').value = '';
+    }
+}
+
+// Leave Request Functions
+function showLeaveRequestForm() {
+    const modal = new bootstrap.Modal(document.getElementById('leaveRequestModal'));
+    modal.show();
+}
+
+function calculateLeaveDays(startDate, endDate) {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const diffTime = Math.abs(end - start);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays + 1; // Include both start and end date
+}
+
+function validateLeaveRequest(startDate, endDate) {
+    const today = new Date();
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    // Check if dates are valid
+    if (start < today) {
+        return { valid: false, message: 'Ngày bắt đầu nghỉ không thể là ngày trong quá khứ!' };
+    }
+    
+    if (end < start) {
+        return { valid: false, message: 'Ngày kết thúc phải sau ngày bắt đầu!' };
+    }
+    
+    const leaveDays = calculateLeaveDays(startDate, endDate);
+    const daysUntilStart = Math.ceil((start - today) / (1000 * 60 * 60 * 24));
+    
+    // Validate based on leave rules
+    if (leaveDays <= 1) {
+        if (daysUntilStart < 1) {
+            return { valid: false, message: 'Nghỉ nửa ngày - 1 ngày: phải xin phép trước 24h ngày hôm trước!' };
+        }
+    } else if (leaveDays <= 3) {
+        if (daysUntilStart < 2) {
+            return { valid: false, message: 'Nghỉ từ 1,5 đến 3 ngày: phải xin phép trước 2 ngày!' };
+        }
+    } else if (leaveDays <= 5) {
+        if (daysUntilStart < 7) {
+            return { valid: false, message: 'Nghỉ 3,5 ngày đến 5 ngày: phải xin phép trước 1 tuần!' };
+        }
+    } else {
+        if (daysUntilStart < 14) {
+            return { valid: false, message: 'Nghỉ hơn 5 ngày: phải xin phép trước 2 tuần!' };
+        }
+    }
+    
+    return { valid: true, message: 'Yêu cầu hợp lệ!' };
+}
+
+function submitLeaveRequest() {
+    const startDate = document.getElementById('leaveStartDate').value;
+    const endDate = document.getElementById('leaveEndDate').value;
+    const reason = document.getElementById('leaveReason').value.trim();
+    const handoverPerson = document.getElementById('handoverPerson').value;
+    const handoverTasks = document.getElementById('handoverTasks').value.trim();
+    
+    if (!startDate || !endDate || !reason || !handoverPerson) {
+        Swal.fire('Lỗi', 'Vui lòng điền đầy đủ thông tin bắt buộc!', 'error');
+        return;
+    }
+    
+    // Validate leave request
+    const validation = validateLeaveRequest(startDate, endDate);
+    if (!validation.valid) {
+        Swal.fire('Từ chối yêu cầu', validation.message, 'error');
+        return;
+    }
+    
+    // Create leave request
+    const leaveRequest = {
+        id: Date.now().toString(),
+        startDate: startDate,
+        endDate: endDate,
+        reason: reason,
+        handoverPerson: handoverPerson,
+        handoverTasks: handoverTasks,
+        status: 'pending', // pending, approved, rejected
+        submittedAt: new Date().toISOString(),
+        submittedBy: CURRENT_USER.fullName, // Use current user info
+        userId: CURRENT_USER.id, // Add user ID for tracking
+        approvals: {
+            teamLead: { status: 'pending', approvedBy: '', approvedAt: null, response: '' },
+            manager: { status: 'pending', approvedBy: '', approvedAt: null, response: '' },
+            company: { status: 'pending', approvedBy: '', approvedAt: null, response: '' }
+        },
+        currentLevel: 'teamLead' // teamLead, manager, company
+    };
+    
+    // Save to user-specific localStorage
+    let leaveRequests = getUserLeaveRequests();
+    leaveRequests.push(leaveRequest);
+    setUserLeaveRequests(leaveRequests);
+    clearLeaveRequestsCache(); // Clear cache after update
+    
+    // Close modal and show success
+    bootstrap.Modal.getInstance(document.getElementById('leaveRequestModal')).hide();
+    
+    Swal.fire({
+        title: 'Gửi yêu cầu thành công!',
+        text: 'Yêu cầu xin nghỉ phép đã được gửi và chờ phê duyệt.',
+        icon: 'success',
+        timer: 2000,
+        showConfirmButton: false
+    });
+    
+    // Clear form
+    document.getElementById('leaveStartDate').value = '';
+    document.getElementById('leaveEndDate').value = '';
+    document.getElementById('leaveReason').value = '';
+    document.getElementById('handoverPerson').value = '';
+    document.getElementById('handoverTasks').value = '';
+    
+    // Refresh leave requests and history display
+    loadLeaveRequests();
+    loadLeaveHistory(); // Show leave history after submitting request
+}
+
+function loadLeaveRequests() {
+    const leaveRequests = getUserLeaveRequests();
+    const pendingRequests = leaveRequests.filter(req => req.status === 'pending');
+    
+    const section = document.getElementById('leaveRequestsSection');
+    const list = document.getElementById('leaveRequestsList');
+    
+    if (pendingRequests.length === 0) {
+        section.style.display = 'none';
+    } else {
+        section.style.display = 'block';
+        
+        list.innerHTML = pendingRequests.map(request => {
+            const startDate = new Date(request.startDate).toLocaleDateString('vi-VN');
+            const endDate = new Date(request.endDate).toLocaleDateString('vi-VN');
+            const submittedAt = new Date(request.submittedAt).toLocaleDateString('vi-VN');
+            const leaveDays = calculateLeaveDays(request.startDate, request.endDate);
+            
+            return `
+                <div class="leave-card status-pending">
+                    <div class="card-body p-3">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="d-flex align-items-center mb-3">
+                                    <h6 class="mb-0 me-3">
+                                        <i class="fas fa-user me-2 text-primary"></i>${request.submittedBy}
+                                </h6>
+                                    <span class="status-badge bg-warning text-dark">Chờ duyệt</span>
+                                    </div>
+                                
+                                <div class="leave-info-grid">
+                                    <div class="leave-info-item">
+                                        <div class="leave-info-label">
+                                            <i class="fas fa-calendar me-1"></i>Thời gian nghỉ
+                                        </div>
+                                        <div class="leave-info-value">${startDate} - ${endDate} (${leaveDays} ngày)</div>
+                                    </div>
+                                    
+                                    <div class="leave-info-item">
+                                        <div class="leave-info-label">
+                                            <i class="fas fa-comment me-1"></i>Lý do
+                                        </div>
+                                        <div class="leave-info-value">${request.reason}</div>
+                                    </div>
+                                    
+                                    <div class="leave-info-item">
+                                        <div class="leave-info-label">
+                                            <i class="fas fa-user-tie me-1"></i>Người thay thế
+                                        </div>
+                                        <div class="leave-info-value">${request.handoverPerson}</div>
+                                    </div>
+                                    
+                                    <div class="leave-info-item">
+                                        <div class="leave-info-label">
+                                            <i class="fas fa-clock me-1"></i>Gửi lúc
+                                        </div>
+                                        <div class="leave-info-value">${submittedAt}</div>
+                                    </div>
+                                </div>
+                                
+                                ${request.handoverTasks ? `
+                                    <div class="leave-info-item mb-3">
+                                        <div class="leave-info-label">
+                                            <i class="fas fa-tasks me-1"></i>Công việc bàn giao
+                                        </div>
+                                        <div class="leave-info-value">${request.handoverTasks}</div>
+                                    </div>
+                                ` : ''}
+                                
+                                <div class="mt-3">
+                                    <div class="leave-info-label mb-2">Trạng thái duyệt</div>
+                                    <div class="approval-status">
+                                        <div class="approval-badge ${request.approvals.teamLead.status}" title="Trưởng nhóm">
+                                            TN
+                                        </div>
+                                        <div class="approval-badge ${request.approvals.manager.status}" title="Quản lý">  
+                                            QL
+                                        </div>
+                                        <div class="approval-badge ${request.approvals.company.status}" title="Công ty">
+                                            CT
+                                        </div>
+                                    </div>
+                                    <small class="text-muted mt-2 d-block">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        Đang chờ: ${getRoleDisplayName(request.currentLevel)}
+                                    </small>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                    <div class="d-grid gap-2">
+                                        <button class="btn btn-success btn-sm" onclick="approveLeaveRequest('${request.id}')">
+                                        <i class="fas fa-check me-1"></i>Duyệt
+                                        </button>
+                                        <button class="btn btn-danger btn-sm" onclick="rejectLeaveRequest('${request.id}')">
+                                            <i class="fas fa-times me-1"></i>Từ chối
+                                        </button>
+                                    </div>
+                                
+                        <div class="mt-3" id="rejectReason_${request.id}" style="display: none;">
+                                    <div class="input-group input-group-sm">
+                                <input type="text" class="form-control" id="rejectReasonInput_${request.id}" 
+                                               placeholder="Lý do từ chối...">
+                                <button class="btn btn-outline-danger" onclick="confirmRejectLeaveRequest('${request.id}')">
+                                            <i class="fas fa-paper-plane"></i>
+                                </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+}
+
+function getApprovalStatusIcons(request) {
+    const getStatusInfo = (status) => {
+        switch(status) {
+            case 'pending':
+                return { class: 'bg-secondary', icon: 'fas fa-clock' };
+            case 'approved':
+                return { class: 'bg-primary', icon: 'fas fa-check' };
+            case 'rejected':
+                return { class: 'bg-danger', icon: 'fas fa-times' };
+            default:
+                return { class: 'bg-secondary', icon: 'fas fa-clock' };
+        }
+    };
+    
+    return {
+        teamLead: getStatusInfo(request.approvals.teamLead.status),
+        manager: getStatusInfo(request.approvals.manager.status),
+        company: getStatusInfo(request.approvals.company.status)
+    };
+}
+
+function loadLeaveHistory() {
+    const leaveRequests = getUserLeaveRequests();
+    
+    // Show all leave requests for current user (not just current month)
+    const section = document.getElementById('leaveHistorySection');
+    const list = document.getElementById('leaveHistoryList');
+    
+    if (leaveRequests.length === 0) {
+        section.style.display = 'none';
+        return;
+    }
+    
+    section.style.display = 'block';
+    
+    // Sort by submission date (newest first) and limit to 10 recent requests
+    const sortedRequests = leaveRequests
+        .sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt))
+        .slice(0, 10); // Show only 10 most recent requests
+    
+    list.innerHTML = sortedRequests.map(request => {
+        const startDate = new Date(request.startDate).toLocaleDateString('vi-VN');
+        const endDate = new Date(request.endDate).toLocaleDateString('vi-VN');
+        const submittedAt = new Date(request.submittedAt).toLocaleDateString('vi-VN');
+        const leaveDays = calculateLeaveDays(request.startDate, request.endDate);
+        
+        // Determine status info
+        let statusClass = 'status-pending';
+        let statusBadge = '';
+        let statusColor = 'bg-warning text-dark';
+        
+        if (request.status === 'approved') {
+            statusClass = 'status-approved';
+            statusBadge = 'Đã duyệt';
+            statusColor = 'bg-success text-white';
+        } else if (request.status === 'rejected') {
+            statusClass = 'status-rejected';
+            statusBadge = 'Từ chối';
+            statusColor = 'bg-danger text-white';
+        } else {
+            statusBadge = 'Chờ duyệt';
+        }
+        
+        return `
+            <div class="leave-card ${statusClass} mb-2">
+                <div class="card-body p-3">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <div class="d-flex align-items-center mb-2">
+                                <h6 class="mb-0 me-3">
+                                    <i class="fas fa-user me-2 text-primary"></i>${request.submittedBy}
+                                </h6>
+                                <span class="status-badge ${statusColor}">${statusBadge}</span>
+                            </div>
+                            
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="leave-info-item">
+                                        <div class="leave-info-label">
+                                            <i class="fas fa-calendar me-1"></i>Thời gian
+                                        </div>
+                                        <div class="leave-info-value">${startDate} - ${endDate} (${leaveDays} ngày)</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="leave-info-item">
+                                        <div class="leave-info-label">
+                                            <i class="fas fa-clock me-1"></i>Gửi lúc
+                                </div>
+                                        <div class="leave-info-value">${submittedAt}</div>
+                            </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="leave-info-item">
+                                        <div class="leave-info-label">
+                                            <i class="fas fa-comment me-1"></i>Lý do
+                                        </div>
+                                        <div class="leave-info-value">${request.reason}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            ${request.status === 'rejected' ? `
+                                <div class="mt-3 p-2 bg-light rounded">
+                                    <small class="text-danger">
+                                        <i class="fas fa-times-circle me-1"></i>
+                                        <strong>Lý do từ chối:</strong> ${getRejectionReason(request)}
+                                </small>
+                            </div>
+                            ` : ''}
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-end">
+                                <div class="leave-info-label mb-2">Trạng thái duyệt</div>
+                                <div class="approval-status justify-content-end">
+                                    <div class="approval-badge ${request.approvals.teamLead.status}" title="Trưởng nhóm">
+                                        TN
+                            </div>
+                                    <div class="approval-badge ${request.approvals.manager.status}" title="Quản lý">
+                                        QL
+                                    </div>
+                                    <div class="approval-badge ${request.approvals.company.status}" title="Công ty">
+                                        CT
+                                    </div>
+                                </div>
+                                <div class="mt-2">
+                                <small class="text-muted">
+                                    <i class="fas fa-user-tie me-1"></i>${request.handoverPerson}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                        </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function getRejectionReason(request) {
+    // Find which level rejected and return the reason
+    if (request.approvals.teamLead.status === 'rejected') {
+        return `Trưởng nhóm: ${request.approvals.teamLead.response}`;
+    } else if (request.approvals.manager.status === 'rejected') {
+        return `Quản lý: ${request.approvals.manager.response}`;
+    } else if (request.approvals.company.status === 'rejected') {
+        return `Công ty: ${request.approvals.company.response}`;
+    }
+    return 'Không có lý do';
+}
+
+// Cache for leave requests to avoid repeated localStorage calls
+let cachedLeaveRequests = null;
+let lastLeaveRequestsUpdate = 0;
+let cachedUserId = null;
+
+function getLeaveRequestForDate(date) {
+    // Update cache if needed (every 5 seconds) or if user changed
+    const now = Date.now();
+    if (!cachedLeaveRequests || (now - lastLeaveRequestsUpdate) > 5000 || cachedUserId !== CURRENT_USER.id) {
+        cachedLeaveRequests = getUserLeaveRequests();
+        lastLeaveRequestsUpdate = now;
+        cachedUserId = CURRENT_USER.id;
+    }
+    
+    return cachedLeaveRequests.find(req => {
+        const startDate = new Date(req.startDate);
+        const endDate = new Date(req.endDate);
+        const checkDate = new Date(date);
+        return checkDate >= startDate && checkDate <= endDate;
+    });
+}
+
+// Function to clear cache when leave requests are updated
+function clearLeaveRequestsCache() {
+    cachedLeaveRequests = null;
+    lastLeaveRequestsUpdate = 0;
+}
+
+function formatLeaveRequestInfo(leaveRequest) {
+    if (!leaveRequest) return '--';
+    
+    const statusColors = {
+        'pending': 'warning',
+        'approved': 'success',
+        'rejected': 'danger'
+    };
+    
+    const statusText = {
+        'pending': 'Chờ duyệt',
+        'approved': 'Đã duyệt',
+        'rejected': 'Đã từ chối'
+    };
+    
+    return `
+        <div class="leave-request-info">
+            <span class="badge bg-${statusColors[leaveRequest.status]} mb-1">
+                <i class="fas fa-calendar-times me-1"></i>${statusText[leaveRequest.status]}
+            </span>
+            <br>
+            <small class="text-muted">
+                <i class="fas fa-comment me-1"></i>${leaveRequest.reason}
+            </small>
+            ${leaveRequest.status === 'rejected' ? `
+                <br>
+                <small class="text-danger">
+                    <i class="fas fa-times-circle me-1"></i>${getRejectionReason(leaveRequest)}
+                </small>
+            ` : ''}
+        </div>
+    `;
+}
+
+function approveLeaveRequest(requestId) {
+    // Get current user role (in real app, get from session)
+    const currentUserRole = getCurrentUserRole();
+    
+    Swal.fire({
+        title: 'Xác nhận đồng ý?',
+        text: `Bạn có chắc muốn đồng ý cho yêu cầu nghỉ phép này với vai trò ${getRoleDisplayName(currentUserRole)}?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#28a745',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Đồng ý',
+        cancelButtonText: 'Hủy'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            let leaveRequests = getUserLeaveRequests();
+            const requestIndex = leaveRequests.findIndex(req => req.id === requestId);
+            
+            if (requestIndex !== -1) {
+                const request = leaveRequests[requestIndex];
+                
+                // Check if user can approve at current level
+                if (!canUserApproveAtLevel(request, currentUserRole)) {
+                    Swal.fire('Lỗi', 'Bạn không có quyền duyệt ở cấp độ này!', 'error');
+                    return;
+                }
+                
+                // Approve at current level
+                request.approvals[currentUserRole].status = 'approved';
+                request.approvals[currentUserRole].approvedBy = CURRENT_USER.fullName; // Use current user info
+                request.approvals[currentUserRole].approvedAt = new Date().toISOString();
+                
+                // If company approves, auto-approve all levels and finalize
+                if (currentUserRole === 'company') {
+                    request.approvals.teamLead.status = 'approved';
+                    request.approvals.manager.status = 'approved';
+                    request.status = 'approved';
+                } else {
+                    // Move to next level
+                    request.currentLevel = getNextLevel(currentUserRole);
+                }
+                
+                setUserLeaveRequests(leaveRequests);
+                clearLeaveRequestsCache(); // Clear cache after update
+                
+                Swal.fire('Thành công!', `Đã đồng ý yêu cầu nghỉ phép với vai trò ${getRoleDisplayName(currentUserRole)}.`, 'success');
+                loadLeaveRequests();
+                loadLeaveHistory(); // Refresh leave history after approval
+            }
+        }
+    });
+}
+
+function getCurrentUserRole() {
+    // In real app, get from user session
+    // For demo, get from dropdown selection
+    const roleSelect = document.getElementById('currentUserRoleSelect');
+    return roleSelect ? roleSelect.value : 'teamLead';
+}
+
+function updateCurrentUserRole() {
+    // Refresh the display when role changes
+    loadLeaveRequests();
+}
+
+function getRoleDisplayName(role) {
+    switch(role) {
+        case 'teamLead': return 'Trưởng nhóm';
+        case 'manager': return 'Quản lý';
+        case 'company': return 'Công ty';
+        default: return 'Người dùng';
+    }
+}
+
+function canUserApproveAtLevel(request, userRole) {
+    const levelOrder = ['teamLead', 'manager', 'company'];
+    const currentLevelIndex = levelOrder.indexOf(request.currentLevel);
+    const userRoleIndex = levelOrder.indexOf(userRole);
+    
+    // User can only approve at their level or higher
+    return userRoleIndex >= currentLevelIndex;
+}
+
+function getNextLevel(currentLevel) {
+    const levelOrder = ['teamLead', 'manager', 'company'];
+    const currentIndex = levelOrder.indexOf(currentLevel);
+    return levelOrder[currentIndex + 1] || 'company';
+}
+
+function rejectLeaveRequest(requestId) {
+    document.getElementById(`rejectReason_${requestId}`).style.display = 'block';
+    document.getElementById(`rejectReasonInput_${requestId}`).focus();
+}
+
+function confirmRejectLeaveRequest(requestId) {
+    const reason = document.getElementById(`rejectReasonInput_${requestId}`).value.trim();
+    
+    if (!reason) {
+        Swal.fire('Lỗi', 'Vui lòng nhập lý do từ chối!', 'error');
+        return;
+    }
+    
+    // Get current user role
+    const currentUserRole = getCurrentUserRole();
+    
+    let leaveRequests = getUserLeaveRequests();
+    const requestIndex = leaveRequests.findIndex(req => req.id === requestId);
+    
+    if (requestIndex !== -1) {
+        const request = leaveRequests[requestIndex];
+        
+        // Check if user can reject at current level
+        if (!canUserApproveAtLevel(request, currentUserRole)) {
+            Swal.fire('Lỗi', 'Bạn không có quyền từ chối ở cấp độ này!', 'error');
+            return;
+        }
+        
+        // Reject at current level
+        request.approvals[currentUserRole].status = 'rejected';
+        request.approvals[currentUserRole].approvedBy = CURRENT_USER.fullName;
+        request.approvals[currentUserRole].approvedAt = new Date().toISOString();
+        request.approvals[currentUserRole].response = reason;
+        
+        // If any level rejects, the entire request is rejected
+        request.status = 'rejected';
+        
+        setUserLeaveRequests(leaveRequests);
+        clearLeaveRequestsCache(); // Clear cache after update
+        
+        Swal.fire('Đã từ chối!', `Yêu cầu nghỉ phép đã bị từ chối bởi ${getRoleDisplayName(currentUserRole)}.`, 'info');
+        loadLeaveRequests();
+        loadLeaveHistory(); // Refresh leave history after rejection
+    }
+}
+
+function renderTodayAttendanceButton() {
+    console.log('renderTodayAttendanceButton called');
+    const today = new Date().toISOString().slice(0, 10);
+    const data = getUserAttendanceData();
+    const todayRecord = data.find(r => r.date === today);
+    
+    console.log('Today:', today);
+    console.log('Today record found:', !!todayRecord);
+    
+    let html = '';
+    if (todayRecord) {
+        html += `<button class="modern-btn modern-btn-outline" disabled style="opacity:0.6;cursor:not-allowed;">
+            <i class="fas fa-check-circle me-2"></i>Đã chấm công hôm nay
+        </button>`;
+    } else {
+        html += `<button class="modern-btn modern-btn-primary" onclick="showAttendanceForm('today')">
+            <i class="fas fa-check me-2"></i>Chấm công hôm nay
+        </button>`;
+    }
+    html += `<button class="modern-btn modern-btn-success" onclick="showMakeupForm()">
+        <i class="fas fa-calendar-plus me-2"></i>Chấm công bù
+    </button>`;
+    html += `<button class="modern-btn modern-btn-outline" onclick="showLeaveRequestForm()">
+        <i class="fas fa-calendar-times me-2"></i>Xin nghỉ phép
+    </button>`;
+    
+    const formElement = document.getElementById('todayAttendanceForm');
+    console.log('todayAttendanceForm element:', formElement);
+    if (formElement) {
+        formElement.innerHTML = html;
+        console.log('Buttons rendered successfully');
+    } else {
+        console.error('todayAttendanceForm element not found!');
+    }
+}
+
+function saveAttendance() {
+    const date = document.getElementById('attendanceDate').value;
+    const workType = document.getElementById('workType').value;
+    const constructionName = document.getElementById('constructionName').value;
+    const ndtMethod = document.getElementById('ndtMethod').value;
+    
+    // Get selected shifts
+    const shifts = [];
+    if (document.getElementById('dayShift').checked) shifts.push('day');
+    if (document.getElementById('nightShift').checked) shifts.push('night');
+    
+    // Get overtime information
+    const dayOvertimeEnd = document.getElementById('dayOvertimeEnd').value;
+    const nightOvertimeEnd = document.getElementById('nightOvertimeEnd').value;
+    const overtimeHours = document.getElementById('overtimeHours').value;
+    
+    // Get expense types
+    const expenses = [];
+    if (document.getElementById('hotelExpense').checked) expenses.push('hotel');
+    if (document.getElementById('shoppingExpense').checked) expenses.push('shopping');
+    if (document.getElementById('phoneExpense').checked) expenses.push('phone');
+    if (document.getElementById('otherExpense').checked) expenses.push('other');
+    
+    const expenseAmount = document.getElementById('expenseAmount').value;
+    const otherExpenseDesc = document.getElementById('otherExpenseDesc').value;
+    
+    const workNote = document.getElementById('workNote').value;
+        
+    if (!date || !workType) {
+        Swal.fire('Lỗi', 'Vui lòng nhập đầy đủ ngày và loại công việc!', 'error');
+            return;
+        }
+    
+    if (workType === 'W' && (!constructionName || !ndtMethod)) {
+        Swal.fire('Lỗi', 'Vui lòng nhập tên công trình và phương pháp NDT!', 'error');
+        return;
+    }
+    
+    // Kiểm tra chi phí bắt buộc nếu có chọn loại chi phí (chỉ khi không phải nghỉ)
+    if (workType !== 'P' && workType !== 'N' && expenses.length > 0 && !expenseAmount) {
+        Swal.fire('Lỗi', 'Vui lòng nhập số tiền chi phí!', 'error');
+        return;
+    }
+    
+    // Kiểm tra mô tả chi phí khác nếu chọn "Khác" (chỉ khi không phải nghỉ)
+    if (workType !== 'P' && workType !== 'N' && expenses.includes('other') && !otherExpenseDesc) {
+        Swal.fire('Lỗi', 'Vui lòng nhập mô tả chi phí khác!', 'error');
+        return;
+    }
+        
+    // Create attendance record
+    const record = {
+        date: date,
+        workType: workType,
+        constructionName: constructionName || '',
+        ndtMethod: ndtMethod || '',
+        shifts: shifts,
+        dayOvertimeEnd: dayOvertimeEnd || '',
+        nightOvertimeEnd: nightOvertimeEnd || '',
+        overtimeHours: overtimeHours || '',
+        expenses: expenses,
+        expenseAmount: expenseAmount || '',
+        otherExpenseDesc: otherExpenseDesc || '',
+        workNote: workNote || '',
+        timestamp: new Date().toISOString()
+    };
+    
+    // Save to user-specific localStorage
+    let existingData = getUserAttendanceData();
+    
+    // Remove existing record for same date if exists
+    existingData = existingData.filter(item => item.date !== date);
+    
+    // Add new record
+    existingData.push(record);
+    setUserAttendanceData(existingData);
+    
+    // Show success message
+    Swal.fire({
+        title: 'Thành công!',
+        text: `Đã lưu chấm công ngày ${new Date(date).toLocaleDateString('vi-VN')}`,
+        icon: 'success',
+        timer: 1500,
+        showConfirmButton: false
+    });
+    
+    hideAttendanceForm();
+    loadAttendanceData();
+    renderTodayAttendanceButton();
+}
+
+function loadAttendanceData() {
+    if (isLoadingData) {
+        console.log('LoadAttendanceData already in progress...');
+        return; // Prevent multiple simultaneous calls
+    }
+    
+    console.log('Starting loadAttendanceData...');
+    isLoadingData = true;
+    
+    try {
+    const filterMonth = document.getElementById('filterMonth').value;
+    const filterWorkType = document.getElementById('filterWorkType').value;
+    const filterNDTMethod = document.getElementById('filterNDTMethod').value;
+    const searchKeyword = document.getElementById('searchKeyword').value.toLowerCase();
+    
+        // Load data from user-specific localStorage
+        let data = getUserAttendanceData();
+        console.log('Loaded data for user', CURRENT_USER.username + ':', data.length, 'records');
+    
+    // Filter by month
+    if (filterMonth) {
+        data = data.filter(item => item.date.startsWith(filterMonth));
+    }
+    
+    // Filter by work type
+    if (filterWorkType) {
+        data = data.filter(item => item.workType === filterWorkType);
+    }
+    
+    // Filter by NDT method
+    if (filterNDTMethod) {
+        data = data.filter(item => item.ndtMethod === filterNDTMethod);
+    }
+    
+    // Filter by search keyword
+    if (searchKeyword) {
+        data = data.filter(item => 
+                (item.constructionName && item.constructionName.toLowerCase().includes(searchKeyword)) ||
+                (item.workNote && item.workNote.toLowerCase().includes(searchKeyword))
+        );
+    }
+    
+    // Sort by date descending
+    data.sort((a, b) => new Date(b.date) - new Date(a.date));
+    
+    attendanceData = data;
+        console.log('Filtered data:', attendanceData.length, 'records');
+        
+    renderAttendanceTable();
+    updateStatistics();
+    updateCurrentMonthDisplay(filterMonth);
+    
+        console.log('loadAttendanceData completed successfully');
+    } catch (error) {
+        console.error('Error in loadAttendanceData:', error);
+    } finally {
+        // Always reset flag
+        isLoadingData = false;
+    }
+}
+
+function renderAttendanceTable() {
+    console.log('renderAttendanceTable called with', attendanceData.length, 'records');
+    const tbody = document.getElementById('attendanceTableBody');
+    
+    if (!tbody) {
+        console.error('attendanceTableBody element not found!');
+        return;
+    }
+    
+    if (attendanceData.length === 0) {
+        console.log('No attendance data, showing empty message');
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="10" class="text-center text-muted py-4">
+                    <i class="fas fa-calendar-times fa-2x mb-2 d-block opacity-50"></i>
+                    Không có dữ liệu chấm công
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    console.log('Rendering table with attendance data...');
+    
+    tbody.innerHTML = attendanceData.map(record => {
+        const formattedDate = new Date(record.date).toLocaleDateString('vi-VN');
+        
+        let workTypeBadge = '';
+        switch(record.workType) {
+            case 'O':
+                workTypeBadge = '<span class="work-badge bg-secondary text-white"><strong>O</strong></span>';
+                break;
+            case 'W':
+                workTypeBadge = '<span class="work-badge bg-primary text-white"><strong>W</strong></span>';
+                break;
+            case 'T':
+                workTypeBadge = '<span class="work-badge bg-info text-white"><strong>T</strong></span>';
+                break;
+            case 'P':
+                workTypeBadge = '<span class="work-badge bg-warning text-dark"><strong>P</strong></span>';
+                break;
+            case 'N':
+                workTypeBadge = '<span class="work-badge bg-danger text-white"><strong>N</strong></span>';
+                break;
+        }
+        
+        // Format shifts
+        let shiftBadge = '';
+        if (record.workType === 'P' || record.workType === 'N') {
+            shiftBadge = '--'; // Không hiển thị ca khi nghỉ
+        } else if (record.shifts && record.shifts.length > 0) {
+            const shiftLabels = {
+                'day': '<span class="badge bg-warning me-1"><i class="fas fa-sun me-1"></i>Ca ngày</span>',
+                'night': '<span class="badge bg-info me-1"><i class="fas fa-moon me-1"></i>Ca đêm</span>'
+            };
+            shiftBadge = record.shifts.map(shift => shiftLabels[shift] || shift).join('');
+        } else {
+            shiftBadge = '<span class="badge bg-warning"><i class="fas fa-sun me-1"></i>Ca ngày</span>'; // Default
+        }
+        
+        const methodBadge = record.ndtMethod ? 
+            `<span class="method-badge bg-warning text-dark">${record.ndtMethod}</span>` : '--';
+        
+        const overtimeBadge = (record.workType === 'P' || record.workType === 'N') ? '--' : 
+            (record.overtimeHours ? `<span class="badge bg-warning">${record.overtimeHours} giờ</span>` : '--');
+            
+        // Format expenses
+        let expenseFormatted = '--';
+        if (record.workType === 'P' || record.workType === 'N') {
+            expenseFormatted = '--'; // Không hiển thị chi phí khi nghỉ
+        } else if (record.expenses && record.expenses.length > 0) {
+            const expenseLabels = {
+                'hotel': '<span class="badge bg-primary me-1"><i class="fas fa-bed me-1"></i>KS</span>',
+                'shopping': '<span class="badge bg-success me-1"><i class="fas fa-shopping-cart me-1"></i>MS</span>',
+                'phone': '<span class="badge bg-info me-1"><i class="fas fa-phone me-1"></i>ĐT</span>',
+                'other': '<span class="badge bg-warning me-1"><i class="fas fa-plus me-1"></i>Khác</span>'
+            };
+            expenseFormatted = record.expenses.map(exp => expenseLabels[exp] || exp).join('');
+            
+            // Thêm số tiền nếu có
+            if (record.expenseAmount) {
+                expenseFormatted += `<br><small class="text-muted">${parseInt(record.expenseAmount).toLocaleString('vi-VN')} VNĐ</small>`;
+            }
+            
+            // Thêm mô tả chi phí khác nếu có
+            if (record.otherExpenseDesc) {
+                expenseFormatted += `<br><small class="text-info">${record.otherExpenseDesc}</small>`;
+            }
+        }
+        
+        // Get leave request info for this date
+        const leaveRequest = getLeaveRequestForDate(record.date);
+        
+        // Format work note with leave approval status
+        let workNoteFormatted = record.workNote || '';
+        if (leaveRequest) {
+            const approvalStatus = getApprovalStatusIcons(leaveRequest);
+            const approvalBadges = `
+                <div class="mt-1">
+                    <small class="text-muted">Duyệt nghỉ phép:</small><br>
+                    <span class="badge ${approvalStatus.teamLead.class} badge-sm me-1" title="Trưởng nhóm">
+                        <i class="${approvalStatus.teamLead.icon}"></i>
+                    </span>
+                    <span class="badge ${approvalStatus.manager.class} badge-sm me-1" title="Quản lý">
+                        <i class="${approvalStatus.manager.icon}"></i>
+                    </span>
+                    <span class="badge ${approvalStatus.company.class} badge-sm" title="Công ty">
+                        <i class="${approvalStatus.company.icon}"></i>
+                    </span>
+                </div>
+            `;
+            workNoteFormatted += approvalBadges;
+        }
+        
+        // Format overtime information
+        let overtimeInfo = '--';
+        if (record.overtimeHours && parseFloat(record.overtimeHours) > 0) {
+            const overtimeDetails = [];
+            if (record.dayOvertimeEnd) overtimeDetails.push(`Ca ngày: ${record.dayOvertimeEnd}`);
+            if (record.nightOvertimeEnd) overtimeDetails.push(`Ca đêm: ${record.nightOvertimeEnd}`);
+            overtimeInfo = overtimeDetails.join('<br>');
+        }
+        
+        return `
+            <tr>
+                <td><strong>${formattedDate}</strong></td>
+                <td>${workTypeBadge}</td>
+                <td>${shiftBadge}</td>
+                <td>${record.constructionName || (record.workType === 'O' ? 'Hành chính' : (record.workType === 'T' ? 'Đào tạo' : (record.workType === 'P' ? 'Nghỉ có phép' : (record.workType === 'N' ? 'Nghỉ không phép' : '--'))))}</td>
+                <td>${methodBadge}</td>
+                <td><small class="text-muted">${overtimeInfo}</small></td>
+                <td>${overtimeBadge}</td>
+                <td>${expenseFormatted}</td>
+                <td>${workNoteFormatted || '--'}</td>
+                <td>
+                    <button class="btn btn-sm btn-outline-primary" onclick="editRecord('${record.date}')" title="Sửa">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger ms-1" onclick="deleteRecord('${record.date}')" title="Xóa">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function updateStatistics() {
+    const totalWorkDays = attendanceData.filter(r => !['P', 'N'].includes(r.workType)).length;
+    const constructionDays = attendanceData.filter(r => r.workType === 'W').length;
+    const officeDays = attendanceData.filter(r => r.workType === 'O').length;
+    const trainingDays = attendanceData.filter(r => r.workType === 'T').length;
+    const overtimeDays = attendanceData.filter(r => r.overtimeHours && parseFloat(r.overtimeHours) > 0).length;
+    
+    document.getElementById('totalWorkDays').textContent = totalWorkDays;
+    document.getElementById('constructionDays').textContent = constructionDays;
+    document.getElementById('officeDays').textContent = officeDays + trainingDays; // Gộp văn phòng và đào tạo
+    document.getElementById('overtimeDays').textContent = overtimeDays;
+}
+
+function updateCurrentMonthDisplay(filterMonth) {
+    if (filterMonth) {
+        const [year, month] = filterMonth.split('-');
+        document.getElementById('currentMonth').textContent = `${month.padStart(2, '0')}/${year}`;
+    } else {
+    const now = new Date();
+        document.getElementById('currentMonth').textContent = `${(now.getMonth() + 1).toString().padStart(2, '0')}/${now.getFullYear()}`;
+    }
+}
+
+// Debounce function to prevent too many calls
+let searchTimeout;
+let isLoadingData = false;
+
+function debounceSearch() {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+        loadAttendanceData();
+    }, 500); // Wait 500ms after user stops typing
+}
+
+function clearFilter() {
+    document.getElementById('filterMonth').value = new Date().toISOString().slice(0, 7);
+    document.getElementById('filterWorkType').value = '';
+    document.getElementById('filterNDTMethod').value = '';
+    document.getElementById('searchKeyword').value = '';
+    loadAttendanceData();
+}
+
+function editRecord(date) {
+    const record = attendanceData.find(r => r.date === date);
+    if (!record) return;
+    
+    // Show form with existing data
+    showAttendanceForm('makeup');
+    
+    document.getElementById('attendanceDate').value = record.date;
+    document.getElementById('workType').value = record.workType;
+    document.getElementById('constructionName').value = record.constructionName;
+    document.getElementById('ndtMethod').value = record.ndtMethod;
+    
+    // Set shift checkboxes
+    document.getElementById('dayShift').checked = record.shifts && record.shifts.includes('day');
+    document.getElementById('nightShift').checked = record.shifts && record.shifts.includes('night');
+    
+    document.getElementById('overtimeHours').value = record.overtimeHours || '';
+    
+    // Set expense checkboxes
+    document.getElementById('hotelExpense').checked = record.expenses && record.expenses.includes('hotel');
+    document.getElementById('shoppingExpense').checked = record.expenses && record.expenses.includes('shopping');
+    document.getElementById('phoneExpense').checked = record.expenses && record.expenses.includes('phone');
+    document.getElementById('otherExpense').checked = record.expenses && record.expenses.includes('other');
+    
+    // Set expense amount and description
+    document.getElementById('expenseAmount').value = record.expenseAmount || '';
+    document.getElementById('otherExpenseDesc').value = record.otherExpenseDesc || '';
+    
+    // Show/hide fields based on selections
+    toggleExpenseAmount();
+    toggleOtherExpense();
+    
+    document.getElementById('workNote').value = record.workNote;
+    
+    toggleConstructionFields();
+}
+
+function deleteRecord(date) {
+    Swal.fire({
+        title: 'Xác nhận xóa?',
+        text: `Bạn có chắc muốn xóa chấm công ngày ${new Date(date).toLocaleDateString('vi-VN')}?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Xóa',
+        cancelButtonText: 'Hủy'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            let data = getUserAttendanceData();
+            data = data.filter(item => item.date !== date);
+            setUserAttendanceData(data);
+            
+            Swal.fire('Đã xóa!', 'Dữ liệu chấm công đã được xóa.', 'success');
+            loadAttendanceData();
+            renderTodayAttendanceButton();
+        }
+    });
+}
+
+function exportMonthlyReport() {
+    const filterMonth = document.getElementById('filterMonth').value;
+    console.log('Selected month:', filterMonth); // Debug log
+    
+    // Kiểm tra và set giá trị mặc định nếu chưa có
+    if (!filterMonth) {
+        const now = new Date();
+        const defaultMonth = now.toISOString().slice(0, 7); // Format YYYY-MM
+        document.getElementById('filterMonth').value = defaultMonth;
+        console.log('Setting default month:', defaultMonth); // Debug log
+    }
+    
+    const [year, month] = (filterMonth || document.getElementById('filterMonth').value).split('-');
+    if (!year || !month) {
+        Swal.fire('Lỗi', 'Tháng không hợp lệ!', 'error');
+        return;
+    }
+    // Generate all days of the month
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const monthData = [
+        ['Ngày', 'Loại công việc', 'Ca', 'Công trình/Mô tả', 'Phương pháp NDT', 'Tăng ca', 'Chi phí', 'Ghi chú']
+    ];
+    // Get attendance data for the month for current user
+    const monthAttendanceData = getUserAttendanceData()
+        .filter(item => item.date.startsWith(filterMonth));
+    let hasData = false;
+    for (let day = 1; day <= daysInMonth; day++) {
+        const dateStr = `${year}-${month.padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+        const record = monthAttendanceData.find(r => r.date === dateStr);
+        if (record) hasData = true;
+        if (record) {
+            let workTypeText = '';
+            switch(record.workType) {
+                case 'O': workTypeText = 'Văn phòng'; break;
+                case 'W': workTypeText = 'Công trường'; break;
+                case 'T': workTypeText = 'Đào tạo'; break;
+                case 'P': workTypeText = 'Nghỉ có phép'; break;
+                case 'N': workTypeText = 'Nghỉ không phép'; break;
+            }
+            const shiftText = (() => {
+                if (record.workType === 'P' || record.workType === 'N') {
+                    return '--'; // Không hiển thị ca khi nghỉ
+                } else if (record.shifts && record.shifts.length > 0) {
+                    const shiftLabels = {
+                        'day': 'Ca ngày',
+                        'night': 'Ca đêm'
+                    };
+                    return record.shifts.map(shift => shiftLabels[shift] || shift).join(', ');
+                }
+                return 'Ca ngày'; // Default
+            })();
+            monthData.push([
+                new Date(dateStr).toLocaleDateString('vi-VN'),
+                workTypeText,
+                shiftText,
+                record.constructionName || (record.workType === 'O' ? 'Hành chính' : (record.workType === 'T' ? 'Đào tạo' : '')),
+                record.ndtMethod || '',
+                (record.workType === 'P' || record.workType === 'N') ? '--' : (record.overtimeHours ? `${record.overtimeHours} giờ` : ''),
+                (() => {
+                    let expenseText = '';
+                    if (record.expenses && record.expenses.length > 0) {
+                        const expenseLabels = {
+                            'hotel': 'Khách sạn',
+                            'shopping': 'Mua sắm', 
+                            'phone': 'Điện thoại',
+                            'other': 'Khác'
+                        };
+                        expenseText = record.expenses.map(exp => expenseLabels[exp] || exp).join(', ');
+                        
+                        if (record.expenseAmount) {
+                            expenseText += ` (${parseInt(record.expenseAmount).toLocaleString('vi-VN')} VNĐ)`;
+                        }
+                        
+                        if (record.otherExpenseDesc) {
+                            expenseText += ` - ${record.otherExpenseDesc}`;
+                        }
+                    }
+                    return expenseText;
+                })(),
+                record.workNote || ''
+            ]);
+        } else {
+            // Empty row for days not attended
+            monthData.push([
+                new Date(dateStr).toLocaleDateString('vi-VN'),
+                '', '', '', '', '', '', ''
+            ]);
+        }
+    }
+    if (!hasData) {
+        Swal.fire('Thông báo', 'Không có dữ liệu chấm công nào trong tháng này!', 'info');
+        return;
+    }
+    // Create and download Excel file
+    try {
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet(monthData);
+        ws['!cols'] = [
+            { width: 12 }, { width: 15 }, { width: 10 }, { width: 25 }, 
+            { width: 15 }, { width: 12 }, { width: 20 }, { width: 30 }
+        ];
+        XLSX.utils.book_append_sheet(wb, ws, `Chấm công ${month}-${year}`);
+        const shortYear = year.slice(-2);
+        const filename = `Bảng chấm công ${CURRENT_USER.fullName} ${month.padStart(2, '0')}-${shortYear}.xlsx`;
+        XLSX.writeFile(wb, filename);
+        console.log('Đã xuất file:', filename);
+        Swal.fire({
+            title: 'Xuất Excel thành công!',
+            text: `File đã được lưu: ${filename}`,
+            icon: 'success',
+            timer: 2000,
+            showConfirmButton: false
+        });
+    } catch (err) {
+        console.error('Lỗi xuất Excel:', err);
+        Swal.fire('Lỗi', 'Không thể xuất file Excel. Vui lòng thử lại hoặc kiểm tra trình duyệt!', 'error');
+    }
+}
+
+function exportCurrentView() {
+    if (attendanceData.length === 0) {
+        Swal.fire('Thông báo', 'Không có dữ liệu để xuất!', 'info');
+        return;
+    }
+    
+    const exportData = [
+        ['Ngày', 'Loại công việc', 'Ca', 'Công trình/Mô tả', 'Phương pháp NDT', 'Tăng ca', 'Chi phí', 'Ghi chú']
+    ];
+    
+            attendanceData.forEach(record => {
+            let workTypeText = '';
+            switch(record.workType) {
+                case 'O': workTypeText = 'Văn phòng'; break;
+                case 'W': workTypeText = 'Công trường'; break;
+                case 'T': workTypeText = 'Đào tạo'; break;
+                case 'P': workTypeText = 'Nghỉ có phép'; break;
+                case 'N': workTypeText = 'Nghỉ không phép'; break;
+            }
+        
+        const shiftText = (() => {
+            if (record.workType === 'P' || record.workType === 'N') {
+                return '--'; // Không hiển thị ca khi nghỉ
+            } else if (record.shifts && record.shifts.length > 0) {
+                const shiftLabels = {
+                    'day': 'Ca ngày',
+                    'night': 'Ca đêm'
+                };
+                return record.shifts.map(shift => shiftLabels[shift] || shift).join(', ');
+            }
+            return 'Ca ngày'; // Default
+        })();
+                    exportData.push([
+                new Date(record.date).toLocaleDateString('vi-VN'),
+                workTypeText,
+                shiftText,
+                record.constructionName || (record.workType === 'O' ? 'Hành chính' : (record.workType === 'T' ? 'Đào tạo' : '')),
+                record.ndtMethod || '',
+                (record.workType === 'P' || record.workType === 'N') ? '--' : (record.overtimeHours ? `${record.overtimeHours} giờ` : ''),
+                (() => {
+                    let expenseText = '';
+                    if (record.expenses && record.expenses.length > 0) {
+                        const expenseLabels = {
+                            'hotel': 'Khách sạn',
+                            'shopping': 'Mua sắm', 
+                            'phone': 'Điện thoại',
+                            'other': 'Khác'
+                        };
+                        expenseText = record.expenses.map(exp => expenseLabels[exp] || exp).join(', ');
+                        
+                        if (record.expenseAmount) {
+                            expenseText += ` (${parseInt(record.expenseAmount).toLocaleString('vi-VN')} VNĐ)`;
+                        }
+                        
+                        if (record.otherExpenseDesc) {
+                            expenseText += ` - ${record.otherExpenseDesc}`;
+                        }
+                    }
+                    return expenseText;
+                })(),
+                record.workNote || ''
+            ]);
+    });
+    
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(exportData);
+    
+    ws['!cols'] = [
+        { width: 12 }, { width: 15 }, { width: 10 }, { width: 25 }, 
+        { width: 15 }, { width: 12 }, { width: 20 }, { width: 30 }
+    ];
+    
+    XLSX.utils.book_append_sheet(wb, ws, 'Dữ liệu lọc');
+    
+    const now = new Date();
+    const filename = `ChamCong_${CURRENT_USER.fullName}_${now.getDate()}_${now.getMonth() + 1}_${now.getFullYear()}.xlsx`;
+    XLSX.writeFile(wb, filename);
+    
+    Swal.fire({
+        title: 'Xuất Excel thành công!',
+        text: `File đã được lưu: ${filename}`,
+        icon: 'success',
+        timer: 2000,
+        showConfirmButton: false
+    });
+}
+
+// Initialize page
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM Content Loaded - Initializing attendance page...');
+    console.log('Current user:', CURRENT_USER);
+    console.log('Using global dashboard storage system');
+    
+    // Wait a bit for global dashboard system to load
+    setTimeout(function() {
+        console.log('Delayed initialization...');
+        console.log('window.DASHBOARD_USER:', window.DASHBOARD_USER);
+        console.log('window.getUserData:', typeof window.getUserData);
+        
+        // Check if required elements exist
+        const filterMonth = document.getElementById('filterMonth');
+        const attendanceTableBody = document.getElementById('attendanceTableBody');
+        const todayAttendanceForm = document.getElementById('todayAttendanceForm');
+        
+        if (!filterMonth || !attendanceTableBody || !todayAttendanceForm) {
+            console.error('Required DOM elements not found:', {
+                filterMonth: !!filterMonth,
+                attendanceTableBody: !!attendanceTableBody, 
+                todayAttendanceForm: !!todayAttendanceForm
+            });
+            return;
+        }
+        
+        console.log('All required elements found, proceeding with initialization...');
+        
+        try {
+            updateCurrentMonthDisplay(filterMonth.value);
+            console.log('Calling renderTodayAttendanceButton...');
+            renderTodayAttendanceButton();
+            console.log('renderTodayAttendanceButton completed');
+            loadAttendanceData();
+            loadLeaveRequests(); // Load pending leave requests
+            loadLeaveHistory(); // Load leave history once
+            updateOvertimeSections(); // Initialize overtime sections
+            console.log('Initialization completed successfully');
+        } catch (error) {
+            console.error('Error during initialization:', error);
+        }
+    }, 100); // Wait 100ms for global system
+});
+
+// Update month display when filter changes
+document.addEventListener('DOMContentLoaded', function() {
+    const filterMonthElement = document.getElementById('filterMonth');
+    if (filterMonthElement) {
+        filterMonthElement.addEventListener('change', function() {
+            console.log('Filter month changed to:', this.value);
+    updateCurrentMonthDisplay(this.value);
+    loadAttendanceData();
+    loadLeaveHistory(); // Reload leave history when month changes
+});
+    }
+});
+
+// Debug function to reset loading state if needed
+function resetLoadingState() {
+    console.log('Resetting loading state...');
+    isLoadingData = false;
+    loadAttendanceData();
+}
+
+// Test function to debug rendering
+function testRender() {
+    console.log('Test render called');
+    console.log('CURRENT_USER:', CURRENT_USER);
+    console.log('window.DASHBOARD_USER:', window.DASHBOARD_USER);
+    console.log('getUserAttendanceData():', getUserAttendanceData());
+    renderTodayAttendanceButton();
+}
+
+// Toggle functions for shift selection
+function toggleDayShift() {
+    const checkbox = document.getElementById('dayShift');
+    checkbox.checked = !checkbox.checked;
+    updateOvertimeSections();
+}
+
+function toggleNightShift() {
+    const checkbox = document.getElementById('nightShift');
+    checkbox.checked = !checkbox.checked;
+    updateOvertimeSections();
+}
+
+// Toggle functions for expense selection
+function toggleHotelExpense() {
+    const checkbox = document.getElementById('hotelExpense');
+    checkbox.checked = !checkbox.checked;
+    toggleExpenseAmount();
+}
+
+function toggleShoppingExpense() {
+    const checkbox = document.getElementById('shoppingExpense');
+    checkbox.checked = !checkbox.checked;
+    toggleExpenseAmount();
+}
+
+function togglePhoneExpense() {
+    const checkbox = document.getElementById('phoneExpense');
+    checkbox.checked = !checkbox.checked;
+    toggleExpenseAmount();
+}
+
+function toggleOtherExpense() {
+    const checkbox = document.getElementById('otherExpense');
+    checkbox.checked = !checkbox.checked;
+    toggleOtherExpense();
+}
+
+// Smart card click handler
+function handleCardClick(event, checkboxId) {
+    // Check if the click was on the checkbox or its label
+    const target = event.target;
+    const checkbox = document.getElementById(checkboxId);
+    
+    // If click was on checkbox or label, let the default behavior handle it
+    if (target === checkbox || target.tagName === 'LABEL' || target.closest('label')) {
+        return; // Let the checkbox handle its own click
+    }
+    
+    // If click was elsewhere on the card, toggle the checkbox
+    event.preventDefault();
+    event.stopPropagation();
+    checkbox.checked = !checkbox.checked;
+    
+    // Trigger the appropriate action based on checkbox type
+    if (checkboxId === 'dayShift' || checkboxId === 'nightShift') {
+        updateOvertimeSections();
+    } else if (checkboxId === 'otherExpense') {
+        toggleOtherExpense();
+    } else {
+        toggleExpenseAmount();
+    }
+}
+</script>
+{% endblock %} 

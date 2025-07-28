@@ -441,8 +441,9 @@ class AboutPage(models.Model):
 
 class UserProfile(models.Model):
     ROLE_CHOICES = [
-        ('admin', 'Quản trị viên'),
+        ('company', 'Công ty'),
         ('manager', 'Quản lý'),
+        ('team_lead', 'Trưởng nhóm'),
         ('staff', 'Nhân viên'),
     ]
     
@@ -452,6 +453,27 @@ class UserProfile(models.Model):
     phone = models.CharField(max_length=20, blank=True, null=True, verbose_name='Số điện thoại')
     avatar = models.ImageField(upload_to='avatars/', blank=True, null=True, verbose_name='Ảnh đại diện')
     bio = models.TextField(blank=True, null=True, verbose_name='Giới thiệu')
+    
+    # Thông tin chuyên môn
+    position = models.CharField(max_length=100, blank=True, null=True, verbose_name='Vị trí công việc')
+    certificates = models.TextField(blank=True, null=True, verbose_name='Chứng chỉ', help_text='Danh sách chứng chỉ, mỗi chứng chỉ một dòng')
+    skills = models.TextField(blank=True, null=True, verbose_name='Kỹ năng', help_text='Danh sách kỹ năng, mỗi kỹ năng một dòng')
+    
+    # Thông tin dự án hiện tại
+    current_project = models.ForeignKey('Project', on_delete=models.SET_NULL, null=True, blank=True, 
+                                       related_name='current_members', verbose_name='Dự án hiện tại')
+    project_position = models.CharField(max_length=100, blank=True, null=True, verbose_name='Vị trí trong dự án')
+    
+    # Thông tin liên hệ khẩn cấp
+    emergency_contact = models.CharField(max_length=100, blank=True, null=True, verbose_name='Liên hệ khẩn cấp')
+    emergency_phone = models.CharField(max_length=20, blank=True, null=True, verbose_name='SĐT khẩn cấp')
+    
+    # Ngày tham gia công ty
+    join_date = models.DateField(null=True, blank=True, verbose_name='Ngày tham gia')
+    
+    # Trạng thái
+    is_active = models.BooleanField(default=True, verbose_name='Đang hoạt động')
+    is_team_lead = models.BooleanField(default=False, verbose_name='Là trưởng nhóm')
     
     # Quyền hạn chi tiết
     can_create_posts = models.BooleanField(default=True, verbose_name='Có thể tạo bài viết')
@@ -1258,4 +1280,140 @@ class PublicProject(models.Model):
     class Meta:
         verbose_name = 'Dự án công khai'
         verbose_name_plural = 'Dự án công khai'
+        ordering = ['-created_at']
+
+
+class LeaveRequest(models.Model):
+    """Model cho yêu cầu nghỉ phép với hệ thống 3 cấp phê duyệt"""
+    
+    STATUS_CHOICES = [
+        ('pending', 'Chờ phê duyệt'),
+        ('approved', 'Đã duyệt'),
+        ('rejected', 'Từ chối'),
+        ('cancelled', 'Đã hủy')
+    ]
+    
+    LEAVE_TYPE_CHOICES = [
+        ('annual', 'Nghỉ phép năm'),
+        ('sick', 'Nghỉ ốm'),
+        ('personal', 'Nghỉ việc riêng'),
+        ('maternity', 'Nghỉ thai sản'),
+        ('other', 'Khác')
+    ]
+    
+    # Thông tin cơ bản
+    employee = models.ForeignKey(User, on_delete=models.CASCADE, related_name='leave_requests', verbose_name='Nhân viên')
+    leave_type = models.CharField(max_length=20, choices=LEAVE_TYPE_CHOICES, verbose_name='Loại nghỉ phép')
+    start_date = models.DateField(verbose_name='Ngày bắt đầu')
+    end_date = models.DateField(verbose_name='Ngày kết thúc')
+    total_days = models.PositiveIntegerField(verbose_name='Tổng số ngày')
+    reason = models.TextField(verbose_name='Lý do nghỉ phép')
+    
+    # Thông tin bàn giao
+    handover_person = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, 
+                                       related_name='handover_requests', verbose_name='Người bàn giao')
+    handover_tasks = models.TextField(blank=True, verbose_name='Công việc bàn giao')
+    
+    # Trạng thái tổng thể
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending', verbose_name='Trạng thái')
+    final_decision_reason = models.TextField(blank=True, verbose_name='Lý do quyết định cuối cùng')
+    
+    # Phê duyệt 3 cấp
+    # Cấp 1: Trưởng nhóm
+    team_lead_approval = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending', verbose_name='Phê duyệt trưởng nhóm')
+    team_lead_approved_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, 
+                                             related_name='team_lead_approvals', verbose_name='Trưởng nhóm phê duyệt')
+    team_lead_approved_at = models.DateTimeField(null=True, blank=True, verbose_name='Thời gian phê duyệt trưởng nhóm')
+    team_lead_rejection_reason = models.TextField(blank=True, verbose_name='Lý do từ chối trưởng nhóm')
+    
+    # Cấp 2: Quản lý
+    manager_approval = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending', verbose_name='Phê duyệt quản lý')
+    manager_approved_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, 
+                                          related_name='manager_approvals', verbose_name='Quản lý phê duyệt')
+    manager_approved_at = models.DateTimeField(null=True, blank=True, verbose_name='Thời gian phê duyệt quản lý')
+    manager_rejection_reason = models.TextField(blank=True, verbose_name='Lý do từ chối quản lý')
+    
+    # Cấp 3: Công ty
+    company_approval = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending', verbose_name='Phê duyệt công ty')
+    company_approved_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, 
+                                          related_name='company_approvals', verbose_name='Công ty phê duyệt')
+    company_approved_at = models.DateTimeField(null=True, blank=True, verbose_name='Thời gian phê duyệt công ty')
+    company_rejection_reason = models.TextField(blank=True, verbose_name='Lý do từ chối công ty')
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Ngày tạo')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='Ngày cập nhật')
+    
+    def __str__(self):
+        return f'{self.employee.get_full_name()} - {self.get_leave_type_display()} ({self.start_date} đến {self.end_date})'
+    
+    def get_final_status(self):
+        """Lấy trạng thái cuối cùng dựa trên logic phân cấp"""
+        # Nếu có cấp cao từ chối thì từ chối
+        if self.company_approval == 'rejected':
+            return 'rejected', 'Công ty từ chối', self.company_rejection_reason
+        elif self.manager_approval == 'rejected':
+            return 'rejected', 'Quản lý từ chối', self.manager_rejection_reason
+        elif self.team_lead_approval == 'rejected':
+            return 'rejected', 'Trưởng nhóm từ chối', self.team_lead_rejection_reason
+        
+        # Nếu tất cả cấp đã duyệt thì duyệt
+        if (self.team_lead_approval == 'approved' and 
+            self.manager_approval == 'approved' and 
+            self.company_approval == 'approved'):
+            return 'approved', 'Đã duyệt', ''
+        
+        # Nếu chưa có cấp nào từ chối và chưa đủ cấp duyệt thì chờ
+        return 'pending', 'Chờ phê duyệt', ''
+    
+    def can_approve(self, user):
+        """Kiểm tra user có thể phê duyệt không"""
+        user_role = getattr(user.user_profile, 'role', 'staff')
+        
+        # Công ty có thể phê duyệt tất cả
+        if user_role == 'company':
+            return True
+        
+        # Quản lý có thể phê duyệt tất cả
+        if user_role == 'manager':
+            return True
+        
+        # Trưởng nhóm có thể phê duyệt nhân viên
+        if user_role == 'team_lead':
+            return True
+        
+        return False
+    
+    def get_required_approvals(self, requester_role):
+        """Lấy danh sách cấp cần phê duyệt dựa trên vai trò người yêu cầu"""
+        if requester_role == 'company':
+            return []  # Công ty không cần phê duyệt
+        
+        if requester_role == 'manager':
+            return ['company']  # Quản lý chỉ cần công ty phê duyệt
+        
+        if requester_role == 'team_lead':
+            return ['manager', 'company']  # Trưởng nhóm cần quản lý và công ty
+        
+        if requester_role == 'staff':
+            return ['team_lead', 'manager', 'company']  # Nhân viên cần tất cả 3 cấp
+        
+        return ['team_lead', 'manager', 'company']  # Mặc định
+    
+    def get_pending_approvals(self):
+        """Lấy danh sách các cấp đang chờ phê duyệt"""
+        pending = []
+        
+        if self.team_lead_approval == 'pending':
+            pending.append('team_lead')
+        if self.manager_approval == 'pending':
+            pending.append('manager')
+        if self.company_approval == 'pending':
+            pending.append('company')
+            
+        return pending
+    
+    class Meta:
+        verbose_name = 'Yêu cầu nghỉ phép'
+        verbose_name_plural = 'Yêu cầu nghỉ phép'
         ordering = ['-created_at']
