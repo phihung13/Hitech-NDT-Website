@@ -1,0 +1,51 @@
+{
+  "timestamp": "2025-08-14T09:04:01.669355",
+  "total_records": 3,
+  "data": [
+    [
+      "Phan Hoàng Diệp",
+      "052087009516",
+      "HTNV-001",
+      "0947072489",
+      "17/6/1987",
+      "Bình Định",
+      "Technical Manager",
+      "NDT",
+      "Đại học",
+      "ISO 9712 Level 3 (UT, RT, MT, PT, PAUT, TOFD, VT)",
+      "1",
+      "",
+      ""
+    ],
+    [
+      "Lê Phát Đạt",
+      "052094015900",
+      "HTNV-002",
+      "0399888137",
+      "20/7/1994",
+      "Bình Định",
+      "Site Manager",
+      "NDT",
+      "Cao Đẳng",
+      "ISO 9712 Level 2 (UT, PT, MT, VT, RT)",
+      "0",
+      "1234",
+      ""
+    ],
+    [
+      "Nguyễn Phi Hùng",
+      "040202023514",
+      "HTNV-008",
+      "0962681707",
+      "13/10/2002",
+      "Nghệ An",
+      "Trainee",
+      "R&D",
+      "Đại Học",
+      "",
+      "0",
+      "1123456788",
+      "MB BANK"
+    ]
+  ]
+}

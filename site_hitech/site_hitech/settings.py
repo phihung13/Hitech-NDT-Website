@@ -31,8 +31,12 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-fx^a=6!1s-s@2&@@n&ko_
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'hitechndt.vn,www.hitechndt.vn,localhost,127.0.0.1,192.168.1.4,0.0.0.0').split(',')
+# ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'hitechndt.vn,www.hitechndt.vn,localhost,127.0.0.1,192.168.1.4,192.168.1.192,0.0.0.0').split(',')
+# Bỏ dòng cũ:
+# ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'hitechndt.vn,www.hitechndt.vn,localhost,127.0.0.1,192.168.1.4,0.0.0.0').split(',')
 
+# Thay bằng:
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '192.168.1.192', '0.0.0.0', '*']
 
 # Application definition
 

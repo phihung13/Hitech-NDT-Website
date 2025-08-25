@@ -1,0 +1,270 @@
+{
+  "export_info": {
+    "company": "Hitech NDT",
+    "period": "08/2025",
+    "export_date": "2025-08-11 16:30:00",
+    "version": "1.0",
+    "total_employees": 3
+  },
+  "employees": {
+    "lephatdat": {
+      "info": {
+        "name": "Lê Phát Đạt",
+        "msnv": "lephatdat",
+        "email": "lephatdat@gmail.com",
+        "position": "Kỹ sư NDT",
+        "department": "Kỹ thuật",
+        "phone": "0901234567"
+      },
+      "attendance": {
+        "days": {
+          "day_01": {
+            "type": "W",
+            "location": "Hòa phú",
+            "method": "VT",
+            "paut_meters": 0,
+            "tofd_meters": 0,
+            "day_shift": true,
+            "night_shift": false,
+            "day_overtime_end": "",
+            "night_overtime_end": "",
+            "overtime_hours": 0,
+            "hotel_expense": 0,
+            "shopping_expense": 0,
+            "phone_expense": 0,
+            "other_expense": 0,
+            "other_expense_desc": "",
+            "note": "",
+            "created_at": "2025-08-01 08:00:00",
+            "updated_at": "2025-08-01 08:00:00"
+          },
+          "day_02": {
+            "type": "W",
+            "location": "CÔNG TY MỚI ABC",
+            "method": "PAUT",
+            "paut_meters": 50.0,
+            "tofd_meters": 0,
+            "day_shift": true,
+            "night_shift": false,
+            "day_overtime_end": "18:00",
+            "night_overtime_end": "",
+            "overtime_hours": 1.0,
+            "hotel_expense": 0,
+            "shopping_expense": 0,
+            "phone_expense": 50000.0,
+            "other_expense": 0,
+            "other_expense_desc": "",
+            "note": "",
+            "created_at": "2025-08-02 08:00:00",
+            "updated_at": "2025-08-02 08:00:00"
+          },
+          "day_03": {
+            "type": "W",
+            "location": "XYZ CONSTRUCTION",
+            "method": "UT",
+            "paut_meters": 0,
+            "tofd_meters": 0,
+            "day_shift": true,
+            "night_shift": false,
+            "day_overtime_end": "",
+            "night_overtime_end": "",
+            "overtime_hours": 0,
+            "hotel_expense": 150000.0,
+            "shopping_expense": 0,
+            "phone_expense": 0,
+            "other_expense": 0,
+            "other_expense_desc": "",
+            "note": "",
+            "created_at": "2025-08-03 08:00:00",
+            "updated_at": "2025-08-03 08:00:00"
+          }
+        },
+        "summary": {
+          "total_work_days": 3,
+          "total_office_days": 0,
+          "total_training_days": 0,
+          "total_leave_days": 0,
+          "total_absent_days": 0,
+          "total_overtime_hours": 1.0,
+          "total_expenses": 200000.0,
+          "hotel_expenses": 150000.0,
+          "shopping_expenses": 0,
+          "phone_expenses": 50000.0,
+          "other_expenses": 0,
+          "paut_total_meters": 50.0,
+          "tofd_total_meters": 0,
+          "construction_projects": [
+            "Hòa phú",
+            "CÔNG TY MỚI ABC",
+            "XYZ CONSTRUCTION"
+          ],
+          "ndt_methods_used": [
+            "VT",
+            "PAUT",
+            "UT"
+          ],
+          "total_working_days": 3,
+          "total_days_in_month": 31
+        }
+      }
+    },
+    "nguyenphihung": {
+      "info": {
+        "name": "Nguyễn Phi Hùng",
+        "msnv": "nguyenphihung",
+        "email": "nguyenphihung@gmail.com",
+        "position": "Trưởng nhóm NDT",
+        "department": "Kỹ thuật",
+        "phone": "0909876543"
+      },
+      "attendance": {
+        "days": {
+          "day_01": {
+            "type": "W",
+            "location": "heneiken",
+            "method": "PAUT",
+            "paut_meters": 80.0,
+            "tofd_meters": 0,
+            "day_shift": true,
+            "night_shift": false,
+            "day_overtime_end": "19:00",
+            "night_overtime_end": "",
+            "overtime_hours": 2.0,
+            "hotel_expense": 0,
+            "shopping_expense": 0,
+            "phone_expense": 75000.0,
+            "other_expense": 0,
+            "other_expense_desc": "",
+            "note": "",
+            "created_at": "2025-08-01 08:00:00",
+            "updated_at": "2025-08-01 08:00:00"
+          },
+          "day_02": {
+            "type": "W",
+            "location": "CÔNG TY LẠ XYZ",
+            "method": "TOFD",
+            "paut_meters": 0,
+            "tofd_meters": 120.0,
+            "day_shift": true,
+            "night_shift": false,
+            "day_overtime_end": "18:30",
+            "night_overtime_end": "",
+            "overtime_hours": 1.5,
+            "hotel_expense": 0,
+            "shopping_expense": 0,
+            "phone_expense": 60000.0,
+            "other_expense": 0,
+            "other_expense_desc": "",
+            "note": "",
+            "created_at": "2025-08-02 08:00:00",
+            "updated_at": "2025-08-02 08:00:00"
+          }
+        },
+        "summary": {
+          "total_work_days": 2,
+          "total_office_days": 0,
+          "total_training_days": 0,
+          "total_leave_days": 0,
+          "total_absent_days": 0,
+          "total_overtime_hours": 3.5,
+          "total_expenses": 135000.0,
+          "hotel_expenses": 0,
+          "shopping_expenses": 0,
+          "phone_expenses": 135000.0,
+          "other_expenses": 0,
+          "paut_total_meters": 80.0,
+          "tofd_total_meters": 120.0,
+          "construction_projects": [
+            "heneiken",
+            "CÔNG TY LẠ XYZ"
+          ],
+          "ndt_methods_used": [
+            "PAUT",
+            "TOFD"
+          ],
+          "total_working_days": 2,
+          "total_days_in_month": 31
+        }
+      }
+    },
+    "phanhoangdiep": {
+      "info": {
+        "name": "Phan Hoàng Diệp",
+        "msnv": "phanhoangdiep",
+        "email": "phanhoangdiep@gmail.com",
+        "position": "Kỹ sư NDT",
+        "department": "Kỹ thuật",
+        "phone": "0905555666"
+      },
+      "attendance": {
+        "days": {
+          "day_01": {
+            "type": "W",
+            "location": "solteck",
+            "method": "UT",
+            "paut_meters": 0,
+            "tofd_meters": 0,
+            "day_shift": true,
+            "night_shift": false,
+            "day_overtime_end": "",
+            "night_overtime_end": "",
+            "overtime_hours": 0,
+            "hotel_expense": 200000.0,
+            "shopping_expense": 0,
+            "phone_expense": 0,
+            "other_expense": 0,
+            "other_expense_desc": "",
+            "note": "",
+            "created_at": "2025-08-01 08:00:00",
+            "updated_at": "2025-08-01 08:00:00"
+          },
+          "day_02": {
+            "type": "W",
+            "location": "namviet",
+            "method": "VT",
+            "paut_meters": 0,
+            "tofd_meters": 0,
+            "day_shift": true,
+            "night_shift": false,
+            "day_overtime_end": "",
+            "night_overtime_end": "",
+            "overtime_hours": 0,
+            "hotel_expense": 0,
+            "shopping_expense": 0,
+            "phone_expense": 0,
+            "other_expense": 0,
+            "other_expense_desc": "",
+            "note": "",
+            "created_at": "2025-08-02 08:00:00",
+            "updated_at": "2025-08-02 08:00:00"
+          }
+        },
+        "summary": {
+          "total_work_days": 2,
+          "total_office_days": 0,
+          "total_training_days": 0,
+          "total_leave_days": 0,
+          "total_absent_days": 0,
+          "total_overtime_hours": 0,
+          "total_expenses": 200000.0,
+          "hotel_expenses": 200000.0,
+          "shopping_expenses": 0,
+          "phone_expenses": 0,
+          "other_expenses": 0,
+          "paut_total_meters": 0,
+          "tofd_total_meters": 0,
+          "construction_projects": [
+            "solteck",
+            "namviet"
+          ],
+          "ndt_methods_used": [
+            "UT",
+            "VT"
+          ],
+          "total_working_days": 2,
+          "total_days_in_month": 31
+        }
+      }
+    }
+  }
+} 

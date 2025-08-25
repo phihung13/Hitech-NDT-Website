@@ -1318,35 +1318,34 @@ class LeaveRequest(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending', verbose_name='Trạng thái')
     final_decision_reason = models.TextField(blank=True, verbose_name='Lý do quyết định cuối cùng')
     
-    # Phê duyệt 3 cấp
-    # Cấp 1: Trưởng nhóm
-    team_lead_approval = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending', verbose_name='Phê duyệt trưởng nhóm')
-    team_lead_approved_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, 
-                                             related_name='team_lead_approvals', verbose_name='Trưởng nhóm phê duyệt')
-    team_lead_approved_at = models.DateTimeField(null=True, blank=True, verbose_name='Thời gian phê duyệt trưởng nhóm')
-    team_lead_rejection_reason = models.TextField(blank=True, verbose_name='Lý do từ chối trưởng nhóm')
-    
+    # Phê duyệt 3 cấp: Người bàn giao, Quản lý, Công ty
+    handover_approval = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending', verbose_name='Phê duyệt người bàn giao')
+    handover_approved_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, 
+                                             related_name='handover_approvals', verbose_name='Người bàn giao phê duyệt')
+    handover_approved_at = models.DateTimeField(null=True, blank=True, verbose_name='Thời gian phê duyệt người bàn giao')
+    handover_rejection_reason = models.TextField(blank=True, verbose_name='Lý do từ chối người bàn giao')
+
     # Cấp 2: Quản lý
     manager_approval = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending', verbose_name='Phê duyệt quản lý')
     manager_approved_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, 
                                           related_name='manager_approvals', verbose_name='Quản lý phê duyệt')
     manager_approved_at = models.DateTimeField(null=True, blank=True, verbose_name='Thời gian phê duyệt quản lý')
     manager_rejection_reason = models.TextField(blank=True, verbose_name='Lý do từ chối quản lý')
-    
+
     # Cấp 3: Công ty
     company_approval = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending', verbose_name='Phê duyệt công ty')
     company_approved_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, 
                                           related_name='company_approvals', verbose_name='Công ty phê duyệt')
     company_approved_at = models.DateTimeField(null=True, blank=True, verbose_name='Thời gian phê duyệt công ty')
     company_rejection_reason = models.TextField(blank=True, verbose_name='Lý do từ chối công ty')
-    
+
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Ngày tạo')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='Ngày cập nhật')
-    
+
     def __str__(self):
         return f'{self.employee.get_full_name()} - {self.get_leave_type_display()} ({self.start_date} đến {self.end_date})'
-    
+
     def get_final_status(self):
         """Lấy trạng thái cuối cùng dựa trên logic phân cấp"""
         # Nếu có cấp cao từ chối thì từ chối
@@ -1354,66 +1353,247 @@ class LeaveRequest(models.Model):
             return 'rejected', 'Công ty từ chối', self.company_rejection_reason
         elif self.manager_approval == 'rejected':
             return 'rejected', 'Quản lý từ chối', self.manager_rejection_reason
-        elif self.team_lead_approval == 'rejected':
-            return 'rejected', 'Trưởng nhóm từ chối', self.team_lead_rejection_reason
-        
+        elif self.handover_approval == 'rejected':
+            return 'rejected', 'Người bàn giao từ chối', self.handover_rejection_reason
         # Nếu tất cả cấp đã duyệt thì duyệt
-        if (self.team_lead_approval == 'approved' and 
+        if (self.handover_approval == 'approved' and 
             self.manager_approval == 'approved' and 
             self.company_approval == 'approved'):
             return 'approved', 'Đã duyệt', ''
-        
         # Nếu chưa có cấp nào từ chối và chưa đủ cấp duyệt thì chờ
         return 'pending', 'Chờ phê duyệt', ''
-    
+
     def can_approve(self, user):
         """Kiểm tra user có thể phê duyệt không"""
         user_role = getattr(user.user_profile, 'role', 'staff')
         
-        # Công ty có thể phê duyệt tất cả
+        # Admin có thể phê duyệt ở BẤT KỲ cấp nào còn pending
+        if user_role == 'admin':
+            return (self.company_approval == 'pending' or 
+                   self.manager_approval == 'pending' or 
+                   self.handover_approval == 'pending')
+        
+        # Công ty có thể phê duyệt ở BẤT KỲ cấp nào còn pending
         if user_role == 'company':
-            return True
-        
-        # Quản lý có thể phê duyệt tất cả
+            return (self.company_approval == 'pending' or 
+                   self.manager_approval == 'pending' or 
+                   self.handover_approval == 'pending')
+            
+        # Quản lý có thể phê duyệt cấp manager và handover
         if user_role == 'manager':
-            return True
-        
-        # Trưởng nhóm có thể phê duyệt nhân viên
-        if user_role == 'team_lead':
-            return True
-        
+            return (self.manager_approval == 'pending' or 
+                   self.handover_approval == 'pending')
+            
+        # Người bàn giao chỉ có thể phê duyệt cấp của mình (cấp 1)
+        if self.handover_person and user == self.handover_person:
+            return self.handover_approval == 'pending'
+            
         return False
-    
+
     def get_required_approvals(self, requester_role):
         """Lấy danh sách cấp cần phê duyệt dựa trên vai trò người yêu cầu"""
         if requester_role == 'company':
             return []  # Công ty không cần phê duyệt
-        
         if requester_role == 'manager':
             return ['company']  # Quản lý chỉ cần công ty phê duyệt
-        
-        if requester_role == 'team_lead':
-            return ['manager', 'company']  # Trưởng nhóm cần quản lý và công ty
-        
         if requester_role == 'staff':
-            return ['team_lead', 'manager', 'company']  # Nhân viên cần tất cả 3 cấp
-        
-        return ['team_lead', 'manager', 'company']  # Mặc định
-    
+            return ['handover', 'manager', 'company']  # Nhân viên cần tất cả 3 cấp
+        return ['handover', 'manager', 'company']  # Mặc định
+
     def get_pending_approvals(self):
         """Lấy danh sách các cấp đang chờ phê duyệt"""
         pending = []
-        
-        if self.team_lead_approval == 'pending':
-            pending.append('team_lead')
+        if self.handover_approval == 'pending':
+            pending.append('handover')
         if self.manager_approval == 'pending':
             pending.append('manager')
         if self.company_approval == 'pending':
             pending.append('company')
-            
         return pending
-    
+
     class Meta:
         verbose_name = 'Yêu cầu nghỉ phép'
         verbose_name_plural = 'Yêu cầu nghỉ phép'
         ordering = ['-created_at']
+
+# Thêm vào cuối file models.py
+
+class Attendance(models.Model):
+    """Model cho dữ liệu chấm công"""
+    
+    WORK_TYPE_CHOICES = [
+        ('W', 'Công trường'),
+        ('O', 'Văn phòng'),
+        ('T', 'Đào tạo'),
+        ('P', 'Nghỉ có phép'),
+        ('N', 'Nghỉ không phép'),
+    ]
+    
+    # Thông tin cơ bản
+    employee = models.ForeignKey(User, on_delete=models.CASCADE, related_name='attendances', verbose_name='Nhân viên')
+    date = models.DateField(verbose_name='Ngày chấm công')
+    work_type = models.CharField(max_length=1, choices=WORK_TYPE_CHOICES, verbose_name='Loại công việc')
+    
+    # Thông tin công trường (nếu work_type = 'W')
+    construction_name = models.CharField(max_length=200, blank=True, verbose_name='Tên công trình')
+    ndt_method = models.CharField(max_length=100, blank=True, verbose_name='Phương pháp NDT')
+    
+    # Số mét vượt cho PAUT và TOFD
+    paut_meters = models.DecimalField(max_digits=8, decimal_places=2, default=0, verbose_name='Số mét vượt PAUT')
+    tofd_meters = models.DecimalField(max_digits=8, decimal_places=2, default=0, verbose_name='Số mét vượt TOFD')
+    
+    # Ca làm việc
+    day_shift = models.BooleanField(default=False, verbose_name='Ca ngày')
+    night_shift = models.BooleanField(default=False, verbose_name='Ca đêm')
+    day_overtime_end = models.TimeField(null=True, blank=True, verbose_name='Tăng ca ngày đến')
+    night_overtime_end = models.TimeField(null=True, blank=True, verbose_name='Tăng ca đêm đến')
+    overtime_hours = models.DecimalField(max_digits=4, decimal_places=2, default=0, verbose_name='Số giờ tăng ca')
+    
+    # Chi phí
+    hotel_expense = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name='Chi phí khách sạn (VNĐ)')
+    shopping_expense = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name='Chi phí mua sắm (VNĐ)')
+    phone_expense = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name='Chi phí điện thoại (VNĐ)')
+    other_expense = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name='Chi phí khác (VNĐ)')
+    other_expense_desc = models.TextField(blank=True, verbose_name='Mô tả chi phí khác')
+    
+    # Ghi chú
+    work_note = models.TextField(blank=True, verbose_name='Ghi chú công việc')
+    
+    # Liên kết với LeaveRequest (nếu có)
+    leave_request = models.ForeignKey(LeaveRequest, on_delete=models.SET_NULL, null=True, blank=True, 
+                                     related_name='attendance_records', verbose_name='Yêu cầu nghỉ phép liên quan')
+    
+    # Trạng thái
+    is_auto_generated = models.BooleanField(default=False, verbose_name='Tự động tạo từ yêu cầu nghỉ phép')
+    can_be_edited = models.BooleanField(default=True, verbose_name='Có thể chỉnh sửa')
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Ngày tạo')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='Ngày cập nhật')
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_attendances', 
+                                  verbose_name='Người tạo')
+    updated_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='updated_attendances', 
+                                  verbose_name='Người cập nhật cuối')
+    
+    class Meta:
+        verbose_name = 'Chấm công'
+        verbose_name_plural = 'Chấm công'
+        unique_together = ['employee', 'date']
+        ordering = ['-date', '-created_at']
+    
+    def __str__(self):
+        return f'{self.employee.get_full_name()} - {self.date} - {self.get_work_type_display()}'
+    
+    def get_work_type_display_name(self):
+        """Lấy tên hiển thị của loại công việc"""
+        return dict(self.WORK_TYPE_CHOICES).get(self.work_type, self.work_type)
+    
+    def get_shift_display(self):
+        """Lấy hiển thị ca làm việc"""
+        shifts = []
+        if self.day_shift:
+            shifts.append('Ca ngày')
+        if self.night_shift:
+            shifts.append('Ca đêm')
+        return ' + '.join(shifts) if shifts else '-'
+    
+    def get_expense_display(self):
+        """Lấy hiển thị chi phí"""
+        expenses = []
+        total_amount = 0
+        
+        if self.hotel_expense and self.hotel_expense > 0:
+            expenses.append(f'KS: {self.hotel_expense:,.0f}đ')
+            total_amount += self.hotel_expense
+        
+        if self.shopping_expense and self.shopping_expense > 0:
+            expenses.append(f'MS: {self.shopping_expense:,.0f}đ')
+            total_amount += self.shopping_expense
+        
+        if self.phone_expense and self.phone_expense > 0:
+            expenses.append(f'ĐT: {self.phone_expense:,.0f}đ')
+            total_amount += self.phone_expense
+        
+        if self.other_expense and self.other_expense > 0:
+            expenses.append(f'Khác: {self.other_expense:,.0f}đ')
+            total_amount += self.other_expense
+        
+        if expenses:
+            result = ', '.join(expenses)
+            if total_amount > 0:
+                result += f' (Tổng: {total_amount:,.0f}đ)'
+            return result
+        return '-'
+    
+    def can_edit(self, user):
+        """Kiểm tra user có thể chỉnh sửa không"""
+        if not self.can_be_edited:
+            return False
+        
+        # Nhân viên chỉ có thể sửa bản ghi của mình
+        if user == self.employee:
+            return True
+        
+        # Admin/Manager có thể sửa tất cả
+        user_role = getattr(user.user_profile, 'role', 'staff')
+        return user_role in ['admin', 'manager', 'company']
+    
+    @classmethod
+    def create_from_leave_request(cls, leave_request, work_type='P'):
+        """Tạo HOẶC liên kết/cập nhật bản ghi chấm công từ yêu cầu nghỉ phép.
+        - Nếu chưa có bản ghi cho ngày đó: tạo mới và gắn `leave_request`
+        - Nếu đã có bản ghi: gắn `leave_request` vào bản ghi hiện có và cập nhật `work_type`
+        """
+        from datetime import timedelta
+        
+        current_date = leave_request.start_date
+        end_date = leave_request.end_date
+        
+        while current_date <= end_date:
+            existing_record = cls.objects.filter(
+                employee=leave_request.employee,
+                date=current_date
+            ).first()
+            
+            if not existing_record:
+                # Tạo bản ghi mới
+                cls.objects.create(
+                    employee=leave_request.employee,
+                    date=current_date,
+                    work_type=work_type,  # 'P' cho nghỉ có phép, 'N' cho nghỉ không phép
+                    leave_request=leave_request,
+                    is_auto_generated=True,
+                    can_be_edited=True,
+                    created_by=leave_request.employee,
+                    updated_by=leave_request.employee
+                )
+            else:
+                # Liên kết và cập nhật bản ghi hiện có cho phù hợp với kết quả phê duyệt
+                existing_record.leave_request = leave_request
+                existing_record.work_type = work_type
+                # Không tự động đổi cờ is_auto_generated để tránh xóa nhầm bản ghi do người dùng tạo
+                existing_record.updated_by = leave_request.employee
+                existing_record.save()
+            
+            current_date += timedelta(days=1)
+    
+    @classmethod
+    def update_from_leave_request(cls, leave_request):
+        """Cập nhật bản ghi chấm công khi trạng thái yêu cầu nghỉ phép thay đổi"""
+        final_status, _, _ = leave_request.get_final_status()
+        
+        if final_status == 'approved':
+            cls.objects.filter(
+                leave_request=leave_request
+            ).update(work_type='P')
+        elif final_status == 'rejected':
+            cls.objects.filter(
+                leave_request=leave_request
+            ).update(work_type='N')
+    
+    @classmethod
+    def delete_for_leave_request(cls, leave_request):
+        """Xóa tất cả bản ghi chấm công gắn với một yêu cầu nghỉ phép.
+        Dùng khi người dùng xóa yêu cầu nghỉ => dữ liệu chấm công tương ứng cũng biến mất.
+        """
+        cls.objects.filter(leave_request=leave_request).delete()

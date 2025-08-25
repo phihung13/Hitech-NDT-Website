@@ -2438,5 +2438,112 @@ document.head.appendChild(style);
             // ... existing code ...
         });
     </script>
+
+    <!-- Auto Refresh System for Dashboard -->
+    <script>
+        // Global auto refresh system
+        let userActive = true;
+        let refreshInterval;
+        let lastRefreshTime = Date.now();
+        
+        function startDashboardAutoRefresh() {
+            console.log('🚀 Starting dashboard auto refresh system...');
+            
+            // Reset timer khi user active
+            document.addEventListener('mousemove', resetTimer);
+            document.addEventListener('keypress', resetTimer);
+            document.addEventListener('click', resetTimer);
+            document.addEventListener('scroll', resetTimer);
+            document.addEventListener('touchstart', resetTimer);
+            
+            // Refresh mỗi 60 giây nếu user không active
+            refreshInterval = setInterval(() => {
+                if (!userActive) {
+                    const timeSinceLastRefresh = Date.now() - lastRefreshTime;
+                    if (timeSinceLastRefresh > 30000) { // Tối thiểu 30 giây
+                        console.log('🔄 Auto refreshing dashboard data...');
+                        refreshDashboardData();
+                        lastRefreshTime = Date.now();
+                    }
+                }
+                userActive = false;
+            }, 60000); // Check mỗi 60 giây
+            
+            console.log('✅ Auto refresh system started');
+        }
+        
+        function resetTimer() {
+            userActive = true;
+        }
+        
+        function refreshDashboardData() {
+            // Refresh các module khác nhau dựa trên trang hiện tại
+            const currentPath = window.location.pathname;
+            
+            if (currentPath.includes('/attendance/')) {
+                // Refresh attendance data
+                if (typeof loadLeaveHistory === 'function') {
+                    loadLeaveHistory();
+                }
+                if (typeof loadAttendanceData === 'function') {
+                    loadAttendanceData();
+                }
+            } else if (currentPath.includes('/projects/')) {
+                // Refresh project data
+                if (typeof loadProjectData === 'function') {
+                    loadProjectData();
+                }
+            } else if (currentPath.includes('/equipment/')) {
+                // Refresh equipment data
+                if (typeof loadEquipmentData === 'function') {
+                    loadEquipmentData();
+                }
+            } else if (currentPath.includes('/documents/')) {
+                // Refresh document data
+                if (typeof loadDocumentData === 'function') {
+                    loadDocumentData();
+                }
+            } else if (currentPath.includes('/dashboard/') || currentPath === '/') {
+                // Refresh dashboard overview
+                if (typeof loadDashboardStats === 'function') {
+                    loadDashboardStats();
+                }
+            }
+            
+            // Refresh notifications nếu có
+            if (typeof loadNotifications === 'function') {
+                loadNotifications();
+            }
+        }
+        
+        // Start auto refresh khi page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Chỉ start auto refresh nếu user đã login
+            if (document.body.classList.contains('dashboard-page') || 
+                document.body.classList.contains('logged-in')) {
+                setTimeout(startDashboardAutoRefresh, 5000); // Start sau 5 giây
+            }
+        });
+        
+        // Pause auto refresh khi tab không active
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) {
+                console.log('⏸️ Pausing auto refresh (tab inactive)');
+                if (refreshInterval) {
+                    clearInterval(refreshInterval);
+                }
+            } else {
+                console.log('▶️ Resuming auto refresh (tab active)');
+                startDashboardAutoRefresh();
+            }
+        });
+        
+        // Cleanup khi page unload
+        window.addEventListener('beforeunload', function() {
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+            }
+        });
+    </script>
 </body>
 </html>

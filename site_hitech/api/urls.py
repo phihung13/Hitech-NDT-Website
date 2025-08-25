@@ -98,6 +98,9 @@ urlpatterns = [
     path('manage/categories/', views.manage_categories, name='manage_categories'),
     path('manage/tags/', views.manage_tags, name='manage_tags'),
     path('dashboard/quality/', views.quality_management, name='quality_management'),
+    
+    # Export attendance data
+    path('export/attendance/', views.export_attendance_data, name='export_attendance_data'),
     path('dashboard/analytics/', views.analytics_management, name='analytics_management'),
     
     # Project management
@@ -138,4 +141,17 @@ urlpatterns = [
     path('manage/ndt-methods/create/', views.create_ndt_method, name='create_ndt_method'),
     path('manage/ndt-methods/delete/<int:method_id>/', views.delete_ndt_method, name='delete_ndt_method'),
     path('manage/ndt-methods/create-defaults/', views.create_default_ndt_methods, name='create_default_ndt_methods'),
+
+    # Leave request APIs
+    path('api/leave-requests/create/', views.create_leave_request, name='create_leave_request'),
+    path('api/leave-requests/', views.get_leave_requests, name='get_leave_requests'),
+    path('api/leave-requests/approve/', views.approve_leave_request, name='approve_leave_request'),
+    path('api/leave-requests/<int:request_id>/delete/', views.delete_leave_request, name='delete_leave_request'),
+    path('api/users/handovers/', views.get_handover_candidates, name='get_handover_candidates'),
+    path('api/notifications/', views.get_system_notifications, name='get_system_notifications'),
+    
+    # Attendance APIs
+    path('api/attendance/', views.get_attendance_data, name='get_attendance_data'),
+    path('api/attendance/save/', views.save_attendance_data, name='save_attendance_data'),
+    path('api/attendance/<int:record_id>/delete/', views.delete_attendance_record, name='delete_attendance_record'),
 ]

@@ -1,0 +1,34 @@
+{
+  "timestamp": "2025-08-01T15:49:47.227834",
+  "total_records": 2,
+  "data": [
+    [
+      "Phan Hoàng Diệp",
+      "052087009516",
+      "HTNV-001",
+      "0947072489",
+      "17/6/1987",
+      "Bình Định",
+      "Technical Manager",
+      "Đại học",
+      "ISO 9712 Level 3 (UT, RT, MT, PT, PAUT, TOFD, VT)",
+      "1",
+      "",
+      ""
+    ],
+    [
+      "Lê Phát Đạt",
+      "052094015900",
+      "HTNV-002",
+      "0399888137",
+      "20/7/1994",
+      "Bình Định",
+      "Site Manager",
+      "Cao Đẳng",
+      "ISO 9712 Level 2 (UT, PT, MT, VT, RT)",
+      "1",
+      "",
+      ""
+    ]
+  ]
+}

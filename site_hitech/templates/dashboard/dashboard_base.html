@@ -362,11 +362,176 @@
         .nav-item:nth-child(4) { animation-delay: 0.4s; }
         .nav-item:nth-child(5) { animation-delay: 0.5s; }
 
+        /* Notification dropdown styles */
+        .notification-dropdown {
+            position: relative;
+        }
+        
+        .notification-dropdown .dropdown-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            right: 0;
+            left: auto;
+            transform: none;
+            margin-top: 0.125rem;
+            width: 380px;
+            max-height: 450px;
+            overflow-y: auto;
+            z-index: 9999;
+            border: 1px solid #e3e6f0;
+            border-radius: 8px;
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        }
+        
+        .notification-dropdown .dropdown-menu.show {
+            display: block !important;
+        }
+        
+        .notification-item {
+            transition: all 0.2s ease;
+            border-bottom: 1px solid #f8f9fa;
+            padding: 12px 16px;
+        }
+        
+        .notification-item:last-child {
+            border-bottom: none;
+        }
+        
+        .notification-item:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .notification-item-modern {
+            transition: all 0.3s ease;
+            border-radius: 6px;
+            margin-bottom: 6px;
+            padding: 10px 12px;
+            background: #fff;
+            border: 1px solid #e9ecef;
+        }
+        
+        .notification-item-modern:hover {
+            background-color: #f8f9fa;
+            transform: translateX(3px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .notification-item-modern:last-child {
+            margin-bottom: 0;
+        }
+        
+        .notification-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+        
+        .notification-content {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .notification-content h6 {
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 4px;
+            line-height: 1.3;
+        }
+        
+        .notification-content p {
+            font-size: 11px;
+            margin-bottom: 6px;
+            color: #6c757d;
+        }
+        
+        .notification-action {
+            margin-left: 8px;
+        }
+        
+        .notification-action .btn {
+            font-size: 11px;
+            padding: 4px 12px;
+            border-radius: 4px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            min-width: 60px;
+            justify-content: center;
+        }
+        
+        .notification-view-btn {
+            border-radius: 4px !important;
+            text-decoration: none !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            gap: 4px !important;
+            white-space: nowrap !important;
+            min-width: 60px !important;
+            justify-content: center !important;
+            padding: 3px 12px !important;
+        }
+        
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            background: #dc3545;
+            color: white;
+            font-weight: 600;
+            min-width: 18px;
+            text-align: center;
+        }
+        
+        .notification-dropdown .btn {
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+        }
+        
+        .notification-dropdown .btn:hover {
+            background-color: #e3f2fd;
+            border-color: #2196f3;
+        }
+        
+        .dropdown-header .btn {
+            font-size: 12px;
+            padding: 2px 6px;
+        }
+        
+        .dropdown-header .btn:hover {
+            background-color: #f8f9fa;
+        }
+        
+        /* Style cho icon plus */
+        .fas.fa-plus.me-2 {
+            color: white !important;
+            font-size: 0.9em !important;
+        }
+
+        .notification-item.read, .notification-item-modern.read {
+            opacity: 0.6;
+            background: #f4f4f4 !important;
+            box-shadow: none !important;
+        }
+
         {% block extra_css %}{% endblock %}
     </style>
 </head>
-<body>
-    <div class="dashboard-wrapper">
+    <body class="dashboard-page logged-in">
+        <div class="dashboard-wrapper">
         <!-- Sidebar -->
         <div class="sidebar" id="sidebar">
             <div class="sidebar-header">
@@ -418,6 +583,7 @@
                         <a href="{% url 'dashboard_overview' %}" class="nav-link">
                             <i class="fas fa-tachometer-alt"></i>
                             <span>Tổng quan</span>
+                            <span id="notificationBadge" class="badge bg-danger ms-auto" style="display: none;">0</span>
                         </a>
                     </div>
                 </div>
@@ -526,6 +692,24 @@
                         {% block page_title %}Dashboard{% endblock %}
                     </h1>
                     <div class="d-flex align-items-center">
+                        <!-- Notification Dropdown -->
+                        <div class="dropdown notification-dropdown me-3">
+                            <button class="btn btn-outline-primary position-relative" type="button" id="notificationDropdown" aria-expanded="false">
+                                <i class="fas fa-bell"></i>
+                                <span id="notificationBadgeHeader" class="notification-badge" style="display: none;">0</span>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="notificationDropdown">
+                                <li><h6 class="dropdown-header d-flex justify-content-between align-items-center">
+                                    <span>Thông báo hệ thống</span>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="refreshNotifications()" title="Làm mới">
+                                        <i class="fas fa-sync-alt"></i>
+                                    </button>
+                                </h6></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><div id="systemNotifications" class="px-3 py-2">Đang tải...</div></li>
+                            </ul>
+                        </div>
+                        
                         <!-- Mobile sidebar toggle -->
                         <button class="btn btn-outline-primary d-md-none me-3" id="sidebarToggle">
                             <i class="fas fa-bars"></i>
@@ -872,5 +1056,281 @@ window.setUserData = function(module, dataType, data) {
 };
 </script>
 {% endblock %}
+    <!-- Auto Refresh Functions Placeholder -->
+    <script>
+        // Placeholder functions for auto refresh
+        function loadDashboardStats() {
+            console.log('📊 Refreshing dashboard stats...');
+            // Implement dashboard stats refresh
+        }
+        
+        function loadProjectData() {
+            console.log('📋 Refreshing project data...');
+            // Implement project data refresh
+        }
+        
+        function loadEquipmentData() {
+            console.log('🔧 Refreshing equipment data...');
+            // Implement equipment data refresh
+        }
+        
+        function loadDocumentData() {
+            console.log('📄 Refreshing document data...');
+            // Implement document data refresh
+        }
+        
+        function refreshDashboardNotifications() {
+            console.log('🔔 Refreshing notifications...');
+            loadNotifications();
+        }
+    </script>
+    <!-- System Notifications -->
+    <script>
+        let notifications = [];
+        let notificationCount = 0;
+        
+        async function loadNotifications() {
+            try {
+                console.log('🔔 Loading system notifications...');
+                const response = await fetch('/api/notifications/', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCSRFToken()
+                    }
+                });
+                
+                console.log('🔍 Response status:', response.status);
+                
+                if (!response.ok) {
+                    console.error('❌ API Error:', response.status, response.statusText);
+                    const errorText = await response.text();
+                    console.error('❌ Error response:', errorText);
+                    return;
+                }
+                
+                const result = await response.json();
+                console.log('🔍 Response data:', result);
+                
+                if (result.success) {
+                    notifications = result.notifications || [];
+                    notificationCount = result.count || 0;
+                    console.log('🔍 Notifications:', notifications);
+                    console.log('🔍 Count:', notificationCount);
+                    updateNotificationDisplay();
+                    console.log(`✅ Loaded ${notificationCount} notifications`);
+                } else {
+                    console.error('❌ Failed to load notifications:', result.message);
+                    // Hiển thị thông báo lỗi
+                    const container = document.getElementById('systemNotifications');
+                    if (container) {
+                        container.innerHTML = `
+                            <div class="text-center text-muted py-3">
+                                <i class="fas fa-exclamation-triangle fa-2x mb-2 text-warning"></i>
+                                <p class="mb-0">Lỗi tải thông báo</p>
+                            </div>
+                        `;
+                    }
+                }
+            } catch (error) {
+                console.error('❌ Error loading notifications:', error);
+                // Hiển thị thông báo lỗi
+                const container = document.getElementById('systemNotifications');
+                if (container) {
+                    container.innerHTML = `
+                        <div class="text-center text-muted py-3">
+                            <i class="fas fa-exclamation-triangle fa-2x mb-2 text-warning"></i>
+                            <p class="mb-0">Lỗi kết nối</p>
+                        </div>
+                    `;
+                }
+            }
+        }
+        
+        function updateNotificationDisplay() {
+            console.log('🔍 updateNotificationDisplay called');
+            // Update dropdown notifications (nếu có)
+            const notificationContainer = document.getElementById('systemNotifications');
+            const notificationBadge = document.getElementById('notificationBadge');
+            if (notificationContainer) {
+                if (notificationCount === 0) {
+                    notificationContainer.innerHTML = `
+                        <div class="text-center text-muted py-3">
+                            <i class="fas fa-bell-slash fa-2x mb-2"></i>
+                            <p class="mb-0">Không có thông báo mới</p>
+                        </div>
+                    `;
+                } else {
+                    let html = '';
+                    notifications.forEach((notification, index) => {
+                        const iconClass = notification.type === 'leave_request' ? 'fas fa-clock text-warning' :
+                                        notification.type === 'document' ? 'fas fa-file-alt text-success' :
+                                        notification.type === 'project' ? 'fas fa-project-diagram text-info' :
+                                        'fas fa-info-circle text-primary';
+                        const readClass = notification.read ? 'read' : '';
+                        html += `
+                            <div class="notification-item ${readClass}" data-index="${index}">
+                                <div class="d-flex align-items-start">
+                                    <div class="notification-icon me-2">
+                                        <i class="${iconClass}"></i>
+                                    </div>
+                                    <div class="notification-content">
+                                        <h6 class="mb-1">${notification.message}</h6>
+                                        <p class="text-muted mb-2">${notification.time} - ${notification.date}</p>
+                                        ${notification.can_view ? `
+                                            <a href="${notification.url}" class="btn btn-sm btn-outline-primary notification-view-btn" data-index="${index}">
+                                                <i class="fas fa-external-link-alt me-1"></i>Xem
+                                            </a>
+                                        ` : `
+                                            <span class="text-muted small">
+                                                <i class="fas fa-lock me-1"></i>Không có quyền
+                                            </span>
+                                        `}
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    notificationContainer.innerHTML = html;
+                }
+            }
+            // Update card notifications (nếu có)
+            const cardContainer = document.getElementById('notificationsContainer');
+            if (cardContainer) {
+                if (notificationCount === 0) {
+                    cardContainer.innerHTML = `
+                        <div class="text-center text-muted py-3">
+                            <i class="fas fa-bell-slash fa-2x mb-2"></i>
+                            <p class="mb-0">Không có thông báo mới</p>
+                        </div>
+                    `;
+                } else {
+                    let html = '';
+                    notifications.forEach((notification, index) => {
+                        const iconClass = notification.type === 'leave_request' ? 'fas fa-clock text-warning' :
+                                        notification.type === 'document' ? 'fas fa-file-alt text-success' :
+                                        notification.type === 'project' ? 'fas fa-project-diagram text-info' :
+                                        'fas fa-info-circle text-primary';
+                        const readClass = notification.read ? 'read' : '';
+                        html += `
+                            <div class="notification-item-modern ${readClass} p-3">
+                                <div class="d-flex align-items-start">
+                                    <div class="notification-icon me-3">
+                                        <i class="fas fa-lg ${iconClass}"></i>
+                                    </div>
+                                    <div class="notification-content flex-grow-1">
+                                        <p class="mb-1 fw-medium">${notification.message}</p>
+                                        <small class="text-muted">
+                                            <i class="fas fa-clock me-1"></i>${notification.time} - ${notification.date}
+                                        </small>
+                                    </div>
+                                    ${notification.can_view ? `
+                                        <div class="notification-action">
+                                            <a href="${notification.url}" class="btn btn-sm btn-outline-primary notification-view-btn" data-index="${index}">
+                                                <i class="fas fa-external-link-alt me-1"></i>Xem
+                                            </a>
+                                        </div>
+                                    ` : `
+                                        <div class="notification-action">
+                                            <span class="text-muted small">
+                                                <i class="fas fa-lock me-1"></i>Không có quyền
+                                            </span>
+                                        </div>
+                                    `}
+                                </div>
+                            </div>
+                        `;
+                    });
+                    cardContainer.innerHTML = html;
+                }
+            }
+            // Update badges
+            const badges = [notificationBadge, document.getElementById('notificationBadgeHeader')];
+            badges.forEach(badge => {
+                if (badge) {
+                    if (notificationCount > 0) {
+                        badge.textContent = notificationCount;
+                        badge.style.display = 'inline';
+                    } else {
+                        badge.style.display = 'none';
+                    }
+                }
+            });
+        }
+        
+        function getCSRFToken() {
+            const name = 'csrftoken';
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        
+        // Load notifications khi page load
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(loadNotifications, 1000); // Load sau 1 giây
+            
+            // Đảm bảo dropdown hoạt động
+            const notificationDropdown = document.getElementById('notificationDropdown');
+            if (notificationDropdown) {
+                notificationDropdown.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const dropdownMenu = this.parentElement.querySelector('.dropdown-menu');
+                    if (dropdownMenu) {
+                        dropdownMenu.classList.toggle('show');
+                        console.log('🔔 Toggle notification dropdown');
+                    }
+                });
+            }
+            
+            // Đóng dropdown khi click outside
+            document.addEventListener('click', function(e) {
+                const dropdown = document.querySelector('.notification-dropdown');
+                const dropdownMenu = document.querySelector('.notification-dropdown .dropdown-menu');
+                if (dropdown && dropdownMenu && !dropdown.contains(e.target)) {
+                    dropdownMenu.classList.remove('show');
+                }
+                
+                // Đánh dấu đã đọc khi click vào nút Xem
+                if (e.target.classList.contains('notification-view-btn') || e.target.closest('.notification-view-btn')) {
+                    const btn = e.target.classList.contains('notification-view-btn') ? e.target : e.target.closest('.notification-view-btn');
+                    const idx = btn.getAttribute('data-index');
+                    if (typeof idx !== 'undefined' && notifications[idx] && !notifications[idx].read) {
+                        notifications[idx].read = true;
+                        notificationCount = Math.max(0, notificationCount - 1);
+                        updateNotificationDisplay();
+                    }
+                }
+            });
+        });
+        
+        // Function để refresh notifications (cho button "Làm mới")
+        function refreshNotifications() {
+            console.log('🔄 Refreshing notifications...');
+            loadNotifications();
+        }
+        
+        // Function để mark all as read (cho button "Đánh dấu đã đọc")
+        function markAllAsRead() {
+            console.log('✅ Marking all notifications as read...');
+            // Có thể implement logic mark as read sau
+            Swal.fire({
+                title: 'Thành công!',
+                text: 'Đã đánh dấu tất cả thông báo là đã đọc',
+                icon: 'success',
+                timer: 2000,
+                showConfirmButton: false
+            });
+        }
+    </script>
 </body>
 </html> 

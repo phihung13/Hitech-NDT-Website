@@ -1,5 +1,5 @@
 from django.http import JsonResponse
-from .models import Course, Post, Category, Comment, ContactSettings, Tag, SiteSettings, AboutPage, HomePageSettings, UserProfile, Project, ProjectFile, ProjectProgress, CourseCategory, Equipment, PublicProject, Company, NDTMethod
+from .models import Course, Post, Category, Comment, ContactSettings, Tag, SiteSettings, AboutPage, HomePageSettings, UserProfile, Project, ProjectFile, ProjectProgress, CourseCategory, Equipment, PublicProject, Company, NDTMethod, Attendance
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
@@ -23,8 +23,13 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from django.utils import translation
 import json
-from datetime import timedelta
+from datetime import timedelta, date, datetime
 import shutil
+from .models import LeaveRequest
+from django.db import models
+from django.utils import timezone
+from django.db.models import Q
+from decimal import Decimal
 
 def get_disk_usage():
     """Lấy thông tin dung lượng disk"""
@@ -885,11 +890,17 @@ def staff_management(request):
 @login_required
 def attendance_management(request):
     """Trang quản lý chấm công"""
+    # Chỉ lấy staff, không lấy admin/manager/company
+    staff_list = UserProfile.objects.filter(
+        role='staff'
+    ).select_related('user').exclude(
+        user__username__in=['admin_test', 'staff_test', 'admin_cascade', 'staff_cascade']
+    )
     context = {
         'title': 'Quản lý chấm công',
         'module_name': 'Quản lý chấm công', 
         'description': 'Hệ thống chấm công tự động, theo dõi giờ làm việc và tính lương nhân viên.',
-        # Dữ liệu được lưu trong localStorage trên trình duyệt
+        'staff_list': staff_list,
     }
     return render(request, 'erp_modules/attendance.html', context)
 
@@ -1637,3 +1648,853 @@ def delete_project_file(request, project_id, file_id):
         messages.success(request, f'Đã xóa file "{file_name}" thành công.')
     
     return redirect('project_detail', project_id=project.id)
+
+@csrf_exempt
+@require_http_methods(["POST"])
+@login_required
+def create_leave_request(request):
+    """API tạo yêu cầu nghỉ phép"""
+    try:
+        data = json.loads(request.body)
+        
+        # Lấy thông tin người bàn giao
+        handover_person_id = data.get('handoverPersonId')
+        handover_person = None
+        if handover_person_id:
+            try:
+                handover_person = User.objects.get(id=handover_person_id)
+            except User.DoesNotExist:
+                pass
+        
+        # Tạo yêu cầu nghỉ phép
+        leave_request = LeaveRequest.objects.create(
+            employee=request.user,
+            leave_type=data.get('leave_type', 'personal'),
+            start_date=data.get('startDate'),
+            end_date=data.get('endDate'),
+            total_days=1,  # Tính toán sau
+            reason=data.get('reason'),
+            handover_person=handover_person,
+            handover_tasks=data.get('handoverTasks', '')
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Yêu cầu nghỉ phép đã được tạo thành công',
+            'request_id': leave_request.id
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Lỗi: {str(e)}'
+        }, status=400)
+
+@require_http_methods(["GET"])
+@login_required
+def get_leave_requests(request):
+    """API lấy danh sách yêu cầu nghỉ phép"""
+    try:
+        user_role = getattr(request.user.user_profile, 'role', 'staff')
+        
+        if user_role in ['admin', 'company']:
+            # Admin/Company thấy tất cả
+            requests = LeaveRequest.objects.all()
+        elif user_role == 'manager':
+            # Manager thấy tất cả
+            requests = LeaveRequest.objects.all()
+        else:
+            # Staff chỉ thấy của mình và những yêu cầu mà họ là người được bàn giao (cấp 1)
+            requests = LeaveRequest.objects.filter(
+                Q(employee=request.user) | 
+                Q(handover_person=request.user)
+            )
+        
+        requests_data = []
+        for req in requests.order_by('-created_at'):
+            requests_data.append({
+                'id': str(req.id),
+                'startDate': req.start_date.strftime('%Y-%m-%d'),
+                'endDate': req.end_date.strftime('%Y-%m-%d'),
+                'reason': req.reason,
+                'handoverPerson': req.handover_person.get_full_name() if req.handover_person else '',
+                'handoverPersonId': str(req.handover_person.id) if req.handover_person else '',
+                'handoverTasks': req.handover_tasks,
+                'status': req.status,
+                'submittedAt': req.created_at.isoformat(),
+                'submittedBy': req.employee.get_full_name(),
+                'userId': req.employee.id,
+                'employeeName': req.employee.get_full_name(),
+                
+                'handoverApproval': req.handover_approval,
+                'managerApproval': req.manager_approval,
+                'companyApproval': req.company_approval,
+                
+                'handoverApprovedBy': req.handover_approved_by.get_full_name() if req.handover_approved_by else '',
+                'handoverApprovedAt': req.handover_approved_at.isoformat() if req.handover_approved_at else None,
+                'handoverRejectionReason': req.handover_rejection_reason,
+                
+                'managerApprovedBy': req.manager_approved_by.get_full_name() if req.manager_approved_by else '',
+                'managerApprovedAt': req.manager_approved_at.isoformat() if req.manager_approved_at else None,
+                'managerRejectionReason': req.manager_rejection_reason,
+                
+                'companyApprovedBy': req.company_approved_by.get_full_name() if req.company_approved_by else '',
+                'companyApprovedAt': req.company_approved_at.isoformat() if req.company_approved_at else None,
+                'companyRejectionReason': req.company_rejection_reason,
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'requests': requests_data
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Lỗi: {str(e)}'
+        }, status=400)
+
+@csrf_exempt
+@require_http_methods(["POST"])
+@login_required
+def approve_leave_request(request):
+    """API phê duyệt yêu cầu nghỉ phép"""
+    try:
+        data = json.loads(request.body)
+        request_id = data.get('request_id')
+        level = data.get('level')  # 'handover', 'manager', 'company'
+        action = data.get('action')  # 'approve', 'reject'
+        reason = data.get('reason', '')
+        
+        leave_request = LeaveRequest.objects.get(id=request_id)
+        
+        # Kiểm tra quyền phê duyệt
+        if not leave_request.can_approve(request.user):
+            return JsonResponse({
+                'success': False,
+                'message': 'Bạn không có quyền phê duyệt yêu cầu này'
+            }, status=403)
+        
+        # Xác định cấp phê duyệt phù hợp dựa trên quyền của user
+        user_role = getattr(request.user.user_profile, 'role', 'staff')
+        
+        # Nếu admin/company phê duyệt, ưu tiên cấp cao nhất còn pending
+        if (user_role == 'admin' or user_role == 'company') and level == 'company':
+            # Công ty phê duyệt/từ chối
+            leave_request.company_approval = 'approved' if action == 'approve' else 'rejected'
+            leave_request.company_approved_by = request.user
+            leave_request.company_approved_at = timezone.now()
+            if action == 'reject':
+                leave_request.company_rejection_reason = reason
+            else:
+                # Nếu công ty duyệt, tự động duyệt các cấp dưới
+                if leave_request.manager_approval == 'pending':
+                    leave_request.manager_approval = 'approved'
+                    leave_request.manager_approved_by = request.user
+                    leave_request.manager_approved_at = timezone.now()
+                if leave_request.handover_approval == 'pending':
+                    leave_request.handover_approval = 'approved'
+                    leave_request.handover_approved_by = request.user
+                    leave_request.handover_approved_at = timezone.now()
+                    
+        elif (user_role == 'admin' or user_role == 'company') and level == 'manager':
+            # Admin phê duyệt ở cấp manager
+            leave_request.manager_approval = 'approved' if action == 'approve' else 'rejected'
+            leave_request.manager_approved_by = request.user
+            leave_request.manager_approved_at = timezone.now()
+            if action == 'reject':
+                leave_request.manager_rejection_reason = reason
+            else:
+                # Nếu admin duyệt manager, tự động duyệt handover (nếu chưa duyệt)
+                if leave_request.handover_approval == 'pending':
+                    leave_request.handover_approval = 'approved'
+                    leave_request.handover_approved_by = request.user
+                    leave_request.handover_approved_at = timezone.now()
+                    
+        elif (user_role == 'admin' or user_role == 'company') and level == 'handover':
+            # Admin phê duyệt ở cấp handover
+            leave_request.handover_approval = 'approved' if action == 'approve' else 'rejected'
+            leave_request.handover_approved_by = request.user
+            leave_request.handover_approved_at = timezone.now()
+            if action == 'reject':
+                leave_request.handover_rejection_reason = reason
+                
+        elif level == 'manager':
+            # Quản lý phê duyệt/từ chối
+            leave_request.manager_approval = 'approved' if action == 'approve' else 'rejected'
+            leave_request.manager_approved_by = request.user
+            leave_request.manager_approved_at = timezone.now()
+            if action == 'reject':
+                leave_request.manager_rejection_reason = reason
+            else:
+                # Nếu quản lý duyệt, tự động duyệt cấp handover (nếu chưa duyệt)
+                if leave_request.handover_approval == 'pending':
+                    leave_request.handover_approval = 'approved'
+                    leave_request.handover_approved_by = request.user
+                    leave_request.handover_approved_at = timezone.now()
+                    
+        elif level == 'handover':
+            # Người bàn giao chỉ có thể phê duyệt cấp của mình
+            leave_request.handover_approval = 'approved' if action == 'approve' else 'rejected'
+            leave_request.handover_approved_by = request.user
+            leave_request.handover_approved_at = timezone.now()
+            if action == 'reject':
+                leave_request.handover_rejection_reason = reason
+        
+        # Cập nhật trạng thái tổng thể
+        final_status, _, _ = leave_request.get_final_status()
+        leave_request.status = final_status
+        
+        leave_request.save()
+        
+        # Tự động tạo/cập nhật bản ghi chấm công
+        from .models import Attendance
+        
+        if final_status == 'approved':
+            # Nếu được duyệt, tạo bản ghi chấm công cho các ngày nghỉ phép
+            Attendance.create_from_leave_request(leave_request, work_type='P')
+        elif final_status == 'rejected':
+            # Nếu bị từ chối, tạo bản ghi chấm công cho các ngày nghỉ không phép
+            Attendance.create_from_leave_request(leave_request, work_type='N')
+        else:
+            # Nếu vẫn đang chờ, cập nhật bản ghi chấm công hiện có (nếu có)
+            Attendance.update_from_leave_request(leave_request)
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Đã {"phê duyệt" if action == "approve" else "từ chối"} yêu cầu nghỉ phép'
+        })
+        
+    except LeaveRequest.DoesNotExist:
+        return JsonResponse({
+            'success': False,
+            'message': 'Không tìm thấy yêu cầu nghỉ phép'
+        }, status=404)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Lỗi: {str(e)}'
+        }, status=400)
+
+@csrf_exempt
+@require_http_methods(["DELETE"])
+@login_required
+def delete_leave_request(request, request_id):
+    """API xóa yêu cầu nghỉ phép (chỉ người tạo mới được xóa).
+    Khi xóa, đồng thời xóa các bản ghi chấm công được tạo/gắn từ yêu cầu này.
+    """
+    try:
+        leave_request = LeaveRequest.objects.get(id=request_id)
+        
+        # Chỉ người tạo mới được xóa yêu cầu của mình
+        if leave_request.employee != request.user:
+            return JsonResponse({
+                'success': False,
+                'message': 'Bạn chỉ có thể xóa yêu cầu nghỉ phép của chính mình'
+            }, status=403)
+        
+        # Xóa các bản ghi Attendance liên quan trước
+        from .models import Attendance
+        Attendance.delete_for_leave_request(leave_request)
+        
+        # Sau đó xóa yêu cầu nghỉ
+        leave_request.delete()
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Đã xóa yêu cầu nghỉ phép và dữ liệu chấm công liên quan'
+        })
+        
+    except LeaveRequest.DoesNotExist:
+        return JsonResponse({
+            'success': False,
+            'message': 'Không tìm thấy yêu cầu nghỉ phép'
+        }, status=404)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Lỗi: {str(e)}'
+        }, status=400)
+
+@login_required
+def get_system_notifications(request):
+    """API lấy thông báo hệ thống chung"""
+    try:
+        user_role = getattr(request.user.user_profile, 'role', 'staff')
+        notifications = []
+        
+        # Thông báo về leave requests mới
+        recent_leave_requests = LeaveRequest.objects.filter(
+            status='pending'
+        ).order_by('-created_at')[:5]
+        
+        for req in recent_leave_requests:
+            # Kiểm tra quyền xem leave request
+            can_view = False
+            if user_role in ['admin', 'company', 'manager']:
+                can_view = True
+            elif req.employee == request.user:
+                can_view = True
+            elif req.handover_person == request.user:
+                can_view = True
+            
+            notifications.append({
+                'type': 'leave_request',
+                'message': f'{req.employee.get_full_name()} vừa xin nghỉ phép chờ phê duyệt',
+                'time': req.created_at.strftime('%H:%M'),
+                'date': req.created_at.strftime('%d/%m/%Y'),
+                'url': '/dashboard/attendance/',
+                'can_view': can_view
+            })
+        
+        # Thông báo về documents mới (nếu có)
+        from .models import Document
+        if Document.objects.exists():
+            recent_docs = Document.objects.filter(
+                status='published'
+            ).order_by('-created_at')[:3]
+            
+            for doc in recent_docs:
+                # Kiểm tra quyền xem document
+                can_view = False
+                if user_role in ['admin', 'company', 'manager']:
+                    can_view = True
+                elif doc.created_by == request.user:
+                    can_view = True
+                elif hasattr(doc, 'access_level') and doc.access_level == 'public':
+                    can_view = True
+                
+                notifications.append({
+                    'type': 'document',
+                    'message': f'{doc.created_by.get_full_name()} vừa thêm tài liệu {doc.title}',
+                    'time': doc.created_at.strftime('%H:%M'),
+                    'date': doc.created_at.strftime('%d/%m/%Y'),
+                    'url': f'/documents/{doc.slug}/',
+                    'can_view': can_view
+                })
+        
+        # Thông báo về projects mới (nếu có)
+        from .models import Project
+        if Project.objects.exists():
+            recent_projects = Project.objects.filter(
+                status='in_progress'
+            ).order_by('-created_at')[:3]
+            
+            for project in recent_projects:
+                # Kiểm tra quyền xem project
+                can_view = False
+                if user_role in ['admin', 'company', 'manager']:
+                    can_view = True
+                elif hasattr(project, 'assigned_to') and project.assigned_to == request.user:
+                    can_view = True
+                elif hasattr(project, 'created_by') and project.created_by == request.user:
+                    can_view = True
+                
+                notifications.append({
+                    'type': 'project',
+                    'message': f'Dự án {project.name} đang được thực hiện',
+                    'time': project.created_at.strftime('%H:%M'),
+                    'date': project.created_at.strftime('%d/%m/%Y'),
+                    'url': f'/projects/{project.id}/',
+                    'can_view': can_view
+                })
+        
+        # Sắp xếp theo thời gian mới nhất
+        notifications.sort(key=lambda x: f"{x['date']} {x['time']}", reverse=True)
+        
+        return JsonResponse({
+            'success': True,
+            'notifications': notifications[:10],  # Chỉ lấy 10 thông báo mới nhất
+            'count': len(notifications)
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Lỗi: {str(e)}'
+        }, status=400)
+
+@csrf_exempt
+@require_http_methods(["GET"])
+@login_required
+def get_attendance_data(request):
+    """API lấy dữ liệu chấm công của user"""
+    try:
+        from .models import Attendance
+        
+        # Lấy dữ liệu chấm công của user hiện tại
+        attendances = Attendance.objects.filter(employee=request.user).order_by('-date')
+        
+        # Chuyển đổi thành format JSON
+        data = []
+        for attendance in attendances:
+            data.append({
+                'id': attendance.id,
+                'date': attendance.date.strftime('%Y-%m-%d'),
+                'workType': attendance.work_type,
+                'constructionName': attendance.construction_name or '',
+                'ndtMethod': attendance.ndt_method or '',
+                'pautMeters': float(attendance.paut_meters) if attendance.paut_meters else 0,
+                'tofdMeters': float(attendance.tofd_meters) if attendance.tofd_meters else 0,
+                'dayShift': attendance.day_shift,
+                'nightShift': attendance.night_shift,
+                'dayOvertimeEnd': attendance.day_overtime_end.strftime('%H:%M') if attendance.day_overtime_end else '',
+                'nightOvertimeEnd': attendance.night_overtime_end.strftime('%H:%M') if attendance.night_overtime_end else '',
+                'overtimeHours': str(attendance.overtime_hours),
+                'hotelExpense': float(attendance.hotel_expense) if attendance.hotel_expense else 0,
+                'shoppingExpense': float(attendance.shopping_expense) if attendance.shopping_expense else 0,
+                'phoneExpense': float(attendance.phone_expense) if attendance.phone_expense else 0,
+                'otherExpense': float(attendance.other_expense) if attendance.other_expense else 0,
+                'otherExpenseDesc': attendance.other_expense_desc or '',
+                'workNote': attendance.work_note or '',
+                'isAutoGenerated': attendance.is_auto_generated,
+                'canBeEdited': attendance.can_be_edited,
+                'timestamp': attendance.created_at.isoformat(),
+                'leaveRequestId': attendance.leave_request.id if attendance.leave_request else None
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'data': data
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Lỗi: {str(e)}'
+        }, status=400)
+
+@csrf_exempt
+@require_http_methods(["POST"])
+@login_required
+def save_attendance_data(request):
+    """API lưu dữ liệu chấm công"""
+    try:
+        from .models import Attendance
+        from datetime import datetime
+        
+        data = json.loads(request.body)
+        date = data.get('date')
+        work_type = data.get('workType')
+        
+        # Kiểm tra dữ liệu bắt buộc
+        if not date or not work_type:
+            return JsonResponse({
+                'success': False,
+                'message': 'Thiếu thông tin bắt buộc'
+            }, status=400)
+        
+        # Chuyển đổi ngày
+        try:
+            attendance_date = datetime.strptime(date, '%Y-%m-%d').date()
+        except ValueError:
+            return JsonResponse({
+                'success': False,
+                'message': 'Định dạng ngày không hợp lệ'
+            }, status=400)
+        
+        # Kiểm tra xem đã có bản ghi cho ngày này chưa
+        existing_record = Attendance.objects.filter(
+            employee=request.user,
+            date=attendance_date
+        ).first()
+        
+        if existing_record:
+            # Cập nhật bản ghi hiện có
+            if not existing_record.can_edit(request.user):
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Bạn không có quyền chỉnh sửa bản ghi này'
+                }, status=403)
+            
+            # Cập nhật thông tin
+            existing_record.work_type = work_type
+            existing_record.construction_name = data.get('constructionName', '')
+            existing_record.ndt_method = data.get('ndtMethod', '')
+            existing_record.paut_meters = float(data.get('pautMeters', 0))
+            existing_record.tofd_meters = float(data.get('tofdMeters', 0))
+            existing_record.day_shift = data.get('dayShift', False)
+            existing_record.night_shift = data.get('nightShift', False)
+            
+            # Xử lý thời gian tăng ca
+            day_overtime = data.get('dayOvertimeEnd', '')
+            if day_overtime:
+                try:
+                    existing_record.day_overtime_end = datetime.strptime(day_overtime, '%H:%M').time()
+                except ValueError:
+                    existing_record.day_overtime_end = None
+            else:
+                existing_record.day_overtime_end = None
+                
+            night_overtime = data.get('nightOvertimeEnd', '')
+            if night_overtime:
+                try:
+                    existing_record.night_overtime_end = datetime.strptime(night_overtime, '%H:%M').time()
+                except ValueError:
+                    existing_record.night_overtime_end = None
+            else:
+                existing_record.night_overtime_end = None
+            
+            existing_record.overtime_hours = float(data.get('overtimeHours', 0))
+            
+            # Xử lý chi phí - chuyển từ boolean sang số tiền
+            hotel_expense = data.get('hotelExpense', 0)
+            shopping_expense = data.get('shoppingExpense', 0)
+            phone_expense = data.get('phoneExpense', 0)
+            other_expense = data.get('otherExpense', 0)
+            
+            # Chuyển đổi sang số tiền nếu là boolean
+            if isinstance(hotel_expense, bool):
+                existing_record.hotel_expense = 200000 if hotel_expense else 0
+            else:
+                existing_record.hotel_expense = float(hotel_expense) if hotel_expense else 0
+                
+            if isinstance(shopping_expense, bool):
+                existing_record.shopping_expense = 0  # Không có giá trị mặc định cho mua sắm
+            else:
+                existing_record.shopping_expense = float(shopping_expense) if shopping_expense else 0
+                
+            if isinstance(phone_expense, bool):
+                existing_record.phone_expense = 0  # Không có giá trị mặc định cho điện thoại
+            else:
+                existing_record.phone_expense = float(phone_expense) if phone_expense else 0
+                
+            if isinstance(other_expense, bool):
+                existing_record.other_expense = 0  # Không có giá trị mặc định cho chi phí khác
+            else:
+                existing_record.other_expense = float(other_expense) if other_expense else 0
+                
+            existing_record.other_expense_desc = data.get('otherExpenseDesc', '')
+            existing_record.work_note = data.get('workNote', '')
+            existing_record.updated_by = request.user
+            existing_record.save()
+            
+            record = existing_record
+        else:
+            # Tạo bản ghi mới
+            # Xử lý chi phí cho bản ghi mới
+            hotel_expense = data.get('hotelExpense', 0)
+            shopping_expense = data.get('shoppingExpense', 0)
+            phone_expense = data.get('phoneExpense', 0)
+            other_expense = data.get('otherExpense', 0)
+            
+            # Chuyển đổi sang số tiền nếu là boolean
+            if isinstance(hotel_expense, bool):
+                hotel_amount = 200000 if hotel_expense else 0
+            else:
+                hotel_amount = float(hotel_expense) if hotel_expense else 0
+                
+            if isinstance(shopping_expense, bool):
+                shopping_amount = 0
+            else:
+                shopping_amount = float(shopping_expense) if shopping_expense else 0
+                
+            if isinstance(phone_expense, bool):
+                phone_amount = 0
+            else:
+                phone_amount = float(phone_expense) if phone_expense else 0
+                
+            if isinstance(other_expense, bool):
+                other_amount = 0
+            else:
+                other_amount = float(other_expense) if other_expense else 0
+            
+            record = Attendance.objects.create(
+                employee=request.user,
+                date=attendance_date,
+                work_type=work_type,
+                construction_name=data.get('constructionName', ''),
+                ndt_method=data.get('ndtMethod', ''),
+                paut_meters=float(data.get('pautMeters', 0)),
+                tofd_meters=float(data.get('tofdMeters', 0)),
+                day_shift=data.get('dayShift', False),
+                night_shift=data.get('nightShift', False),
+                overtime_hours=float(data.get('overtimeHours', 0)),
+                hotel_expense=hotel_amount,
+                shopping_expense=shopping_amount,
+                phone_expense=phone_amount,
+                other_expense=other_amount,
+                other_expense_desc=data.get('otherExpenseDesc', ''),
+                work_note=data.get('workNote', ''),
+                created_by=request.user,
+                updated_by=request.user
+            )
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Lưu chấm công thành công',
+            'record_id': record.id
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Lỗi: {str(e)}'
+        }, status=400)
+
+@csrf_exempt
+@require_http_methods(["DELETE"])
+@login_required
+def delete_attendance_record(request, record_id):
+    """API xóa bản ghi chấm công"""
+    try:
+        from .models import Attendance
+        
+        record = Attendance.objects.get(id=record_id)
+        
+        # Kiểm tra quyền xóa
+        if not record.can_edit(request.user):
+            return JsonResponse({
+                'success': False,
+                'message': 'Bạn không có quyền xóa bản ghi này'
+            }, status=403)
+        
+        record.delete()
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Xóa bản ghi thành công'
+        })
+        
+    except Attendance.DoesNotExist:
+        return JsonResponse({
+            'success': False,
+            'message': 'Không tìm thấy bản ghi'
+        }, status=404)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Lỗi: {str(e)}'
+        }, status=400)
+
+def export_attendance_data(request):
+    """Xuất dữ liệu chấm công theo tháng cho toàn bộ nhân viên"""
+    print(f"Export request from user: {request.user.username}")
+    print(f"User is authenticated: {request.user.is_authenticated}")
+    print(f"User is superuser: {request.user.is_superuser}")
+    
+    if not request.user.is_authenticated:
+        print("User not authenticated")
+        return JsonResponse({'error': 'Unauthorized'}, status=401)
+    
+    # Lấy tháng/năm từ request
+    month = request.GET.get('month')
+    year = request.GET.get('year')
+    
+    print(f"Export parameters: month={month}, year={year}")
+    
+    if not month or not year:
+        print("Missing month or year parameters")
+        return JsonResponse({'error': 'Thiếu tháng hoặc năm'}, status=400)
+    
+    try:
+        month = int(month)
+        year = int(year)
+    except ValueError:
+        return JsonResponse({'error': 'Tháng và năm phải là số'}, status=400)
+    
+    # Tính ngày đầu và cuối tháng
+    start_date = date(year, month, 1)
+    if month == 12:
+        end_date = date(year + 1, 1, 1) - timedelta(days=1)
+    else:
+        end_date = date(year, month + 1, 1) - timedelta(days=1)
+    
+    # Lấy tất cả nhân viên có chấm công trong tháng
+    employees = User.objects.filter(
+        attendances__date__gte=start_date,
+        attendances__date__lte=end_date
+    ).distinct()
+    
+    print(f"Found {employees.count()} employees with attendance data")
+    
+    # Cấu trúc dữ liệu xuất
+    export_data = {
+        "export_info": {
+            "company": "Hitech NDT",
+            "period": f"{month:02d}/{year}",
+            "export_date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "version": "1.0",
+            "total_employees": employees.count()
+        },
+        "employees": {}
+    }
+    
+    # Xử lý từng nhân viên
+    for employee in employees:
+        employee_data = {
+            "info": {
+                "name": employee.get_full_name() or employee.username,
+                "msnv": employee.username,
+                "email": employee.email,
+                "position": getattr(employee.user_profile, 'position', ''),
+                "department": getattr(employee.user_profile, 'department', ''),
+                "phone": getattr(employee.user_profile, 'phone', '')
+            },
+            "attendance": {
+                "days": {},
+                "summary": {
+                    "total_work_days": 0,
+                    "total_office_days": 0,
+                    "total_training_days": 0,
+                    "total_leave_days": 0,
+                    "total_absent_days": 0,
+                    "total_overtime_hours": 0,
+                    "total_expenses": 0,
+                    "hotel_expenses": 0,
+                    "shopping_expenses": 0,
+                    "phone_expenses": 0,
+                    "other_expenses": 0,
+                    "paut_total_meters": 0,
+                    "tofd_total_meters": 0,
+                    "construction_projects": [],
+                    "ndt_methods_used": []
+                }
+            }
+        }
+        
+        # Lấy dữ liệu chấm công của nhân viên trong tháng
+        attendances = Attendance.objects.filter(
+            employee=employee,
+            date__gte=start_date,
+            date__lte=end_date
+        ).order_by('date')
+        
+        # Xử lý từng ngày
+        for attendance in attendances:
+            day_key = f"day_{attendance.date.day:02d}"
+            
+            day_data = {
+                "type": attendance.work_type,
+                "location": attendance.construction_name or "",
+                "method": attendance.ndt_method or "",
+                "paut_meters": float(attendance.paut_meters) if attendance.paut_meters else 0,
+                "tofd_meters": float(attendance.tofd_meters) if attendance.tofd_meters else 0,
+                "day_shift": attendance.day_shift,
+                "night_shift": attendance.night_shift,
+                "day_overtime_end": attendance.day_overtime_end.strftime("%H:%M") if attendance.day_overtime_end else "",
+                "night_overtime_end": attendance.night_overtime_end.strftime("%H:%M") if attendance.night_overtime_end else "",
+                "overtime_hours": float(attendance.overtime_hours) if attendance.overtime_hours else 0,
+                "hotel_expense": float(attendance.hotel_expense) if attendance.hotel_expense else 0,
+                "shopping_expense": float(attendance.shopping_expense) if attendance.shopping_expense else 0,
+                "phone_expense": float(attendance.phone_expense) if attendance.phone_expense else 0,
+                "other_expense": float(attendance.other_expense) if attendance.other_expense else 0,
+                "other_expense_desc": attendance.other_expense_desc or "",
+                "note": attendance.work_note or "",
+                "created_at": attendance.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+                "updated_at": attendance.updated_at.strftime("%Y-%m-%d %H:%M:%S")
+            }
+            
+            employee_data["attendance"]["days"][day_key] = day_data
+            
+            # Cập nhật summary
+            if attendance.work_type == 'W':
+                employee_data["attendance"]["summary"]["total_work_days"] += 1
+                if attendance.construction_name and attendance.construction_name not in employee_data["attendance"]["summary"]["construction_projects"]:
+                    employee_data["attendance"]["summary"]["construction_projects"].append(attendance.construction_name)
+                if attendance.ndt_method and attendance.ndt_method not in employee_data["attendance"]["summary"]["ndt_methods_used"]:
+                    employee_data["attendance"]["summary"]["ndt_methods_used"].append(attendance.ndt_method)
+                
+                # Thống kê số mét vượt PAUT và TOFD
+                if attendance.paut_meters and attendance.paut_meters > 0:
+                    if "paut_total_meters" not in employee_data["attendance"]["summary"]:
+                        employee_data["attendance"]["summary"]["paut_total_meters"] = 0
+                    employee_data["attendance"]["summary"]["paut_total_meters"] += float(attendance.paut_meters)
+                
+                if attendance.tofd_meters and attendance.tofd_meters > 0:
+                    if "tofd_total_meters" not in employee_data["attendance"]["summary"]:
+                        employee_data["attendance"]["summary"]["tofd_total_meters"] = 0
+                    employee_data["attendance"]["summary"]["tofd_total_meters"] += float(attendance.tofd_meters)
+            elif attendance.work_type == 'O':
+                employee_data["attendance"]["summary"]["total_office_days"] += 1
+            elif attendance.work_type == 'T':
+                employee_data["attendance"]["summary"]["total_training_days"] += 1
+            elif attendance.work_type == 'P':
+                employee_data["attendance"]["summary"]["total_leave_days"] += 1
+            elif attendance.work_type == 'N':
+                employee_data["attendance"]["summary"]["total_absent_days"] += 1
+            
+            # Cập nhật thống kê khác
+            employee_data["attendance"]["summary"]["total_overtime_hours"] += float(attendance.overtime_hours) if attendance.overtime_hours else 0
+            
+            # Tính tổng chi phí
+            total_expenses = (float(attendance.hotel_expense or 0) + 
+                            float(attendance.shopping_expense or 0) + 
+                            float(attendance.phone_expense or 0) + 
+                            float(attendance.other_expense or 0))
+            employee_data["attendance"]["summary"]["total_expenses"] += total_expenses
+            
+            # Cập nhật từng loại chi phí
+            if attendance.hotel_expense and attendance.hotel_expense > 0:
+                employee_data["attendance"]["summary"]["hotel_expenses"] += float(attendance.hotel_expense)
+            if attendance.shopping_expense and attendance.shopping_expense > 0:
+                employee_data["attendance"]["summary"]["shopping_expenses"] += float(attendance.shopping_expense)
+            if attendance.phone_expense and attendance.phone_expense > 0:
+                employee_data["attendance"]["summary"]["phone_expenses"] += float(attendance.phone_expense)
+            if attendance.other_expense and attendance.other_expense > 0:
+                employee_data["attendance"]["summary"]["other_expenses"] += float(attendance.other_expense)
+        
+        # Tính toán thêm
+        total_days = (employee_data["attendance"]["summary"]["total_work_days"] + 
+                     employee_data["attendance"]["summary"]["total_office_days"] + 
+                     employee_data["attendance"]["summary"]["total_training_days"])
+        
+        employee_data["attendance"]["summary"]["total_working_days"] = total_days
+        employee_data["attendance"]["summary"]["total_days_in_month"] = end_date.day
+        
+        export_data["employees"][employee.username] = employee_data
+    
+    # Trả về JSON
+    json_content = json.dumps(export_data, ensure_ascii=False, indent=2)
+    print(f"Generated JSON content length: {len(json_content)} characters")
+    
+    response = HttpResponse(
+        json_content,
+        content_type='application/json'
+    )
+    response['Content-Disposition'] = f'attachment; filename="chamcong_{month:02d}_{year}.json"'
+    response['Access-Control-Allow-Origin'] = '*'
+    response['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
+    response['Access-Control-Allow-Headers'] = 'Content-Type, X-Requested-With'
+    
+    print("Export completed successfully")
+    return response
+
+@require_http_methods(["GET"])
+@login_required
+def get_handover_candidates(request):
+    """Trả về danh sách người có thể bàn giao công việc (active users, loại trừ chính mình).
+    Hỗ trợ tìm kiếm q và giới hạn limit.
+    """
+    try:
+        query = (request.GET.get('q') or '').strip()
+        try:
+            limit = int(request.GET.get('limit', '50'))
+        except ValueError:
+            limit = 50
+        
+        users_qs = (User.objects.select_related('user_profile')
+                    .filter(is_active=True)
+                    .exclude(id=request.user.id))
+        
+        if query:
+            users_qs = users_qs.filter(
+                Q(username__icontains=query) |
+                Q(first_name__icontains=query) |
+                Q(last_name__icontains=query) |
+                Q(email__icontains=query)
+            )
+        
+        users_qs = users_qs.order_by('first_name', 'last_name', 'username')[:limit]
+        
+        users = [{
+            'id': u.id,
+            'username': u.username,
+            'full_name': u.get_full_name() or u.username,
+            'email': u.email,
+            'role': getattr(u.user_profile, 'role', '')
+        } for u in users_qs]
+        
+        return JsonResponse({'success': True, 'users': users})
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': f'Lỗi: {str(e)}'}, status=400)
