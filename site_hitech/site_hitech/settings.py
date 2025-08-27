@@ -219,6 +219,23 @@ if not DEBUG:
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# Cache configuration - File-based cache thay vì Redis để tiết kiệm RAM
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.filebased.FileBasedCache',
+        'LOCATION': '/var/tmp/django_cache',
+        'TIMEOUT': 3600,  # Cache 1 giờ
+        'OPTIONS': {
+            'MAX_ENTRIES': 1000,  # Giới hạn số file cache
+            'CULL_FREQUENCY': 3,  # Xóa 1/3 cache khi đạt MAX_ENTRIES
+        }
+    }
+}
+
+# Session configuration - Lưu session vào database thay vì cache/redis
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+SESSION_COOKIE_AGE = 86400  # Session hết hạn sau 1 ngày
+
 # Cấu hình URL đăng nhập
 LOGIN_URL = '/admin/login/'
 
