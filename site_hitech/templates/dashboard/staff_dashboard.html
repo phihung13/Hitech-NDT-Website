@@ -769,6 +769,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 {% if user.user_profile.role == 'admin' %}Quản trị viên
                 {% elif user.user_profile.role == 'manager' %}Quản lý
                 {% else %}Nhân viên{% endif %}
+                {% if user.user_profile.msnv %}
+                    • MSNV: {{ user.user_profile.msnv }}
+                {% endif %}
                 • Hôm nay: {% now "l, d/m/Y" %}
             </p>
         </div>

@@ -87,6 +87,7 @@ urlpatterns = [
     path('dashboard/', views.dashboard_overview, name='dashboard_overview'),
     path('dashboard/projects/', views.projects_management, name='projects_management'),
     path('dashboard/staff/', views.staff_management, name='staff_management'),
+    path('dashboard/staff/export/', views.export_staff_data, name='export_staff_data'),
     path('dashboard/attendance/', views.attendance_management, name='attendance_management'),
     path('dashboard/equipment/', views.equipment_management, name='equipment_management'),
     path('dashboard/documents/', views.documents_management, name='documents_management'),

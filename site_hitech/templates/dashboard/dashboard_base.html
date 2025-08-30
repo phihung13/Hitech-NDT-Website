@@ -568,6 +568,9 @@
                             {% if user.user_profile.role == 'admin' %}Quản trị viên
                             {% elif user.user_profile.role == 'manager' %}Quản lý
                             {% else %}Nhân viên{% endif %}
+                            {% if user.user_profile.msnv %}
+                                • MSNV: {{ user.user_profile.msnv }}
+                            {% endif %}
                         </div>
                     </div>
                 </div>
@@ -789,6 +792,7 @@ window.DASHBOARD_USER = {
     username: '{{ user.username }}',
     fullName: '{{ user.get_full_name|default:user.username }}',
     role: '{% if user.user_profile.role %}{{ user.user_profile.role }}{% else %}staff{% endif %}',
+    msnv: '{% if user.user_profile.msnv %}{{ user.user_profile.msnv }}{% else %}{% endif %}',
     email: '{{ user.email }}'
 };
 

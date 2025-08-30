@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QTableWidget, QTableWidgetItem, QHeaderView, QGroupBox, QHBoxLayout, QSizePolicy, QFrame, QPushButton, QScrollArea
 from PyQt5.QtGui import QFont, QColor, QIcon
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QTimer
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 import numpy as np
@@ -19,6 +19,11 @@ class TabTongLuong(QWidget):
         self.salary_data_file = "data/salary_data.json"
         self.salary_data = self.load_salary_data()
         
+        # Timer để tự động ẩn thông báo sau 5 giây
+        self.notification_timer = QTimer()
+        self.notification_timer.setSingleShot(True)
+        self.notification_timer.timeout.connect(self.hide_notification)
+        
         self.init_ui()
 
     def init_ui(self):
@@ -27,12 +32,12 @@ class TabTongLuong(QWidget):
         main_layout.setSpacing(10)
         main_layout.setContentsMargins(10, 10, 10, 10)
 
-        # Tiêu đề nổi bật (cố định ở trên)
-        title = QLabel("TỔNG CHI PHÍ TIỀN LƯƠNG THÁNG 08.2025")
-        title.setFont(QFont("Times New Roman", 22, QFont.Bold))
-        title.setAlignment(Qt.AlignCenter)
-        title.setStyleSheet("color: #007bff; margin-bottom: 10px; padding: 10px; background: white; border-radius: 8px;")
-        main_layout.addWidget(title)
+        # Tiêu đề nổi bật (tự động lấy tháng từ file import)
+        self.title = QLabel("TỔNG CHI PHÍ TIỀN LƯƠNG THÁNG 08.2025")
+        self.title.setFont(QFont("Times New Roman", 22, QFont.Bold))
+        self.title.setAlignment(Qt.AlignCenter)
+        self.title.setStyleSheet("color: #007bff; margin-bottom: 10px; padding: 10px; background: white; border-radius: 8px;")
+        main_layout.addWidget(self.title)
 
         # Tạo Scroll Area
         scroll_area = QScrollArea()
@@ -351,14 +356,24 @@ class TabTongLuong(QWidget):
             self.status_label.setText("🗑️ Đã xóa hết dữ liệu lương")
             self.status_label.setStyleSheet("color: #dc3545; padding: 10px; background: #f8d7da; border-radius: 8px;")
             
+            # Bắt đầu timer để tự động ẩn thông báo sau 5 giây
+            self.notification_timer.start(5000)  # 5000ms = 5 giây
+            
             print("=== ĐÃ XÓA HẾT DỮ LIỆU LƯƠNG ===")
             
         except Exception as e:
             print(f"Lỗi khi xóa dữ liệu: {e}")
 
+    def hide_notification(self):
+        """Ẩn thông báo và trở về trạng thái mặc định"""
+        self.status_label.setText("📋 Chưa có dữ liệu lương thực tế. Vui lòng tính toán lương trong tab Phiếu lương trước.")
+        self.status_label.setStyleSheet("color: #6c757d; padding: 10px; background: #f8f9fa; border-radius: 8px;")
+
     def refresh_data(self):
         """Làm mới dữ liệu từ file"""
         self.salary_data = self.load_salary_data()
+        # Cập nhật tiêu đề với tháng tự động
+        self.update_title()
         self.update_display()
         
         if self.salary_data:
@@ -619,9 +634,39 @@ class TabTongLuong(QWidget):
         self.summary_labels["Tổng KPI"].setText(f"{total_kpi:,.0f} VNĐ")
         self.summary_labels["Tổng thực nhận"].setText(f"{total_salary:,.0f} VNĐ")
 
+    def detect_month_from_data(self):
+        """Tự động detect tháng từ dữ liệu chấm công"""
+        try:
+            if not self.data_chamcong:
+                return "08.2025"  # Default nếu không có dữ liệu
+            
+            # Tìm tháng từ dữ liệu chấm công
+            for employee_data in self.data_chamcong.values():
+                if 'cham_cong' in employee_data:
+                    for date_str in employee_data['cham_cong'].keys():
+                        # Parse date string (format: YYYY-MM-DD)
+                        if '-' in date_str:
+                            parts = date_str.split('-')
+                            if len(parts) >= 2:
+                                year = parts[0]
+                                month = parts[1]
+                                return f"{month}.{year}"
+            
+            return "08.2025"  # Default nếu không parse được
+        except Exception as e:
+            print(f"Lỗi detect tháng: {e}")
+            return "08.2025"
+
+    def update_title(self):
+        """Cập nhật tiêu đề với tháng tự động"""
+        month_year = self.detect_month_from_data()
+        self.title.setText(f"TỔNG CHI PHÍ TIỀN LƯƠNG THÁNG {month_year}")
+
     def update_data(self, data_chamcong):
         """Cập nhật dữ liệu chấm công (không tự động tính toán)"""
         self.data_chamcong = data_chamcong
+        # Cập nhật tiêu đề với tháng tự động
+        self.update_title()
         # Không tự động tính toán gì cả, chỉ cập nhật hiển thị
         self.update_display()
 

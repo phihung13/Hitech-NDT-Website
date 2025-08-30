@@ -345,7 +345,17 @@ def staff_login(request):
 @staff_required
 def staff_dashboard(request):
     """Dashboard nội bộ cho nhân viên"""
-    profile = request.user.user_profile
+    # Đảm bảo UserProfile tồn tại
+    profile, created = UserProfile.objects.get_or_create(
+        user=request.user,
+        defaults={
+            'role': 'staff',
+            'msnv': f'HTNV-{request.user.id:03d}'  # Tạo MSNV mặc định
+        }
+    )
+    
+    if created:
+        messages.info(request, f'Đã tạo hồ sơ người dùng với MSNV: {profile.msnv}')
     
     # Thống kê cơ bản
     total_posts = Post.objects.count()
@@ -727,11 +737,17 @@ def report_generate(request):
 @login_required
 def dashboard_overview(request):
     """Trang tổng quan dashboard chính"""
-    # Sử dụng logic giống staff_dashboard
-    profile = getattr(request.user, 'user_profile', None)
-    if not profile:
-        messages.error(request, 'Bạn cần có hồ sơ người dùng để truy cập dashboard.')
-        return redirect('home')
+    # Đảm bảo UserProfile tồn tại
+    profile, created = UserProfile.objects.get_or_create(
+        user=request.user,
+        defaults={
+            'role': 'staff',
+            'msnv': f'HTNV-{request.user.id:03d}'  # Tạo MSNV mặc định
+        }
+    )
+    
+    if created:
+        messages.info(request, f'Đã tạo hồ sơ người dùng với MSNV: {profile.msnv}')
     
     # Thống kê cơ bản
     total_posts = Post.objects.count()
@@ -861,7 +877,7 @@ def projects_management(request):
     }
     return render(request, 'erp_modules/projects.html', context)
 
-@login_required  
+@login_required
 def staff_management(request):
     """Trang quản lý nhân viên - Chỉ Manager/Admin"""
     profile = getattr(request.user, 'user_profile', None)
@@ -886,6 +902,50 @@ def staff_management(request):
         'coming_soon': True
     }
     return render(request, 'erp_modules/staff.html', context)
+
+@login_required
+def export_staff_data(request):
+    """API xuất dữ liệu nhân viên với MSNV cho app"""
+    profile = getattr(request.user, 'user_profile', None)
+    
+    # Kiểm tra quyền truy cập
+    if not profile or profile.role not in ['admin', 'manager']:
+        return JsonResponse({'error': 'Không có quyền truy cập'}, status=403)
+    
+    try:
+        # Lấy tất cả nhân viên
+        staff_profiles = UserProfile.objects.select_related('user').all()
+        
+        staff_data = []
+        for profile in staff_profiles:
+            staff_info = {
+                'name': profile.user.get_full_name() or profile.user.username,
+                'msnv': profile.msnv or '',
+                'cccd': '',  # Có thể thêm trường CCCD sau
+                'phone': profile.phone or '',
+                'birth_date': '',  # Có thể thêm trường ngày sinh sau
+                'hometown': '',  # Có thể thêm trường quê quán sau
+                'position': profile.position or '',
+                'department': profile.department or '',
+                'education': '',  # Có thể thêm trường học vấn sau
+                'certificates': profile.certificates or '',
+                'dependents': '',  # Có thể thêm trường người phụ thuộc sau
+                'bank_account': '',  # Có thể thêm trường tài khoản ngân hàng sau
+                'bank_name': ''  # Có thể thêm trường tên ngân hàng sau
+            }
+            staff_data.append(list(staff_info.values()))
+        
+        # Format giống với file nhanvien.json của app
+        export_data = {
+            'timestamp': timezone.now().isoformat(),
+            'total_records': len(staff_data),
+            'data': staff_data
+        }
+        
+        return JsonResponse(export_data, safe=False)
+        
+    except Exception as e:
+        return JsonResponse({'error': f'Lỗi xuất dữ liệu: {str(e)}'}, status=500)
 
 @login_required
 def attendance_management(request):

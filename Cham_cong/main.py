@@ -35,10 +35,13 @@ class MainWindow(QMainWindow):
         self.tabs = QTabWidget()
         self.setCentralWidget(self.tabs)
 
-        self.tab_nhanvien = TabNhanVien()
+        # Khởi tạo tab quy định lương trước (để có thể truyền vào tab nhân viên)
+        self.tab_quydinh = TabQuyDinhLuong()
+        
+        # Khởi tạo tab nhân viên với callback đến tab quy định lương
+        self.tab_nhanvien = TabNhanVien(on_nhanvien_changed=self.tab_quydinh.refresh_data)
         self.tabs.addTab(self.tab_nhanvien, "Quản lý con người")
         
-        self.tab_quydinh = TabQuyDinhLuong()
         self.tabs.addTab(self.tab_quydinh, "Quy định lương")
         
         # Tạo tab Bảng công trước

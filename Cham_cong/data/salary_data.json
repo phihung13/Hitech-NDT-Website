@@ -1,4 +1,18 @@
 {
+  "Lê Phát Đạt": {
+    "msnv": "HTNV-002",
+    "luong_co_ban": 8518519.0,
+    "tong_them_gio": 852273.0,
+    "tong_phu_cap": 1600021.0,
+    "tong_kpi": 0.0,
+    "tong_thu_nhap": 0,
+    "bao_hiem": 557256.0,
+    "thue_tncn": 0.0,
+    "tam_ung": 0,
+    "vi_pham": 0,
+    "thuc_nhan": 10713557.0,
+    "month_year": "Tháng 1/2025"
+  },
   "Nguyễn Phi Hùng": {
     "msnv": "HTNV-008",
     "luong_co_ban": 12000000.0,
@@ -11,34 +25,6 @@
     "tam_ung": 0,
     "vi_pham": 0,
     "thuc_nhan": 11420607.0,
-    "month_year": "Tháng 8/2025"
-  },
-  "Lê Phát Đạt": {
-    "msnv": "HTNV-002",
-    "luong_co_ban": 1538462.0,
-    "tong_them_gio": 0.0,
-    "tong_phu_cap": 230000.0,
-    "tong_kpi": 0.0,
-    "tong_thu_nhap": 0,
-    "bao_hiem": 557256.0,
-    "thue_tncn": 0.0,
-    "tam_ung": 0,
-    "vi_pham": 0,
-    "thuc_nhan": 1199389.0,
-    "month_year": "Tháng 8/2025"
-  },
-  "Phan Hoàng Diệp": {
-    "msnv": "HTNV-001",
-    "luong_co_ban": 3846154.0,
-    "tong_them_gio": 681818.0,
-    "tong_phu_cap": 1244538.0,
-    "tong_kpi": 3000000.0,
-    "tong_thu_nhap": 0,
-    "bao_hiem": 557256.0,
-    "thue_tncn": 0.0,
-    "tam_ung": 0,
-    "vi_pham": 0,
-    "thuc_nhan": 8315254.0,
-    "month_year": "Tháng 8/2025"
+    "month_year": "Tháng 7/2025"
   }
 }

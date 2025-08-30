@@ -1,0 +1,59 @@
+{
+  "msnv_to_name": {
+    "HTNV-001": "Phan Hoàng Diệp",
+    "HTNV-002": "Lê Phát Đạt",
+    "HTNV-008": "Nguyễn Phi Hùng"
+  },
+  "name_to_msnv": {
+    "Phan Hoàng Diệp": "HTNV-001",
+    "Lê Phát Đạt": "HTNV-002",
+    "Nguyễn Phi Hùng": "HTNV-008"
+  },
+  "employee_data": {
+    "HTNV-001": {
+      "name": "Phan Hoàng Diệp",
+      "msnv": "HTNV-001",
+      "cccd": "052087009516",
+      "phone": "0947072489",
+      "birth_date": "17/6/1987",
+      "hometown": "Bình Định",
+      "position": "Technical Manager",
+      "department": "NDT",
+      "education": "Đại học",
+      "certificates": "ISO 9712 Level 3 (UT, RT, MT, PT, PAUT, TOFD, VT)",
+      "dependents": "1",
+      "bank_account": "",
+      "bank_name": ""
+    },
+    "HTNV-002": {
+      "name": "Lê Phát Đạt",
+      "msnv": "HTNV-002",
+      "cccd": "052094015900",
+      "phone": "0399888137",
+      "birth_date": "20/7/1994",
+      "hometown": "Bình Định",
+      "position": "Site Manager",
+      "department": "NDT",
+      "education": "Cao Đẳng",
+      "certificates": "ISO 9712 Level 2 (UT, PT, MT, VT, RT)",
+      "dependents": "0",
+      "bank_account": "1234",
+      "bank_name": ""
+    },
+    "HTNV-008": {
+      "name": "Nguyễn Phi Hùng",
+      "msnv": "HTNV-008",
+      "cccd": "040202023514",
+      "phone": "0962681707",
+      "birth_date": "13/10/2002",
+      "hometown": "Nghệ An",
+      "position": "Trainee",
+      "department": "R&D",
+      "education": "Đại Học",
+      "certificates": "",
+      "dependents": "0",
+      "bank_account": "1123456788",
+      "bank_name": "MB BANK"
+    }
+  }
+}

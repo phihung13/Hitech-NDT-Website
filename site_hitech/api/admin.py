@@ -271,12 +271,18 @@ class CommentAdmin(admin.ModelAdmin):
 
 @admin.register(UserProfile)
 class UserProfileAdmin(admin.ModelAdmin):
-    list_display = ['user', 'role', 'department', 'phone']
+    list_display = ['user', 'msnv', 'role', 'department', 'phone']
     list_filter = ['role', 'department']
-    search_fields = ['user__username', 'user__email', 'department']
+    search_fields = ['user__username', 'user__email', 'department', 'msnv']
     fieldsets = [
         ('Thông tin cơ bản', {
-            'fields': ['user', 'role', 'department', 'phone', 'avatar', 'bio']
+            'fields': ['user', 'msnv', 'role', 'department', 'phone', 'avatar', 'bio']
+        }),
+        ('Thông tin chuyên môn', {
+            'fields': ['position', 'certificates', 'skills', 'current_project', 'project_position']
+        }),
+        ('Thông tin liên hệ khẩn cấp', {
+            'fields': ['emergency_contact', 'emergency_phone', 'join_date']
         }),
         ('Quyền hạn bài viết', {
             'fields': ['can_create_posts', 'can_edit_all_posts', 'can_delete_posts', 'can_publish_posts']

@@ -449,6 +449,7 @@ class UserProfile(models.Model):
     
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='user_profile')
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='staff', verbose_name='Vai trò')
+    msnv = models.CharField(max_length=20, blank=True, null=True, verbose_name='Mã số nhân viên', help_text='Mã số nhân viên duy nhất')
     department = models.CharField(max_length=100, blank=True, null=True, verbose_name='Phòng ban')
     phone = models.CharField(max_length=20, blank=True, null=True, verbose_name='Số điện thoại')
     avatar = models.ImageField(upload_to='avatars/', blank=True, null=True, verbose_name='Ảnh đại diện')
@@ -512,6 +513,26 @@ class UserProfile(models.Model):
             self.can_edit_all_courses = True
             self.can_delete_courses = True
             self.can_manage_users = False  # Chỉ admin mới quản lý user
+            self.can_view_analytics = True
+            self.can_manage_settings = False
+            self.user.is_staff = True
+        elif self.role == 'company':
+            self.can_edit_all_posts = True
+            self.can_delete_posts = True
+            self.can_publish_posts = True
+            self.can_edit_all_courses = True
+            self.can_delete_courses = True
+            self.can_manage_users = True
+            self.can_view_analytics = True
+            self.can_manage_settings = True
+            self.user.is_staff = True
+        elif self.role == 'team_lead':
+            self.can_edit_all_posts = False
+            self.can_delete_posts = False
+            self.can_publish_posts = False
+            self.can_edit_all_courses = False
+            self.can_delete_courses = False
+            self.can_manage_users = False
             self.can_view_analytics = True
             self.can_manage_settings = False
             self.user.is_staff = True

@@ -410,39 +410,79 @@ class TabQuyDinhLuong(QWidget):
             QMessageBox.critical(self, "Lỗi", f"Không thể xóa quy định lương: {str(e)}")
 
     def hien_thi_luong(self, row, col):
-        luong = self.ds_luong_nv[row]
-        # Tương thích dữ liệu cũ (13 cột, có PC-Năng suất ở index 8): bỏ cột này
         try:
-            if isinstance(luong, list) and len(luong) >= 13:
-                # Tạo bản sao để không sửa trực tiếp nguồn dữ liệu
-                luong = luong.copy()
-                luong.pop(8)  # Bỏ "PC-Năng suất" cũ
-        except Exception:
-            pass
-        self.inputMaNV.setText(luong[0])
-        self.inputHoTen.setText(luong[1])
-        self.inputCCCD.setText(luong[2])
-        self.inputLuongCB.setText(luong[3])
-        
-        # Hiển thị phụ cấp (đúng index theo header bảng)
-        if len(luong) > 4:
-            self.inputPCCongTrinh.setText(luong[4])  # PC-Công trình
-        if len(luong) > 5:
-            self.inputPCChucDanh.setText(luong[5])  # PC-Chức danh
-        if len(luong) > 6:
-            self.inputPCXang.setText(luong[6])      # PC-Xăng
-        if len(luong) > 7:
-            self.inputPCDienThoai.setText(luong[7]) # PC-Điện thoại
-        if len(luong) > 8 - 1:
-            self.inputPCNangSuatPAUT.setText(luong[8])  # PC-Năng suất PAUT (mới)
-        if len(luong) > 9 - 1:
-            self.inputPCNangSuatTOFD.setText(luong[9])  # PC-Năng suất TOFD (mới)
-        
-        # Hiển thị trạng thái và BHXH
-        if len(luong) > 10:
-            self.inputTrangThai.setText(luong[10])
-        if len(luong) > 11:
-            self.inputBaoHiem.setText(luong[11])
+            # Kiểm tra row có hợp lệ không
+            if row < 0 or row >= len(self.ds_luong_nv):
+                print(f"Lỗi: Row {row} không hợp lệ, tổng số quy định lương: {len(self.ds_luong_nv)}")
+                return
+            
+            luong = self.ds_luong_nv[row]
+            
+            # Kiểm tra luong có phải là list không
+            if not isinstance(luong, list):
+                print(f"Lỗi: Dữ liệu lương tại row {row} không phải là list")
+                return
+            
+            # Tương thích dữ liệu cũ (13 cột, có PC-Năng suất ở index 8): bỏ cột này
+            try:
+                if len(luong) >= 13:
+                    # Tạo bản sao để không sửa trực tiếp nguồn dữ liệu
+                    luong = luong.copy()
+                    luong.pop(8)  # Bỏ "PC-Năng suất" cũ
+            except Exception:
+                pass
+            
+            # Hiển thị thông tin với kiểm tra an toàn
+            self.inputMaNV.setText(str(luong[0]) if len(luong) > 0 and luong[0] else "")
+            self.inputHoTen.setText(str(luong[1]) if len(luong) > 1 and luong[1] else "")
+            self.inputCCCD.setText(str(luong[2]) if len(luong) > 2 and luong[2] else "")
+            self.inputLuongCB.setText(str(luong[3]) if len(luong) > 3 and luong[3] else "")
+            
+            # Hiển thị phụ cấp (đúng index theo header bảng)
+            if len(luong) > 4:
+                self.inputPCCongTrinh.setText(str(luong[4]))  # PC-Công trình
+            else:
+                self.inputPCCongTrinh.clear()
+                
+            if len(luong) > 5:
+                self.inputPCChucDanh.setText(str(luong[5]))  # PC-Chức danh
+            else:
+                self.inputPCChucDanh.clear()
+                
+            if len(luong) > 6:
+                self.inputPCXang.setText(str(luong[6]))      # PC-Xăng
+            else:
+                self.inputPCXang.clear()
+                
+            if len(luong) > 7:
+                self.inputPCDienThoai.setText(str(luong[7])) # PC-Điện thoại
+            else:
+                self.inputPCDienThoai.clear()
+                
+            if len(luong) > 8:
+                self.inputPCNangSuatPAUT.setText(str(luong[8]))  # PC-Năng suất PAUT (mới)
+            else:
+                self.inputPCNangSuatPAUT.clear()
+                
+            if len(luong) > 9:
+                self.inputPCNangSuatTOFD.setText(str(luong[9]))  # PC-Năng suất TOFD (mới)
+            else:
+                self.inputPCNangSuatTOFD.clear()
+            
+            # Hiển thị trạng thái và BHXH
+            if len(luong) > 10:
+                self.inputTrangThai.setText(str(luong[10]))
+            else:
+                self.inputTrangThai.clear()
+                
+            if len(luong) > 11:
+                self.inputBaoHiem.setText(str(luong[11]))
+            else:
+                self.inputBaoHiem.clear()
+                
+        except Exception as e:
+            print(f"Lỗi khi hiển thị thông tin lương tại row {row}: {str(e)}")
+            QMessageBox.warning(self, "Lỗi", f"Không thể hiển thị thông tin lương: {str(e)}")
 
     def capnhat_bang_luong(self):
         self.tableLuong.setRowCount(0)
@@ -554,10 +594,27 @@ class TabQuyDinhLuong(QWidget):
             QMessageBox.warning(self, "Chưa chọn", "Vui lòng chọn dự án để xóa")
 
     def hien_thi_phucap(self, row, col):
-        pc = self.ds_phu_cap_ct[row]
-        self.inputLoaiDuAn.setText(pc[0])
-        self.inputDonGiaLe.setText(pc[1])
-        self.inputChiPhi.setText(pc[2])
+        try:
+            # Kiểm tra row có hợp lệ không
+            if row < 0 or row >= len(self.ds_phu_cap_ct):
+                print(f"Lỗi: Row {row} không hợp lệ, tổng số phụ cấp: {len(self.ds_phu_cap_ct)}")
+                return
+            
+            pc = self.ds_phu_cap_ct[row]
+            
+            # Kiểm tra pc có phải là list không
+            if not isinstance(pc, list):
+                print(f"Lỗi: Dữ liệu phụ cấp tại row {row} không phải là list")
+                return
+            
+            # Hiển thị thông tin với kiểm tra an toàn
+            self.inputLoaiDuAn.setText(str(pc[0]) if len(pc) > 0 and pc[0] else "")
+            self.inputDonGiaLe.setText(str(pc[1]) if len(pc) > 1 and pc[1] else "")
+            self.inputChiPhi.setText(str(pc[2]) if len(pc) > 2 and pc[2] else "")
+            
+        except Exception as e:
+            print(f"Lỗi khi hiển thị thông tin phụ cấp tại row {row}: {str(e)}")
+            QMessageBox.warning(self, "Lỗi", f"Không thể hiển thị thông tin phụ cấp: {str(e)}")
 
     def capnhat_bang_phucap(self):
         self.tablePhucap.setRowCount(0)
@@ -590,6 +647,9 @@ class TabQuyDinhLuong(QWidget):
             
             # Reload dữ liệu từ data manager
             self.ds_luong_nv, self.ds_phu_cap_ct = self.data_manager.load_quydinh_luong()
+            
+            # Cập nhật danh sách nhân viên (quan trọng!)
+            self.capnhat_combo_nhanvien()
             
             # Refresh bảng
             self.capnhat_bang_luong()

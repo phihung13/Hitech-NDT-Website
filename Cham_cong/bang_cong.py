@@ -13,6 +13,7 @@ from datetime import datetime
 from data_manager import DataManager
 from company_matcher import CompanyMatcher
 from new_company_dialog import NewCompanyDialog
+from employee_mapper import EmployeeMapper
 
 class EmployeeSelectionDialog(QDialog):
     """Dialog để chọn nhân viên hiển thị trong bảng công"""
@@ -422,7 +423,8 @@ class TabBangCong(QWidget):
     def __init__(self, on_data_changed=None, on_quydinh_changed=None):
         super().__init__()
         self.data_manager = DataManager()  # Thêm data_manager
-        self.data_chamcong = {}  # Dictionary lưu dữ liệu chấm công
+        self.employee_mapper = EmployeeMapper()  # Thêm employee mapper
+        self.data_chamcong = {}  # Dictionary lưu dữ liệu chấm công (sử dụng MSNV làm key)
         self.current_month = datetime.now().month
         self.current_year = datetime.now().year
         self.is_data_imported = False  # Trạng thái đã import dữ liệu
@@ -430,7 +432,9 @@ class TabBangCong(QWidget):
         self.on_data_changed = on_data_changed
         self.on_quydinh_changed = on_quydinh_changed  # Callback để refresh quy định lương
         self.selected_employees = set()  # Set nhân viên được chọn để hiển thị
+        self.sunday_columns = []  # Danh sách các cột chủ nhật để tô màu
         self.load_selected_employees()  # Tải danh sách nhân viên đã chọn
+        self.load_employee_mapping()  # Load mapping nhân viên
         self.init_ui()
     
     def load_selected_employees(self):
@@ -463,6 +467,31 @@ class TabBangCong(QWidget):
                 json.dump(data, f, ensure_ascii=False, indent=2)
         except Exception as e:
             print(f"Lỗi lưu danh sách nhân viên: {e}")
+    
+    def load_employee_mapping(self):
+        """Load mapping nhân viên từ dữ liệu nhân viên"""
+        try:
+            # Load mapping từ file nếu có
+            self.employee_mapper.load_mapping()
+            
+            # Cập nhật mapping từ dữ liệu nhân viên hiện tại
+            nhanvien_data = self.data_manager.load_nhanvien()
+            self.employee_mapper.load_from_nhanvien_data(nhanvien_data)
+            
+            # Lưu mapping mới
+            self.employee_mapper.save_mapping()
+            
+            print(f"Đã load mapping cho {len(self.employee_mapper.get_all_msnv())} nhân viên")
+        except Exception as e:
+            print(f"Lỗi load employee mapping: {e}")
+    
+    def refresh_employee_mapping(self):
+        """Refresh mapping nhân viên khi có thay đổi"""
+        try:
+            self.load_employee_mapping()
+            print("Đã refresh employee mapping")
+        except Exception as e:
+            print(f"Lỗi refresh employee mapping: {e}")
     
     def init_ui(self):
         main_layout = QVBoxLayout(self)
@@ -1111,26 +1140,83 @@ class TabBangCong(QWidget):
                     if employee_name not in self.data_chamcong:
                         self.data_chamcong[employee_name] = {}
                     
-                    # Import dữ liệu các ngày
+                    # Import dữ liệu các ngày (format cũ cho bảng công)
                     days_data = {}
                     for i in range(1, 32):
                         day_value = row.get(f"ngay_{i}", "").strip()
                         if day_value:
                             days_data[f"day_{i}"] = day_value
                     
+                    # Tạo days_detail (format mới cho phiếu lương)
+                    days_detail = {}
+                    
+                    # Lấy các thông tin tổng từ CSV
+                    total_ot_150 = float(row.get('ot_150', 0) or 0)
+                    total_cn_200 = float(row.get('cn_200', 0) or 0)
+                    total_le_300 = float(row.get('le_300', 0) or 0)
+                    total_ns_ut = float(row.get('ns_ut', 0) or 0)
+                    total_ns_paut = float(row.get('ns_paut', 0) or 0)
+                    total_ns_tofd = float(row.get('ns_tofd', 0) or 0)
+                    total_cp_mua_sam = float(row.get('cp_mua_sam', 0) or 0)
+                    total_cp_khach_san = float(row.get('cp_khach_san', 0) or 0)
+                    total_pc_di_lai = float(row.get('pc_di_lai', 0) or 0)
+                    
+                    # Đếm số ngày làm việc để phân bổ
+                    working_days = sum(1 for i in range(1, 32) if row.get(f"ngay_{i}", "").strip() in ['W', 'O', 'T'])
+                    
+                    # Tạo days_detail từ dữ liệu CSV
+                    for i in range(1, 32):
+                        day_value = row.get(f"ngay_{i}", "").strip()
+                        if day_value:
+                            day_data = {
+                                'type': day_value,
+                                'overtime_hours': 0,
+                                'location': '',
+                                'method': '',
+                                'phone_expense': 0,
+                                'hotel_expense': 0,
+                                'shopping_expense': 0,
+                                'gas_expense': 0,
+                                'paut_meters': 0,
+                                'tofd_meters': 0,
+                                'other_expense': 0
+                            }
+                            
+                            # Phân bổ thêm giờ và chi phí cho các ngày làm việc
+                            if day_value in ['W', 'O', 'T'] and working_days > 0:
+                                # Phân bổ đều thêm giờ
+                                day_data['overtime_hours'] = total_ot_150 / working_days if working_days > 0 else 0
+                                
+                                # Phân bổ chi phí
+                                day_data['phone_expense'] = total_pc_di_lai / working_days if working_days > 0 else 0
+                                day_data['hotel_expense'] = total_cp_khach_san / working_days if working_days > 0 else 0
+                                day_data['shopping_expense'] = total_cp_mua_sam / working_days if working_days > 0 else 0
+                                
+                                # Phân bổ năng suất
+                                day_data['paut_meters'] = total_ns_paut / working_days if working_days > 0 else 0
+                                day_data['tofd_meters'] = total_ns_tofd / working_days if working_days > 0 else 0
+                                
+                                # Đặt địa điểm mặc định cho công trường
+                                if day_value == 'W':
+                                    day_data['location'] = 'Công trường'
+                                    day_data['method'] = 'PAUT'
+                            
+                            days_detail[f"day_{i:02d}"] = day_data
+                    
                     self.data_chamcong[employee_name][month_year] = {
-                        'days': days_data,
-                        'ot_150': float(row.get('ot_150', 0) or 0),
-                        'sunday_200': float(row.get('cn_200', 0) or 0),
-                        'holiday_300': float(row.get('le_300', 0) or 0),
-                        'nang_suat_ut': float(row.get('ns_ut', 0) or 0),
-                        'nang_suat_paut': float(row.get('ns_paut', 0) or 0),
-                        'nang_suat_tofd': float(row.get('ns_tofd', 0) or 0),
+                        'days': days_data,  # Format cũ cho bảng công
+                        'days_detail': days_detail,  # Format mới cho phiếu lương
+                        'ot_150': total_ot_150,
+                        'sunday_200': total_cn_200,
+                        'holiday_300': total_le_300,
+                        'nang_suat_ut': total_ns_ut,
+                        'nang_suat_paut': total_ns_paut,
+                        'nang_suat_tofd': total_ns_tofd,
                         'ngay_tinh_luong': int(str(row.get('ngay_tinh_luong', 0) or 0)),
                         'tam_ung': float(row.get('tam_ung', 0) or 0),
-                        'chi_phi_mua_sam': float(row.get('cp_mua_sam', 0) or 0),
-                        'chi_phi_khach_san': float(row.get('cp_khach_san', 0) or 0),
-                        'phu_cap_di_lai': float(row.get('pc_di_lai', 0) or 0)
+                        'chi_phi_mua_sam': total_cp_mua_sam,
+                        'chi_phi_khach_san': total_cp_khach_san,
+                        'phu_cap_di_lai': total_pc_di_lai
                     }
         
         # Cập nhật trạng thái và available months
@@ -1203,8 +1289,11 @@ class TabBangCong(QWidget):
                     all_possible_employees = set()
                     if self.selected_employees:
                         all_possible_employees.update(self.selected_employees)
-                    # Thêm nhân viên từ data_chamcong (nếu có)
-                    all_possible_employees.update(self.data_chamcong.keys())
+                    # Thêm nhân viên từ data_chamcong (nếu có) - chuyển từ MSNV sang tên
+                    for msnv in self.data_chamcong.keys():
+                        employee_name = self.employee_mapper.get_name_by_msnv(msnv)
+                        if employee_name:
+                            all_possible_employees.add(employee_name)
                     
                     for msnv, employee_data in employees_data.items():
                         if 'info' in employee_data and 'attendance' in employee_data:
@@ -1215,13 +1304,25 @@ class TabBangCong(QWidget):
                             if not employee_name or not employee_name.strip():
                                 continue  # Bỏ qua nếu tên rỗng
                                 
+                            # Sử dụng MSNV làm khóa chính thay vì tên nhân viên
                             json_employees.append(employee_name)
                             
                             # Import tất cả nhân viên có trong file JSON, không kiểm tra danh sách
                             displayed_employees.append(employee_name)
                             
-                            if employee_name not in self.data_chamcong:
-                                self.data_chamcong[employee_name] = {}
+                            # Sử dụng MSNV làm khóa chính trong data_chamcong
+                            if msnv not in self.data_chamcong:
+                                self.data_chamcong[msnv] = {}
+                            
+                            # Lưu thông tin nhân viên để mapping
+                            self.data_chamcong[msnv]['employee_info'] = {
+                                'name': employee_name,
+                                'msnv': msnv,
+                                'email': employee_info.get('email', ''),
+                                'position': employee_info.get('position', ''),
+                                'department': employee_info.get('department', ''),
+                                'phone': employee_info.get('phone', '')
+                            }
                             
                             # Xử lý dữ liệu ngày
                             days_converted = {}
@@ -1261,7 +1362,7 @@ class TabBangCong(QWidget):
                                         tofd_total += _to_float(_day_info.get('tofd_meters', 0))
                             
                             # Lưu dữ liệu với format mới
-                            self.data_chamcong[employee_name][f"{self.current_month:02d}/{self.current_year}"] = {
+                            self.data_chamcong[msnv][f"{self.current_month:02d}/{self.current_year}"] = {
                                 'days': days_converted,
                                 'days_detail': days_detail,
                                 'ot_150': summary.get('total_overtime_hours', 0),
@@ -1419,6 +1520,30 @@ class TabBangCong(QWidget):
         if self.on_data_changed:
             self.on_data_changed(self.data_chamcong)
     
+    def highlight_sunday_columns(self, month, year, days_in_month):
+        """Tô màu vàng cho các cột chủ nhật"""
+        try:
+            for day in range(1, days_in_month + 1):
+                try:
+                    date_obj = datetime(year, month, day)
+                    weekday = date_obj.weekday()  # 0=Monday, 6=Sunday
+                    
+                    # Nếu là chủ nhật (weekday = 6)
+                    if weekday == 6:
+                        col_index = day + 1  # +2 cho "Tên nhân viên" và "Chi tiết", -1 vì day bắt đầu từ 1
+                        
+                        # Lưu thông tin cột chủ nhật để set background sau
+                        if not hasattr(self, 'sunday_columns'):
+                            self.sunday_columns = []
+                        self.sunday_columns.append(col_index)
+                        
+                except ValueError:
+                    # Bỏ qua ngày không hợp lệ
+                    continue
+                    
+        except Exception as e:
+            print(f"Lỗi khi tô màu chủ nhật: {e}")
+    
     def get_max_days_from_data(self, month_year):
         """Lấy số ngày tối đa có trong dữ liệu CSV"""
         max_days = 0
@@ -1467,8 +1592,23 @@ class TabBangCong(QWidget):
         
         headers = ["Tên\nnhân viên", "Chi tiết"]
         
+        # Tạo headers với thông tin ngày và thứ
         for day in range(1, days_in_month + 1):
-            headers.append(f"{day}")
+            # Tính thứ trong tuần cho ngày này
+            try:
+                date_obj = datetime(year, month, day)
+                weekday = date_obj.weekday()  # 0=Monday, 6=Sunday
+                
+                # Chuyển đổi sang tên thứ tiếng Việt
+                weekday_names = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"]
+                weekday_name = weekday_names[weekday]
+                
+                # Tạo header với số ngày và thứ
+                header_text = f"{day}\n{weekday_name}"
+                headers.append(header_text)
+            except ValueError:
+                # Nếu ngày không hợp lệ (như 31/2), chỉ hiển thị số
+                headers.append(f"{day}")
         
         summary_headers = [
             "Tổng công\ntrường (W)", "Tổng văn\nphòng (O)", "Tổng đào\ntạo (T)", 
@@ -1484,6 +1624,10 @@ class TabBangCong(QWidget):
         self.table_widget.setColumnCount(len(headers))
         self.table_widget.setHorizontalHeaderLabels(headers)
         
+        # Reset và set màu vàng cho các cột chủ nhật
+        self.sunday_columns = []
+        self.highlight_sunday_columns(month, year, days_in_month)
+        
         # Cập nhật column width cho các cột ngày và tổng hợp
         header = self.table_widget.horizontalHeader()
         
@@ -1498,42 +1642,58 @@ class TabBangCong(QWidget):
             self.table_widget.setColumnWidth(i, 100)
         
         # Cập nhật dữ liệu - lọc theo nhân viên được chọn
-        all_employees = list(self.data_chamcong.keys())
+        all_msnv = list(self.data_chamcong.keys())
+        
+        # Chuyển đổi tên nhân viên thành MSNV để so sánh
+        selected_msnv = set()
+        for name in self.selected_employees:
+            msnv = self.employee_mapper.get_msnv_by_name(name)
+            if msnv:
+                selected_msnv.add(msnv)
         
         # Lọc nhân viên theo danh sách đã chọn
-        if self.selected_employees:
+        if selected_msnv:
             # Hiển thị cả nhân viên đã chọn mà chưa có dữ liệu
-            employees = list(self.selected_employees)
+            employees_msnv = list(selected_msnv)
             # Thêm nhân viên có dữ liệu nhưng chưa được chọn (nếu cần)
-            for emp in all_employees:
-                if emp not in employees:
-                    employees.append(emp)
+            for msnv in all_msnv:
+                if msnv not in employees_msnv:
+                    employees_msnv.append(msnv)
         else:
-            employees = all_employees  # Hiển thị tất cả nếu chưa chọn ai
+            employees_msnv = all_msnv  # Hiển thị tất cả nếu chưa chọn ai
             
-        self.table_widget.setRowCount(len(employees))
+        self.table_widget.setRowCount(len(employees_msnv))
         
         # Cập nhật thông tin header
         self.update_working_days_display()
         
-        for row, employee in enumerate(employees):
+        for row, msnv in enumerate(employees_msnv):
             try:
                 # Tìm dữ liệu cho tháng hiện tại
                 employee_data = {}
-                if employee in self.data_chamcong:
-                    employee_data = self.data_chamcong[employee].get(month_year, {})
+                if msnv in self.data_chamcong:
+                    employee_data = self.data_chamcong[msnv].get(month_year, {})
                     
                     if not employee_data:
                         # Tìm tháng gần nhất có dữ liệu
-                        for existing_month in self.data_chamcong[employee].keys():
-                            employee_data = self.data_chamcong[employee][existing_month]
-                            break
+                        for existing_month in self.data_chamcong[msnv].keys():
+                            if existing_month != 'employee_info':  # Bỏ qua thông tin nhân viên
+                                employee_data = self.data_chamcong[msnv][existing_month]
+                                break
                 
                 # Tên nhân viên (có thể click để xem thông tin chi tiết)
-                employee_info = employee_data.get('info', {})
+                employee_name = self.employee_mapper.get_name_by_msnv(msnv)
+                if not employee_name:
+                    employee_name = msnv  # Fallback nếu không tìm thấy tên
+                
+                # Lấy thông tin nhân viên từ mapping hoặc từ dữ liệu
+                employee_info = self.data_chamcong[msnv].get('employee_info', {}) if msnv in self.data_chamcong else {}
+                if not employee_info:
+                    employee_info = employee_data.get('info', {})
+                
                 if employee_info:
                     # Tạo button cho tên nhân viên
-                    name_btn = QPushButton(employee)
+                    name_btn = QPushButton(employee_name)
                     name_btn.setFont(QFont("Times New Roman", 9))
                     name_btn.setStyleSheet("""
                         QPushButton {
@@ -1550,11 +1710,11 @@ class TabBangCong(QWidget):
                             background-color: #f8f9fa;
                         }
                     """)
-                    name_btn.clicked.connect(lambda checked, emp=employee, info=employee_info: self.show_employee_info(emp, info))
+                    name_btn.clicked.connect(lambda checked, emp=employee_name, info=employee_info: self.show_employee_info(emp, info))
                     self.table_widget.setCellWidget(row, 0, name_btn)
                 else:
                     # Fallback nếu không có thông tin chi tiết
-                    self.table_widget.setItem(row, 0, QTableWidgetItem(employee))
+                    self.table_widget.setItem(row, 0, QTableWidgetItem(employee_name))
                 
                 # Nút chi tiết
                 detail_btn = QPushButton("Chi tiết")
@@ -1573,7 +1733,7 @@ class TabBangCong(QWidget):
                         border-color: #495057;
                     }
                 """)
-                detail_btn.clicked.connect(lambda checked, emp=employee, data=employee_data: self.show_detail(emp, data))
+                detail_btn.clicked.connect(lambda checked, emp=employee_name, data=employee_data: self.show_detail(emp, data))
                 self.table_widget.setCellWidget(row, 1, detail_btn)
                 
                 # Dữ liệu các ngày
@@ -1585,8 +1745,21 @@ class TabBangCong(QWidget):
                     item = QTableWidgetItem(work_type)
                     item.setTextAlignment(Qt.AlignCenter)
                     
+                    # Kiểm tra xem có phải chủ nhật không
+                    col_index = 1 + day
+                    is_sunday = False
+                    try:
+                        date_obj = datetime(year, month, day)
+                        is_sunday = (date_obj.weekday() == 6)  # 6 = Sunday
+                    except ValueError:
+                        pass
+                    
                     # Thêm màu sắc cho các loại công
-                    if work_type == 'W':
+                    if is_sunday:
+                        # Chủ nhật - màu vàng với độ ưu tiên cao nhất
+                        item.setBackground(QColor("#fff3cd"))  # Màu vàng cho chủ nhật
+                        item.setForeground(QColor("#856404"))  # Chữ màu nâu đậm
+                    elif work_type == 'W':
                         item.setBackground(QColor("#e3f2fd"))  # Xanh nhạt cho công trường
                     elif work_type == 'O':
                         item.setBackground(QColor("#f3e5f5"))  # Tím nhạt cho văn phòng
@@ -1600,8 +1773,11 @@ class TabBangCong(QWidget):
                         # Nếu chưa có dữ liệu, để trống
                         item = QTableWidgetItem("")
                         item.setTextAlignment(Qt.AlignCenter)
+                        if is_sunday:
+                            item.setBackground(QColor("#fff3cd"))
+                            item.setForeground(QColor("#856404"))
                     
-                    self.table_widget.setItem(row, 1 + day, item)
+                    self.table_widget.setItem(row, col_index, item)
                 
                 # Tính tổng các loại công
                 work_counts = self.calculate_work_summary(days_data, days_in_month)
@@ -1833,6 +2009,9 @@ class TabBangCong(QWidget):
             
             # Reload dữ liệu nhân viên
             self.load_selected_employees()
+            
+            # Refresh employee mapping
+            self.refresh_employee_mapping()
             
             # Refresh employee selection dialog nếu đang mở
             if hasattr(self, 'employee_dialog') and self.employee_dialog:

@@ -239,9 +239,14 @@
                     </h4>
                     <p class="text-muted mb-0">Quản lý thông tin nhân viên, dự án và chứng chỉ</p>
                 </div>
-                <button class="btn add-staff-btn" onclick="showAddStaffModal()">
-                    <i class="fas fa-plus me-2"></i>Thêm nhân viên
-                </button>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-primary" onclick="exportStaffData()">
+                        <i class="fas fa-download me-2"></i>Xuất dữ liệu
+                    </button>
+                    <button class="btn add-staff-btn" onclick="showAddStaffModal()">
+                        <i class="fas fa-plus me-2"></i>Thêm nhân viên
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -1099,11 +1104,25 @@ function addStaff() {
         return;
     }
     
+    // Kiểm tra MSNV bắt buộc
+    const msnv = document.getElementById('staffMSNV').value.trim();
+    if (!msnv) {
+        Swal.fire('Lỗi!', 'Vui lòng nhập Mã số nhân viên (MSNV).', 'error');
+        return;
+    }
+    
+    // Kiểm tra MSNV trùng lặp
+    const existingStaff = staffData.find(staff => staff.msnv === msnv);
+    if (existingStaff) {
+        Swal.fire('Lỗi!', `MSNV "${msnv}" đã tồn tại. Vui lòng sử dụng MSNV khác.`, 'error');
+        return;
+    }
+    
     const newStaff = {
         id: Date.now().toString(),
         name: document.getElementById('staffName').value,
         cccd: document.getElementById('staffCCCD').value,
-        msnv: document.getElementById('staffMSNV').value,
+        msnv: msnv,
         phone: document.getElementById('staffPhone').value,
         birthDate: document.getElementById('staffBirthDate').value,
         hometown: document.getElementById('staffHometown').value,
@@ -1175,12 +1194,26 @@ function updateStaff() {
     
     if (staffIndex === -1) return;
     
+    // Kiểm tra MSNV bắt buộc
+    const msnv = document.getElementById('editStaffMSNV').value.trim();
+    if (!msnv) {
+        Swal.fire('Lỗi!', 'Vui lòng nhập Mã số nhân viên (MSNV).', 'error');
+        return;
+    }
+    
+    // Kiểm tra MSNV trùng lặp (trừ nhân viên hiện tại)
+    const existingStaff = staffData.find(staff => staff.msnv === msnv && staff.id !== staffId);
+    if (existingStaff) {
+        Swal.fire('Lỗi!', `MSNV "${msnv}" đã tồn tại. Vui lòng sử dụng MSNV khác.`, 'error');
+        return;
+    }
+    
     // Update staff data
     staffData[staffIndex] = {
         ...staffData[staffIndex],
         name: document.getElementById('editStaffName').value,
         cccd: document.getElementById('editStaffCCCD').value,
-        msnv: document.getElementById('editStaffMSNV').value,
+        msnv: msnv,
         phone: document.getElementById('editStaffPhone').value,
         birthDate: document.getElementById('editStaffBirthDate').value,
         hometown: document.getElementById('editStaffHometown').value,
@@ -1230,6 +1263,66 @@ function deleteStaff(staffId) {
             Swal.fire('Đã xóa!', 'Nhân viên đã được xóa.', 'success');
         }
     });
+}
+
+function exportStaffData() {
+    // Hiển thị loading
+    Swal.fire({
+        title: 'Đang xuất dữ liệu...',
+        text: 'Vui lòng chờ trong giây lát',
+        allowOutsideClick: false,
+        didOpen: () => {
+            Swal.showLoading();
+        }
+    });
+    
+    // Gọi API xuất dữ liệu
+    fetch('/dashboard/staff/export/', {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': getCookie('csrftoken')
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Lỗi xuất dữ liệu');
+        }
+        return response.json();
+    })
+    .then(data => {
+        // Tạo file JSON để download
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `nhanvien_${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        
+        Swal.fire('Thành công!', 'Đã xuất dữ liệu nhân viên thành công.', 'success');
+    })
+    .catch(error => {
+        console.error('Lỗi xuất dữ liệu:', error);
+        Swal.fire('Lỗi!', 'Không thể xuất dữ liệu. Vui lòng thử lại.', 'error');
+    });
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
 }
 
 function showStaffDetail(staffId) {

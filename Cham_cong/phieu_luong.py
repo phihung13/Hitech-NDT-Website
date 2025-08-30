@@ -1141,6 +1141,8 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
             ngay_cong_truong = 0
             ngay_dao_tao = 0
             ngay_van_phong = 0
+            ngay_nghi_co_phep = 0  # Số ngày nghỉ có phép
+            ngay_nghi_khong_phep = 0  # Số ngày nghỉ không phép
             tong_xang_xe = 0  # Tổng xăng xe từ tất cả ngày
             tong_dien_thoai = 0  # Tổng điện thoại từ tất cả ngày
             tong_khach_san = 0  # Tổng khách sạn từ tất cả ngày
@@ -1165,6 +1167,10 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
                         ngay_van_phong += 1
                     elif day_type == 'T':  # Đào tạo
                         ngay_dao_tao += 1
+                    elif day_type == 'P':  # Nghỉ có phép
+                        ngay_nghi_co_phep += 1
+                    elif day_type == 'N':  # Nghỉ không phép
+                        ngay_nghi_khong_phep += 1
                     
                     # Tính thêm giờ (giả sử tất cả là OT 150%)
                     if overtime_hours > 0:
@@ -1285,38 +1291,38 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
                 thanh_tien_200 = luong_1_gio * sunday_200_hours * 2.0  # 200%
                 thanh_tien_300 = luong_1_gio * holiday_300_hours * 3.0  # 300%
                 
-                # Điền số giờ và thành tiền vào bảng với tooltip
-                self.tableThemGio.setItem(0, 1, QTableWidgetItem(str(ot_150_hours)))
-                thanh_tien_150_item = QTableWidgetItem(f"{thanh_tien_150:,.0f}")
-                thanh_tien_150_item.setToolTip("🔍 CÔNG THỨC\nThêm giờ 150% = Số giờ × Lương 1 giờ × 1.5")
-                self.tableThemGio.setItem(0, 2, thanh_tien_150_item)
-                
-                self.tableThemGio.setItem(1, 1, QTableWidgetItem(str(sunday_200_hours)))
-                thanh_tien_200_item = QTableWidgetItem(f"{thanh_tien_200:,.0f}")
-                thanh_tien_200_item.setToolTip("🔍 CÔNG THỨC\nThêm giờ 200% = Số giờ × Lương 1 giờ × 2.0")
-                self.tableThemGio.setItem(1, 2, thanh_tien_200_item)
-                
-                self.tableThemGio.setItem(2, 1, QTableWidgetItem(str(holiday_300_hours)))
-                thanh_tien_300_item = QTableWidgetItem(f"{thanh_tien_300:,.0f}")
-                thanh_tien_300_item.setToolTip("🔍 CÔNG THỨC\nThêm giờ 300% = Số giờ × Lương 1 giờ × 3.0")
-                self.tableThemGio.setItem(2, 2, thanh_tien_300_item)
-                
-                # Tính tổng thu nhập thêm giờ
-                total_overtime_hours = ot_150_hours + sunday_200_hours + holiday_300_hours
-                total_overtime_amount = thanh_tien_150 + thanh_tien_200 + thanh_tien_300
-                
-                self.tableThemGio.setItem(3, 1, QTableWidgetItem(str(total_overtime_hours)))
-                total_overtime_item = QTableWidgetItem(f"{total_overtime_amount:,.0f}")
-                total_overtime_item.setToolTip("🔍 CÔNG THỨC\nTổng thêm giờ = Thành tiền 150% + Thành tiền 200% + Thành tiền 300%")
-                self.tableThemGio.setItem(3, 2, total_overtime_item)
-                
-                # print(f"=== DEBUG: THÊM GIỜ ===")
-                # print(f"Lương cơ bản: {luong_co_ban:,}")
-                # print(f"Lương 1 giờ: {luong_1_gio:,.0f} = {luong_co_ban:,} ÷ 176")
-                # print(f"150%: {ot_150_hours} giờ × {luong_1_gio:,.0f} × 1.5 = {thanh_tien_150:,.0f}")
-                # print(f"200%: {sunday_200_hours} giờ × {luong_1_gio:,.0f} × 2.0 = {thanh_tien_200:,.0f}")
-                # print(f"300%: {holiday_300_hours} giờ × {luong_1_gio:,.0f} × 3.0 = {thanh_tien_300:,.0f}")
-                # print(f"Tổng thêm giờ: {total_overtime_amount:,.0f}")
+                            # Điền số giờ và thành tiền vào bảng với tooltip
+            self.tableThemGio.setItem(0, 1, QTableWidgetItem(f"{ot_150_hours:.2f}"))
+            thanh_tien_150_item = QTableWidgetItem(f"{thanh_tien_150:,.0f}")
+            thanh_tien_150_item.setToolTip("🔍 CÔNG THỨC\nThêm giờ 150% = Số giờ × Lương 1 giờ × 1.5")
+            self.tableThemGio.setItem(0, 2, thanh_tien_150_item)
+            
+            self.tableThemGio.setItem(1, 1, QTableWidgetItem(f"{sunday_200_hours:.2f}"))
+            thanh_tien_200_item = QTableWidgetItem(f"{thanh_tien_200:,.0f}")
+            thanh_tien_200_item.setToolTip("🔍 CÔNG THỨC\nThêm giờ 200% = Số giờ × Lương 1 giờ × 2.0")
+            self.tableThemGio.setItem(1, 2, thanh_tien_200_item)
+            
+            self.tableThemGio.setItem(2, 1, QTableWidgetItem(f"{holiday_300_hours:.2f}"))
+            thanh_tien_300_item = QTableWidgetItem(f"{thanh_tien_300:,.0f}")
+            thanh_tien_300_item.setToolTip("🔍 CÔNG THỨC\nThêm giờ 300% = Số giờ × Lương 1 giờ × 3.0")
+            self.tableThemGio.setItem(2, 2, thanh_tien_300_item)
+            
+            # Tính tổng thu nhập thêm giờ
+            total_overtime_hours = ot_150_hours + sunday_200_hours + holiday_300_hours
+            total_overtime_amount = thanh_tien_150 + thanh_tien_200 + thanh_tien_300
+            
+            self.tableThemGio.setItem(3, 1, QTableWidgetItem(f"{total_overtime_hours:.2f}"))
+            total_overtime_item = QTableWidgetItem(f"{total_overtime_amount:,.0f}")
+            total_overtime_item.setToolTip("🔍 CÔNG THỨC\nTổng thêm giờ = Thành tiền 150% + Thành tiền 200% + Thành tiền 300%")
+            self.tableThemGio.setItem(3, 2, total_overtime_item)
+            
+            # print(f"=== DEBUG: THÊM GIỜ ===")
+                        # print(f"Lương cơ bản: {luong_co_ban:,}")
+            # print(f"Lương 1 giờ: {luong_1_gio:,.0f} = {luong_co_ban:,} ÷ 176")
+            # print(f"150%: {ot_150_hours} giờ × {luong_1_gio:,.0f} × 1.5 = {thanh_tien_150:,.0f}")
+            # print(f"200%: {sunday_200_hours} giờ × {luong_1_gio:,.0f} × 2.0 = {thanh_tien_200:,.0f}")
+            # print(f"300%: {holiday_300_hours} giờ × {luong_1_gio:,.0f} × 3.0 = {thanh_tien_300:,.0f}")
+            # print(f"Tổng thêm giờ: {total_overtime_amount:,.0f}")
             
             # C) PHỤ CẤP - Đếm số ngày theo loại
             if hasattr(self, 'tablePhuCap'):
@@ -1487,12 +1493,36 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
             # Tải dữ liệu tạm ứng và vi phạm đã lưu
             self.load_tam_ung_vi_pham_data()
             
+            # Cập nhật thông tin nghỉ phép trên giao diện
+            self.update_attendance_info(ngay_nghi_co_phep, ngay_nghi_khong_phep)
+            
             # print("=== KẾT THÚC fill_chamcong_data ===")
                 
         except Exception as e:
             print(f"Lỗi điền dữ liệu chấm công: {e}")
             import traceback
             traceback.print_exc()
+
+    def update_attendance_info(self, ngay_nghi_co_phep, ngay_nghi_khong_phep):
+        """Cập nhật thông tin nghỉ phép trên giao diện"""
+        try:
+            # Cập nhật số ngày nghỉ có phép
+            if hasattr(self, 'nghi_co_phep_label'):
+                self.nghi_co_phep_label.setText(str(ngay_nghi_co_phep))
+            
+            # Cập nhật số ngày nghỉ không phép
+            if hasattr(self, 'nghi_khong_phep_label'):
+                self.nghi_khong_phep_label.setText(str(ngay_nghi_khong_phep))
+            
+            # Tính số ngày bị trừ (ngày nghỉ không phép sẽ bị trừ lương)
+            ngay_bi_tru = ngay_nghi_khong_phep
+            if hasattr(self, 'ngay_bi_tru_label'):
+                self.ngay_bi_tru_label.setText(str(ngay_bi_tru))
+            
+            print(f"✅ Cập nhật thông tin nghỉ phép: Có phép={ngay_nghi_co_phep}, Không phép={ngay_nghi_khong_phep}, Bị trừ={ngay_bi_tru}")
+            
+        except Exception as e:
+            print(f"Lỗi cập nhật thông tin nghỉ phép: {e}")
 
     def fill_luong_data(self, luong_data):
         """Điền dữ liệu từ quy định lương vào các bảng"""
@@ -1703,6 +1733,14 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
                 self.tong_cong_label.setText("")
             if hasattr(self, 'thuc_nhan_label'):
                 self.thuc_nhan_label.setText("")
+            
+            # Reset thông tin nghỉ phép
+            if hasattr(self, 'nghi_co_phep_label'):
+                self.nghi_co_phep_label.setText("")
+            if hasattr(self, 'nghi_khong_phep_label'):
+                self.nghi_khong_phep_label.setText("")
+            if hasattr(self, 'ngay_bi_tru_label'):
+                self.ngay_bi_tru_label.setText("")
             
             # print("Debug: Đã xóa xong tất cả dữ liệu phiếu lương")
                 
@@ -2352,13 +2390,13 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
         
         # Thông tin chấm công
         info_items = [
-            ("Số ngày trong tháng tối đa\n(không bao gồm chủ nhật):", str(working_days), "#28a745", True),
-            ("Số ngày nghỉ có phép\ntrong tháng:", "", "#17a2b8", False),
-            ("Số ngày nghỉ không phép\ntrong tháng:", "", "#ffc107", False), 
-            ("Số ngày bị trừ:", "", "#dc3545", False)
+            ("Số ngày trong tháng tối đa\n(không bao gồm chủ nhật):", str(working_days), "#28a745", True, "working_days"),
+            ("Số ngày nghỉ có phép\ntrong tháng:", "", "#17a2b8", False, "nghi_co_phep"),
+            ("Số ngày nghỉ không phép\ntrong tháng:", "", "#ffc107", False, "nghi_khong_phep"), 
+            ("Số ngày bị trừ:", "", "#dc3545", False, "ngay_bi_tru")
         ]
         
-        for i, (label_text, value, color, is_working_days) in enumerate(info_items):
+        for i, (label_text, value, color, is_working_days, field_name) in enumerate(info_items):
             # Container cho mỗi item
             item_container = QFrame()
             item_container.setStyleSheet(f"""
@@ -2400,8 +2438,8 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
                 }}
             """)
             
-            # Lưu reference cho số ngày làm việc để có thể cập nhật sau
-            if is_working_days:
+            # Lưu reference cho các label để có thể cập nhật sau
+            if field_name == "working_days":
                 self.working_days_value_label = value_label
                 # Thêm tooltip mặc định
                 month_info = self.get_month_info(current_date.year(), current_date.month())
@@ -2414,6 +2452,18 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
 {month_info['special_info']}
                     """
                     value_label.setToolTip(tooltip_text.strip())
+            elif field_name == "nghi_co_phep":
+                self.nghi_co_phep_label = value_label
+                # Khởi tạo với giá trị 0
+                self.nghi_co_phep_label.setText("0")
+            elif field_name == "nghi_khong_phep":
+                self.nghi_khong_phep_label = value_label
+                # Khởi tạo với giá trị 0
+                self.nghi_khong_phep_label.setText("0")
+            elif field_name == "ngay_bi_tru":
+                self.ngay_bi_tru_label = value_label
+                # Khởi tạo với giá trị 0
+                self.ngay_bi_tru_label.setText("0")
             
             item_layout.addWidget(label)
             item_layout.addWidget(value_label)
@@ -3269,9 +3319,9 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
             # Cập nhật bảng thêm giờ
             if hasattr(self, 'tableThemGio'):
                 # Cập nhật số giờ
-                self.tableThemGio.setItem(0, 1, QTableWidgetItem(str(ot_150_hours)))
-                self.tableThemGio.setItem(1, 1, QTableWidgetItem(str(ot_200_hours)))
-                self.tableThemGio.setItem(2, 1, QTableWidgetItem(str(ot_300_hours)))
+                self.tableThemGio.setItem(0, 1, QTableWidgetItem(f"{ot_150_hours:.2f}"))
+                self.tableThemGio.setItem(1, 1, QTableWidgetItem(f"{ot_200_hours:.2f}"))
+                self.tableThemGio.setItem(2, 1, QTableWidgetItem(f"{ot_300_hours:.2f}"))
                 
                 # Cập nhật thành tiền với tooltip
                 thanh_tien_150_item = QTableWidgetItem(f"{thanh_tien_150:,.0f}")
@@ -3289,10 +3339,10 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
                 # Tính tổng thu nhập thêm giờ
                 total_overtime = ot_150_hours + ot_200_hours + ot_300_hours
                 total_overtime_amount = thanh_tien_150 + thanh_tien_200 + thanh_tien_300
-                self.tableThemGio.setItem(3, 1, QTableWidgetItem(str(total_overtime)))
-                total_overtime_item = QTableWidgetItem(f"{total_overtime_amount:,.0f}")
-                total_overtime_item.setToolTip("🔍 CÔNG THỨC\nTổng thêm giờ = Thành tiền 150% + Thành tiền 200% + Thành tiền 300%")
-                self.tableThemGio.setItem(3, 2, total_overtime_item)
+                self.tableThemGio.setItem(3, 1, QTableWidgetItem(f"{total_overtime:.2f}"))
+            total_overtime_item = QTableWidgetItem(f"{total_overtime_amount:,.0f}")
+            total_overtime_item.setToolTip("🔍 CÔNG THỨC\nTổng thêm giờ = Thành tiền 150% + Thành tiền 200% + Thành tiền 300%")
+            self.tableThemGio.setItem(3, 2, total_overtime_item)
                 
         except Exception as e:
             print(f"Lỗi cập nhật dữ liệu thêm giờ: {e}")
