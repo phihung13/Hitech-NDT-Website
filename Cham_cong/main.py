@@ -1,6 +1,7 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow, QTabWidget, QMenuBar, QMenu, QAction, QMessageBox, QFileDialog
+from PyQt5.QtWidgets import QApplication, QMainWindow, QTabWidget, QMenuBar, QMenu, QAction, QMessageBox, QFileDialog, QSizePolicy
 from PyQt5.QtCore import QTimer, pyqtSignal
+from PyQt5.QtGui import QScreen
 from nhanvien import TabNhanVien
 from quy_dinh_luong import TabQuyDinhLuong
 from bang_cong import TabBangCong
@@ -17,7 +18,19 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Quản lý nội bộ chấm công")
-        self.setGeometry(100, 100, 1200, 700)
+        
+        # Thiết lập kích thước tối thiểu và tối đa
+        self.setMinimumSize(800, 600)
+        self.setMaximumSize(1920, 1080)
+        
+        # Thiết lập kích thước ban đầu phù hợp với màn hình
+        self.resize(1200, 700)
+        
+        # Cho phép resize và tối ưu hóa layout
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        
+        # Tự động điều chỉnh kích thước dựa trên màn hình
+        self.center_and_resize_window()
         
         # Khởi tạo data manager
         self.data_manager = DataManager()
@@ -257,6 +270,45 @@ class MainWindow(QMainWindow):
                 QMessageBox.information(self, "Success", "Data imported successfully!")
         except Exception as e:
             QMessageBox.warning(self, "Error", f"Import failed: {str(e)}")
+    
+    def center_and_resize_window(self):
+        """Tự động điều chỉnh kích thước và vị trí cửa sổ dựa trên màn hình"""
+        try:
+            # Lấy thông tin màn hình hiện tại
+            screen = QApplication.primaryScreen()
+            screen_geometry = screen.availableGeometry()
+            
+            # Tính toán kích thước phù hợp (80% màn hình)
+            screen_width = screen_geometry.width()
+            screen_height = screen_geometry.height()
+            
+            # Kích thước tối ưu dựa trên màn hình
+            optimal_width = int(screen_width * 0.8)
+            optimal_height = int(screen_height * 0.8)
+            
+            # Đảm bảo không vượt quá giới hạn đã set
+            optimal_width = min(optimal_width, 1920)
+            optimal_height = min(optimal_height, 1080)
+            optimal_width = max(optimal_width, 800)
+            optimal_height = max(optimal_height, 600)
+            
+            # Đặt kích thước
+            self.resize(optimal_width, optimal_height)
+            
+            # Căn giữa cửa sổ
+            x = (screen_width - optimal_width) // 2
+            y = (screen_height - optimal_height) // 2
+            self.move(x, y)
+            
+            print(f"🖥️ Điều chỉnh kích thước cửa sổ:")
+            print(f"   📏 Màn hình: {screen_width}x{screen_height}")
+            print(f"   📐 Cửa sổ: {optimal_width}x{optimal_height}")
+            print(f"   📍 Vị trí: ({x}, {y})")
+            
+        except Exception as e:
+            print(f"⚠️ Lỗi khi điều chỉnh kích thước cửa sổ: {e}")
+            # Fallback về kích thước mặc định
+            self.resize(1200, 700)
     
     def show_about(self):
         """Hiển thị thông tin về ứng dụng"""

@@ -935,26 +935,10 @@ class TabBangCong(QWidget):
         self.combo_month.currentTextChanged.connect(self.on_month_changed)
         layout.addWidget(self.combo_month)
         
-        # Nút Load tháng
-        self.btn_load_month = QPushButton("📂 Load tháng")
-        self.btn_load_month.setStyleSheet("""
-            QPushButton {
-                background-color: #007bff;
-                color: white;
-                border: none;
-                padding: 8px 16px;
-                border-radius: 4px;
-                font-weight: bold;
-            }
-            QPushButton:hover {
-                background-color: #0056b3;
-            }
-            QPushButton:pressed {
-                background-color: #004085;
-            }
-        """)
-        self.btn_load_month.clicked.connect(self.load_selected_month)
-        layout.addWidget(self.btn_load_month)
+        # (Gỡ) Nút Load tháng – chức năng trùng Import file
+        # self.btn_load_month = QPushButton("📂 Load tháng")
+        # self.btn_load_month.clicked.connect(self.load_selected_month)
+        # layout.addWidget(self.btn_load_month)
         
         # Nút Gỡ import
         self.btn_unload_month = QPushButton("🗑️ Gỡ import")
@@ -998,26 +982,10 @@ class TabBangCong(QWidget):
         self.btn_import.clicked.connect(self.import_data)
         layout.addWidget(self.btn_import)
         
-        # Nút Xóa file đã import
-        self.btn_clear_imported = QPushButton("🗑️ Xóa file đã import")
-        self.btn_clear_imported.setStyleSheet("""
-            QPushButton {
-                background-color: #ffc107;
-                color: #212529;
-                border: none;
-                padding: 8px 16px;
-                border-radius: 4px;
-                font-weight: bold;
-            }
-            QPushButton:hover {
-                background-color: #e0a800;
-            }
-            QPushButton:pressed {
-                background-color: #d39e00;
-            }
-        """)
-        self.btn_clear_imported.clicked.connect(self.clear_imported_file)
-        layout.addWidget(self.btn_clear_imported)
+        # (Gỡ) Nút Xóa file đã import – trùng với Gỡ import
+        # self.btn_clear_imported = QPushButton("🗑️ Xóa file đã import")
+        # self.btn_clear_imported.clicked.connect(self.clear_imported_file)
+        # layout.addWidget(self.btn_clear_imported)
         
         # Spacer
         layout.addStretch()
