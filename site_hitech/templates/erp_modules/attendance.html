@@ -357,10 +357,9 @@
                                 </ul>
                             </div>
                             {% if user.is_superuser or user.user_profile.role == 'company' %}
-                            <button class="btn btn-success btn-sm" type="button" id="exportDataBtn" onclick="exportAttendanceData()" title="Xuất dữ liệu chấm công">
+                            <button class="btn btn-success btn-sm" type="button" id="exportDataBtn" onclick="exportAttendanceData()" title="Xuất dữ liệu chấm công dạng JSON đầy đủ">
                                 <i class="fas fa-download me-1"></i>Export Data
                             </button>
-
                             {% endif %}
                         </div>
                     </div>
@@ -474,6 +473,36 @@
                             </div>
                         </div>
                     </div>
+                    
+                    <!-- Thêm hàng thống kê mét vượt PAUT/TOFD -->
+                    <div class="row mt-3">
+                        <div class="col-lg-3 col-md-6 col-sm-6">
+                            <div class="stats-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-grow-1">
+                                        <h3 class="mb-1" id="totalPautMeters">0m</h3>
+                                        <small>Tổng mét vượt PAUT</small>
+                                    </div>
+                                    <div class="stats-icon">
+                                        <i class="fas fa-ruler fa-2x opacity-75"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-md-6 col-sm-6">
+                            <div class="stats-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-grow-1">
+                                        <h3 class="mb-1" id="totalTofdMeters">0m</h3>
+                                        <small>Tổng mét vượt TOFD</small>
+                                    </div>
+                                    <div class="stats-icon">
+                                        <i class="fas fa-ruler-combined fa-2x opacity-75"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -492,9 +521,17 @@
                 <div class="modern-card-body">
                     <div class="row">
                         <div class="col-12">
-                            <div id="todayAttendanceForm" class="d-flex flex-wrap">
-                                <!-- Buttons sẽ render động -->
-                            </div>
+                                                            <div id="todayAttendanceForm" class="d-flex flex-wrap">
+                                    <button type="button" id="todayBtn" class="modern-btn modern-btn-primary me-2">
+                                        <i class="fas fa-calendar-check me-2"></i>Chấm công hôm nay
+                                    </button>
+                                    <button type="button" id="makeupBtn" class="modern-btn modern-btn-outline">
+                                        <i class="fas fa-calendar-plus me-2"></i>Chấm công bù
+                                    </button>
+                                    <button type="button" class="modern-btn modern-btn-outline" onclick="testPautTofdFields()" style="background-color: #ffc107; color: #000;">
+                                        <i class="fas fa-bug me-2"></i>Test PAUT/TOFD
+                                    </button>
+                                </div>
                         </div>
                     </div>
                 </div>
@@ -513,113 +550,183 @@
                 </div>
                 <div class="modern-card-body">
                     <form id="attendanceForm">
+                        <!-- Ngày chấm công - Chung cho cả 2 ca -->
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label class="form-label fw-bold">Ngày chấm công</label>
+                                    <label class="form-label fw-bold">
+                                        <i class="fas fa-calendar me-2"></i>Ngày chấm công <span class="text-danger">*</span>
+                                    </label>
                                     <input type="date" class="form-control" id="attendanceDate" required>
                                 </div>
                             </div>
+                        </div>
+                        
+                        <!-- Ca làm việc - 2 form riêng biệt -->
+                        <div class="row">
+                            <!-- Form Ca ngày -->
                             <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label class="form-label fw-bold">Loại công việc</label>
-                                    <select class="form-select" id="workType" onchange="toggleConstructionFields()" required>
-                                        <option value="">Chọn loại công việc</option>
-                                        <option value="W">Công trường</option>
-                                        <option value="O">Văn phòng</option>
-                                        <option value="T">Đào tạo</option>
-                                        <option value="P">Nghỉ có phép</option>
-                                        <option value="N">Nghỉ không phép</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div id="constructionFields" style="display: none;">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label class="form-label fw-bold">Tên công trình</label>
-                                        <input type="text" class="form-control" id="constructionName" placeholder="Nhập tên công trình">
+                                <div class="modern-card">
+                                    <div class="modern-card-header bg-warning text-dark">
+                                        <h6 class="mb-0">
+                                            <i class="fas fa-sun me-2"></i>Ca ngày
+                                        </h6>
                                     </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label class="form-label fw-bold">Phương pháp NDT</label>
-                                        <select class="form-select" id="ndtMethod" onchange="toggleMetersFields()">
-                                            <option value="">Chọn phương pháp</option>
-                                            <option value="MT">MT - Magnetic Testing</option>
-                                            <option value="UT">UT - Ultrasonic Testing</option>
-                                            <option value="RT">RT - Radiographic Testing</option>
-                                            <option value="VT">VT - Visual Testing</option>
-                                            <option value="PAUT">PAUT - Phased Array Ultrasonic Testing</option>
-                                            <option value="TOFD">TOFD - Time of Flight Diffraction</option>
-                                        </select>
+                                    <div class="modern-card-body">
+                                        <div class="mb-3">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="dayShift" checked>
+                                                <label class="form-check-label fw-bold" for="dayShift">
+                                                    Làm việc ca ngày
+                                                </label>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Form ca ngày -->
+                                        <div id="dayShiftForm">
+                                            <div class="mb-3">
+                                                <label class="form-label fw-bold">Loại công việc</label>
+                                                <select class="form-select" id="dayWorkType" onchange="toggleDayConstructionFields()">
+                                                    <option value="">Chọn loại công việc</option>
+                                                    <option value="W">Công trường</option>
+                                                    <option value="O">Văn phòng</option>
+                                                    <option value="T">Đào tạo</option>
+                                                </select>
+                                            </div>
+                                            
+                                            <!-- Công trình ca ngày -->
+                                            <div id="dayConstructionFields" style="display: none;">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Tên công trình</label>
+                                                    <input type="text" class="form-control" id="dayConstructionName" placeholder="Nhập tên công trình">
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Phương pháp NDT</label>
+                                                    <select class="form-select" id="dayNdtMethod" onchange="toggleMetersFields()">
+                                                        <option value="">Chọn phương pháp</option>
+                                                        <option value="MT">MT - Magnetic Testing</option>
+                                                        <option value="UT">UT - Ultrasonic Testing</option>
+                                                        <option value="RT">RT - Radiographic Testing</option>
+                                                        <option value="VT">VT - Visual Testing</option>
+                                                        <option value="PAUT">PAUT - Phased Array Ultrasonic Testing</option>
+                                                        <option value="TOFD">TOFD - Time of Flight Diffraction</option>
+                                                    </select>
+                                                </div>
+                                                
+                                                <!-- Số mét vượt PAUT -->
+                                                <div class="mb-3" id="pautMetersField" style="display: none;">
+                                                    <label class="form-label">Số mét vượt PAUT</label>
+                                                    <input type="number" class="form-control" id="dayPautMeters" placeholder="Nhập số mét vượt PAUT" step="0.01" min="0">
+                                                </div>
+                                                
+                                                <!-- Số mét vượt TOFD -->
+                                                <div class="mb-3" id="tofdMetersField" style="display: none;">
+                                                    <label class="form-label">Số mét vượt TOFD</label>
+                                                    <input type="number" class="form-control" id="dayTofdMeters" placeholder="Nhập số mét vượt TOFD" step="0.01" min="0">
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Tăng ca ngày -->
+                                            <div class="mb-3">
+                                                <label class="form-label">Giờ kết thúc tăng ca</label>
+                                                <input type="time" class="form-control" id="dayOvertimeEnd" placeholder="VD: 18:00">
+                                                <small class="text-muted">Tính tăng ca từ 17:00</small>
+                                            </div>
+                                            
+                                            <!-- Ghi chú ca ngày -->
+                                            <div class="mb-3">
+                                                <label class="form-label">Ghi chú ca ngày</label>
+                                                <textarea class="form-control" id="dayWorkNote" rows="2" placeholder="Ghi chú công việc ca ngày..."></textarea>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                             
-                            <!-- Phần nhập số mét vượt cho PAUT -->
-                            <div id="pautMetersField" style="display: none;">
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="mb-3">
-                                            <label class="form-label fw-bold">
-                                                <i class="fas fa-ruler me-2"></i>Số mét vượt PAUT
-                                            </label>
-                                            <input type="number" class="form-control" id="pautMeters" placeholder="Nhập số mét vượt PAUT" step="0.01" min="0" value="0">
-                                            <small class="text-muted">Số mét vượt cho phương pháp PAUT</small>
-                                        </div>
+                            <!-- Form Ca đêm -->
+                            <div class="col-md-6">
+                                <div class="modern-card">
+                                    <div class="modern-card-header bg-info text-white">
+                                        <h6 class="mb-0">
+                                            <i class="fas fa-moon me-2"></i>Ca đêm
+                                        </h6>
                                     </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Phần nhập số mét vượt cho TOFD -->
-                            <div id="tofdMetersField" style="display: none;">
-                                <div class="row">
-                                    <div class="col-md-6">
+                                    <div class="modern-card-body">
                                         <div class="mb-3">
-                                            <label class="form-label fw-bold">
-                                                <i class="fas fa-ruler me-2"></i>Số mét vượt TOFD
-                                            </label>
-                                            <input type="number" class="form-control" id="tofdMeters" placeholder="Nhập số mét vượt TOFD" step="0.01" min="0" value="0">
-                                            <small class="text-muted">Số mét vượt cho phương pháp TOFD</small>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="nightShift">
+                                                <label class="form-check-label fw-bold" for="nightShift">
+                                                    Làm việc ca đêm
+                                                </label>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Form ca đêm -->
+                                        <div id="nightShiftForm" style="display: none;">
+                                            <div class="mb-3">
+                                                <label class="form-label fw-bold">Loại công việc</label>
+                                                <select class="form-select" id="nightWorkType" onchange="toggleNightConstructionFields()">
+                                                    <option value="">Chọn loại công việc</option>
+                                                    <option value="W">Công trường</option>
+                                                    <option value="O">Văn phòng</option>
+                                                    <option value="T">Đào tạo</option>
+                                                </select>
+                                            </div>
+                                            
+                                            <!-- Công trình ca đêm -->
+                                            <div id="nightConstructionFields" style="display: none;">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Tên công trình</label>
+                                                    <input type="text" class="form-control" id="nightConstructionName" placeholder="Nhập tên công trình">
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Phương pháp NDT</label>
+                                                    <select class="form-select" id="nightNdtMethod" onchange="toggleNightMetersFields()">
+                                                        <option value="">Chọn phương pháp</option>
+                                                        <option value="MT">MT - Magnetic Testing</option>
+                                                        <option value="UT">UT - Ultrasonic Testing</option>
+                                                        <option value="RT">RT - Radiographic Testing</option>
+                                                        <option value="VT">VT - Visual Testing</option>
+                                                        <option value="PAUT">PAUT - Phased Array Ultrasonic Testing</option>
+                                                        <option value="TOFD">TOFD - Time of Flight Diffraction</option>
+                                                    </select>
+                                                </div>
+                                                
+                                                <!-- Số mét vượt PAUT ca đêm -->
+                                                <div class="mb-3" id="nightPautMetersField" style="display: none;">
+                                                    <label class="form-label">Số mét vượt PAUT</label>
+                                                    <input type="number" class="form-control" id="nightPautMeters" placeholder="Nhập số mét vượt PAUT" step="0.01" min="0">
+                                                </div>
+                                                
+                                                <!-- Số mét vượt TOFD ca đêm -->
+                                                <div class="mb-3" id="nightTofdMetersField" style="display: none;">
+                                                    <label class="form-label">Số mét vượt TOFD</label>
+                                                    <input type="number" class="form-control" id="nightTofdMeters" placeholder="Nhập số mét vượt TOFD" step="0.01" min="0">
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Tăng ca đêm -->
+                                            <div class="mb-3">
+                                                <label class="form-label">Giờ kết thúc tăng ca</label>
+                                                <input type="time" class="form-control" id="nightOvertimeEnd" placeholder="VD: 06:00">
+                                                <small class="text-muted">Tính tăng ca từ 04:00</small>
+                                            </div>
+                                            
+                                            <!-- Ghi chú ca đêm -->
+                                            <div class="mb-3">
+                                                <label class="form-label">Ghi chú ca đêm</label>
+                                                <textarea class="form-control" id="nightWorkNote" rows="2" placeholder="Ghi chú công việc ca đêm..."></textarea>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                         
-                        <div id="shiftSection" style="display: none;">
-                            <div class="mb-3">
-                                <label class="form-label fw-bold">
-                                    <i class="fas fa-clock me-2"></i>Ca làm việc
-                                </label>
-                                <div class="row g-3">
-                                    <div class="col-6">
-                                        <div class="selection-card" onclick="handleCardClick(event, 'dayShift')">
-                                            <div class="d-flex align-items-center justify-content-center mb-2">
-                                                <input class="form-check-input me-2" type="checkbox" id="dayShift" value="day" checked onchange="updateOvertimeSections()">
-                                                <label class="form-check-label fw-bold mb-0" for="dayShift">
-                                                    <i class="fas fa-sun text-warning me-2"></i>Ca ngày
-                                                </label>
-                                            </div>
-                                            <div class="small text-muted">7h30-11h30, 13h-17h</div>
-                                        </div>
-                                    </div>
-                                    <div class="col-6">
-                                        <div class="selection-card" onclick="handleCardClick(event, 'nightShift')">
-                                            <div class="d-flex align-items-center justify-content-center mb-2">
-                                                <input class="form-check-input me-2" type="checkbox" id="nightShift" value="night" onchange="updateOvertimeSections()">
-                                                <label class="form-check-label fw-bold mb-0" for="nightShift">
-                                                    <i class="fas fa-moon text-info me-2"></i>Ca đêm
-                                                </label>
-                                            </div>
-                                            <div class="small text-muted">19h-23h, 0h-4h</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                        <!-- Cảnh báo khi không chọn ca nào -->
+                        <div id="shiftWarning" class="alert alert-warning mt-3" style="display: none;">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Vui lòng chọn ít nhất 1 ca làm việc!
                         </div>
                         
                         <div id="overtimeSection" style="display: none;">
@@ -659,50 +766,55 @@
                             </div>
                         </div>
                         
+                        <!-- Chi phí chung -->
                         <div id="expenseSection" style="display: none;">
-                            <div class="mb-3">
-                                <label class="form-label fw-bold">
-                                    <i class="fas fa-money-bill me-2"></i>Chi phí
-                                </label>
-                                <div class="row g-3 mb-3">
-                                    <div class="col-md-3">
-                                        <div class="mb-2">
-                                            <label class="form-label small fw-bold">
-                                                <i class="fas fa-bed text-primary me-1"></i>Khách sạn (VNĐ)
-                                            </label>
-                                            <input type="number" class="form-control" id="hotelExpense" placeholder="0" min="0" step="1000">
-                                        </div>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <div class="mb-2">
-                                            <label class="form-label small fw-bold">
-                                                <i class="fas fa-shopping-cart text-primary me-1"></i>Mua sắm (VNĐ)
-                                            </label>
-                                            <input type="number" class="form-control" id="shoppingExpense" placeholder="0" min="0" step="1000">
-                                        </div>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <div class="mb-2">
-                                            <label class="form-label small fw-bold">
-                                                <i class="fas fa-phone text-info me-1"></i>Điện thoại (VNĐ)
-                                            </label>
-                                            <input type="number" class="form-control" id="phoneExpense" placeholder="0" min="0" step="1000">
-                                        </div>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <div class="mb-2">
-                                            <label class="form-label small fw-bold">
-                                                <i class="fas fa-plus text-warning me-1"></i>Khác (VNĐ)
-                                            </label>
-                                            <input type="number" class="form-control" id="otherExpense" placeholder="0" min="0" step="1000">
-                                        </div>
-                                    </div>
+                            <div class="modern-card">
+                                <div class="modern-card-header bg-success text-white">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-money-bill me-2"></i>Chi phí chung
+                                    </h6>
                                 </div>
-                                <div class="row">
-                                    <div class="col-md-12">
-                                        <div class="mb-3" id="otherExpenseField" style="display: none;">
-                                            <label class="form-label">Mô tả chi phí khác</label>
-                                            <input type="text" class="form-control" id="otherExpenseDesc" placeholder="Mô tả chi phí">
+                                <div class="modern-card-body">
+                                    <div class="row g-3">
+                                        <div class="col-md-3">
+                                            <div class="mb-2">
+                                                <label class="form-label small fw-bold">
+                                                    <i class="fas fa-bed text-primary me-1"></i>Khách sạn (VNĐ)
+                                                </label>
+                                                <input type="number" class="form-control" id="hotelExpense" placeholder="0" min="0" step="1000">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="mb-2">
+                                                <label class="form-label small fw-bold">
+                                                    <i class="fas fa-shopping-cart text-primary me-1"></i>Mua sắm (VNĐ)
+                                                </label>
+                                                <input type="number" class="form-control" id="shoppingExpense" placeholder="0" min="0" step="1000">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="mb-2">
+                                                <label class="form-label small fw-bold">
+                                                    <i class="fas fa-phone text-info me-1"></i>Điện thoại (VNĐ)
+                                                </label>
+                                                <input type="number" class="form-control" id="phoneExpense" placeholder="0" min="0" step="1000">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="mb-2">
+                                                <label class="form-label small fw-bold">
+                                                    <i class="fas fa-plus text-warning me-1"></i>Chi phí khác (VNĐ)
+                                                </label>
+                                                <input type="number" class="form-control" id="otherExpense" placeholder="0" min="0" step="1000">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label">Mô tả chi phí khác</label>
+                                                <textarea class="form-control" id="otherExpenseDesc" rows="2" placeholder="Mô tả chi phí khác..."></textarea>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -719,7 +831,7 @@
                         <div class="row">
                             <div class="col-12">
                                 <div class="d-flex gap-2">
-                                    <button type="button" class="modern-btn modern-btn-primary" onclick="saveAttendance()">
+                                    <button type="submit" class="modern-btn modern-btn-primary">
                                         <i class="fas fa-save me-2"></i>Lưu chấm công
                                     </button>
                                     <button type="button" class="modern-btn modern-btn-outline" onclick="hideAttendanceForm()">
@@ -739,16 +851,14 @@
         <div class="col-12">
             <div class="modern-card">
                 <div class="modern-card-header">
-                    <h6 class="mb-0">
-                        <i class="fas fa-table me-2"></i>Dữ liệu chấm công
-                    </h6>
+                    <h5 class="mb-0">
+                        <i class="fas fa-calendar-alt me-2"></i>
+                        Dữ liệu chấm công
+                    </h5>
                 </div>
                 <div class="modern-card-body">
-                    <div id="attendanceTableContainer">
-                        <p class="text-center text-muted">
-                            <i class="fas fa-spinner fa-spin me-2"></i>
-                            Đang tải dữ liệu...
-                        </p>
+                    <div id="attendanceDataContainer">
+                        <!-- Dữ liệu sẽ được render động -->
                     </div>
                 </div>
             </div>
@@ -955,9 +1065,15 @@ function updateCurrentMonthDisplay() {
 }
 
 // Helper functions using API with fallback to localStorage
-async function getUserAttendanceData() {
+async function getUserAttendanceData(month = null, year = null) {
     try {
-        const response = await fetch('/api/attendance/', {
+        // Tạo URL với tham số tháng/năm nếu có
+        let url = '/api/attendance/';
+        if (month && year) {
+            url += `?month=${month}&year=${year}`;
+        }
+        
+        const response = await fetch(url, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -1032,13 +1148,11 @@ async function getUserLeaveRequests() {
 }
 
 function showMakeupForm() {
-    console.log('showMakeupForm called');
-    showAttendanceForm('makeup');
+    const today = new Date();
+    showAttendanceForm('makeup', today);
 }
 
-function showAttendanceForm(mode) {
-    console.log('showAttendanceForm called with mode:', mode);
-    currentMode = mode;
+function showAttendanceForm(mode = 'today', defaultDate = null) {
     const formSection = document.getElementById('attendanceFormSection');
     const formTitle = document.getElementById('formTitle');
     const dateInput = document.getElementById('attendanceDate');
@@ -1048,16 +1162,62 @@ function showAttendanceForm(mode) {
         return;
     }
     
+    // Reset form trước khi hiển thị
+    const form = document.getElementById('attendanceForm');
+    if (form) {
+        form.reset();
+    }
+    
+    // Set date input
+    const today = defaultDate || new Date();
+    const dateStr = today.toISOString().split('T')[0];
+    dateInput.value = dateStr;
+    
+    // Set title based on mode
+    if (mode === 'makeup') {
+        formTitle.innerHTML = '<i class="fas fa-calendar-plus text-primary me-2"></i>Chấm công bù';
+        dateInput.removeAttribute('readonly');
+    } else if (mode === 'edit') {
+        formTitle.innerHTML = '<i class="fas fa-edit text-warning me-2"></i>Sửa chấm công';
+        dateInput.setAttribute('readonly', true);
+    } else {
+        formTitle.innerHTML = '<i class="fas fa-calendar-check text-primary me-2"></i>Chấm công hôm nay';
+        dateInput.setAttribute('readonly', true);
+    }
+    
+    // Hiển thị form
+    formSection.style.display = 'block';
+    
+    // Chỉ reset form nếu không phải mode edit
+    if (mode !== 'edit') {
+        // Reset form về trạng thái ban đầu
+        clearForm();
+        
+        // Set lại ngày sau khi clearForm
+        dateInput.value = dateStr;
+    }
+    
     if (mode === 'today') {
         formTitle.innerHTML = '<i class="fas fa-edit text-primary me-2"></i>Chấm công hôm nay';
         dateInput.value = new Date().toISOString().split('T')[0];
         dateInput.disabled = true;
+    } else if (mode === 'edit') {
+        formTitle.innerHTML = '<i class="fas fa-edit text-warning me-2"></i>Sửa chấm công';
+        dateInput.disabled = false;
     } else {
         formTitle.innerHTML = '<i class="fas fa-calendar-plus text-warning me-2"></i>Chấm công bù';
         dateInput.disabled = false;
     }
     
     formSection.style.display = 'block';
+    
+    // Hiển thị form ca ngày mặc định
+    document.getElementById('dayShiftForm').style.display = 'block';
+    document.getElementById('nightShiftForm').style.display = 'none';
+    
+    // Hiển thị phần chi phí
+    document.getElementById('expenseSection').style.display = 'block';
+    
     console.log('Form section shown');
 }
 
@@ -1070,43 +1230,83 @@ function hideAttendanceForm() {
 }
 
 function clearForm() {
-    document.getElementById('workType').value = '';
-    document.getElementById('constructionName').value = '';
-    document.getElementById('ndtMethod').value = '';
-    document.getElementById('dayShift').checked = true;
+    // Reset ngày về hôm nay
+    const today = new Date();
+    const dateStr = today.toISOString().split('T')[0];
+    document.getElementById('attendanceDate').value = dateStr;
+    
+    // Reset ca ngày
+    document.getElementById('dayShift').checked = false;
+    document.getElementById('dayWorkType').value = '';
+    document.getElementById('dayConstructionName').value = '';
+    document.getElementById('dayNdtMethod').value = '';
+    document.getElementById('dayPautMeters').value = '';
+    document.getElementById('dayTofdMeters').value = '';
+    document.getElementById('dayOvertimeEnd').value = '';
+    document.getElementById('dayWorkNote').value = '';
+    
+    // Reset ca đêm
     document.getElementById('nightShift').checked = false;
+    document.getElementById('nightWorkType').value = '';
+    document.getElementById('nightConstructionName').value = '';
+    document.getElementById('nightNdtMethod').value = '';
+    document.getElementById('nightPautMeters').value = '';
+    document.getElementById('nightTofdMeters').value = '';
+    document.getElementById('nightOvertimeEnd').value = '';
+    document.getElementById('nightWorkNote').value = '';
     
-    // Reset overtime fields
-    const dayOvertimeEnd = document.getElementById('dayOvertimeEnd');
-    const nightOvertimeEnd = document.getElementById('nightOvertimeEnd');
-    const overtimeHours = document.getElementById('overtimeHours');
-    if (dayOvertimeEnd) dayOvertimeEnd.value = '';
-    if (nightOvertimeEnd) nightOvertimeEnd.value = '';
-    if (overtimeHours) overtimeHours.value = '';
-    
-    // Reset expense inputs
+    // Reset chi phí
     document.getElementById('hotelExpense').value = '';
     document.getElementById('shoppingExpense').value = '';
     document.getElementById('phoneExpense').value = '';
     document.getElementById('otherExpense').value = '';
+    document.getElementById('otherExpenseDesc').value = '';
     
-    const otherExpenseDesc = document.getElementById('otherExpenseDesc');
-    const otherExpenseField = document.getElementById('otherExpenseField');
+    // Ẩn các trường PAUT/TOFD meters
+    const pautMetersField = document.getElementById('pautMetersField');
+    const tofdMetersField = document.getElementById('tofdMetersField');
+    const nightPautMetersField = document.getElementById('nightPautMetersField');
+    const nightTofdMetersField = document.getElementById('nightTofdMetersField');
     
-    if (otherExpenseDesc) otherExpenseDesc.value = '';
-    if (otherExpenseField) otherExpenseField.style.display = 'none';
+    if (pautMetersField) pautMetersField.style.display = 'none';
+    if (tofdMetersField) tofdMetersField.style.display = 'none';
+    if (nightPautMetersField) nightPautMetersField.style.display = 'none';
+    if (nightTofdMetersField) nightTofdMetersField.style.display = 'none';
     
-            document.getElementById('workNote').value = '';
-        document.getElementById('constructionFields').style.display = 'none';
-        document.getElementById('shiftSection').style.display = 'none';
-        document.getElementById('overtimeSection').style.display = 'none';
-        document.getElementById('expenseSection').style.display = 'none';
-        
-        // Thêm event listener cho otherExpense
-        const otherExpenseInput = document.getElementById('otherExpense');
-        if (otherExpenseInput) {
-            otherExpenseInput.addEventListener('input', toggleOtherExpense);
-        }
+    // Ẩn các section
+    const dayConstructionFields = document.getElementById('dayConstructionFields');
+    const nightConstructionFields = document.getElementById('nightConstructionFields');
+    const expenseSection = document.getElementById('expenseSection');
+    
+    if (dayConstructionFields) dayConstructionFields.style.display = 'none';
+    if (nightConstructionFields) nightConstructionFields.style.display = 'none';
+    if (expenseSection) expenseSection.style.display = 'none';
+    
+    // Ẩn form ca làm việc
+    const dayShiftForm = document.getElementById('dayShiftForm');
+    const nightShiftForm = document.getElementById('nightShiftForm');
+    
+    if (dayShiftForm) dayShiftForm.style.display = 'none';
+    if (nightShiftForm) nightShiftForm.style.display = 'none';
+    
+    // Reset tiêu đề form
+    const formTitle = document.getElementById('formTitle');
+    if (formTitle) {
+        formTitle.innerHTML = '<i class="fas fa-calendar-check text-primary me-2"></i>Chấm công hôm nay';
+    }
+    
+    // Reset nút submit về trạng thái ban đầu
+    const submitBtn = document.querySelector('button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.innerHTML = '<i class="fas fa-save me-2"></i>Lưu chấm công';
+        submitBtn.classList.remove('btn-warning');
+        submitBtn.classList.add('btn-primary');
+        submitBtn.removeAttribute('data-edit-date');
+        submitBtn.disabled = false;
+    }
+    
+    // Cập nhật validation
+    updateShiftValidation();
 }
 
 // Smart card click handler - không còn cần thiết vì đã chuyển sang input số tiền
@@ -1130,7 +1330,11 @@ async function renderTodayAttendanceButton() {
     console.log('renderTodayAttendanceButton called');
     try {
         const today = new Date().toISOString().slice(0, 10);
-        const data = await getUserAttendanceData();
+        // Lấy dữ liệu của tháng hiện tại để kiểm tra chấm công hôm nay
+        const currentDate = new Date();
+        const currentMonth = currentDate.getMonth() + 1;
+        const currentYear = currentDate.getFullYear();
+        const data = await getUserAttendanceData(currentMonth, currentYear);
         
         console.log('Today:', today);
         console.log('Data received:', data);
@@ -1217,13 +1421,11 @@ function toggleConstructionFields() {
     console.log('Work type selected:', workType);
     
     const constructionFields = document.getElementById('constructionFields');
-    const shiftSection = document.getElementById('shiftSection');
     const overtimeSection = document.getElementById('overtimeSection');
     const expenseSection = document.getElementById('expenseSection');
     
     console.log('Elements found:', {
         constructionFields: !!constructionFields,
-        shiftSection: !!shiftSection,
         overtimeSection: !!overtimeSection,
         expenseSection: !!expenseSection
     });
@@ -1231,37 +1433,44 @@ function toggleConstructionFields() {
     if (workType === 'W') {
         // Công trường - hiển thị tất cả
         if (constructionFields) constructionFields.style.display = 'block';
-        if (shiftSection) shiftSection.style.display = 'block';
         if (overtimeSection) overtimeSection.style.display = 'block';
         if (expenseSection) expenseSection.style.display = 'block';
         console.log('Showing all sections for work type W (Công trường)');
     } else if (workType === 'O') {
-        // Văn phòng - không cần công trình, có ca làm việc và tăng ca
+        // Văn phòng - không cần công trình, có tăng ca và chi phí
         if (constructionFields) constructionFields.style.display = 'none';
-        if (shiftSection) shiftSection.style.display = 'block';
         if (overtimeSection) overtimeSection.style.display = 'block';
         if (expenseSection) expenseSection.style.display = 'block';
-        console.log('Showing shift/overtime/expense sections for O (Văn phòng)');
+        
+        // Reset các trường liên quan đến công trường
+        resetConstructionFields();
+        console.log('Showing overtime/expense sections for O (Văn phòng)');
     } else if (workType === 'T') {
-        // Đào tạo - không cần công trình, có ca làm việc và tăng ca
+        // Đào tạo - không cần công trình, có tăng ca và chi phí
         if (constructionFields) constructionFields.style.display = 'none';
-        if (shiftSection) shiftSection.style.display = 'block';
         if (overtimeSection) overtimeSection.style.display = 'block';
         if (expenseSection) expenseSection.style.display = 'block';
-        console.log('Showing shift/overtime/expense sections for T (Đào tạo)');
+        
+        // Reset các trường liên quan đến công trường
+        resetConstructionFields();
+        console.log('Showing overtime/expense sections for T (Đào tạo)');
     } else if (workType === 'P' || workType === 'N') {
         // Nghỉ có phép/không phép - chỉ hiển thị ghi chú
         if (constructionFields) constructionFields.style.display = 'none';
-        if (shiftSection) shiftSection.style.display = 'none';
         if (overtimeSection) overtimeSection.style.display = 'none';
         if (expenseSection) expenseSection.style.display = 'none';
+        
+        // Reset các trường liên quan đến công trường
+        resetConstructionFields();
         console.log('Hiding all sections for P/N (Nghỉ)');
     } else {
         // Chưa chọn - ẩn tất cả
         if (constructionFields) constructionFields.style.display = 'none';
-        if (shiftSection) shiftSection.style.display = 'none';
         if (overtimeSection) overtimeSection.style.display = 'none';
         if (expenseSection) expenseSection.style.display = 'none';
+        
+        // Reset các trường liên quan đến công trường
+        resetConstructionFields();
         console.log('Hiding all sections - no selection');
     }
     
@@ -1269,9 +1478,96 @@ function toggleConstructionFields() {
     updateOvertimeSections();
 }
 
+function resetConstructionFields() {
+    console.log('resetConstructionFields called');
+    
+    // Reset các trường liên quan đến công trường
+    const dayConstructionName = document.getElementById('dayConstructionName');
+    const dayNdtMethod = document.getElementById('dayNdtMethod');
+    const dayPautMeters = document.getElementById('dayPautMeters');
+    const dayTofdMeters = document.getElementById('dayTofdMeters');
+    const nightConstructionName = document.getElementById('nightConstructionName');
+    const nightNdtMethod = document.getElementById('nightNdtMethod');
+    const nightPautMeters = document.getElementById('nightPautMeters');
+    const nightTofdMeters = document.getElementById('nightTofdMeters');
+    
+    // Reset giá trị
+    if (dayConstructionName) dayConstructionName.value = '';
+    if (dayNdtMethod) dayNdtMethod.value = '';
+    if (dayPautMeters) dayPautMeters.value = '';
+    if (dayTofdMeters) dayTofdMeters.value = '';
+    if (nightConstructionName) nightConstructionName.value = '';
+    if (nightNdtMethod) nightNdtMethod.value = '';
+    if (nightPautMeters) nightPautMeters.value = '';
+    if (nightTofdMeters) nightTofdMeters.value = '';
+    
+    // Ẩn các trường PAUT/TOFD meters
+    const pautMetersField = document.getElementById('pautMetersField');
+    const tofdMetersField = document.getElementById('tofdMetersField');
+    const nightPautMetersField = document.getElementById('nightPautMetersField');
+    const nightTofdMetersField = document.getElementById('nightTofdMetersField');
+    
+    if (pautMetersField) pautMetersField.style.display = 'none';
+    if (tofdMetersField) tofdMetersField.style.display = 'none';
+    if (nightPautMetersField) nightPautMetersField.style.display = 'none';
+    if (nightTofdMetersField) nightTofdMetersField.style.display = 'none';
+    
+    console.log('Construction fields reset successfully');
+}
+
+function resetDayConstructionFields() {
+    console.log('resetDayConstructionFields called');
+    
+    // Reset các trường liên quan đến công trường ca ngày
+    const dayConstructionName = document.getElementById('dayConstructionName');
+    const dayNdtMethod = document.getElementById('dayNdtMethod');
+    const dayPautMeters = document.getElementById('dayPautMeters');
+    const dayTofdMeters = document.getElementById('dayTofdMeters');
+    
+    // Reset giá trị
+    if (dayConstructionName) dayConstructionName.value = '';
+    if (dayNdtMethod) dayNdtMethod.value = '';
+    if (dayPautMeters) dayPautMeters.value = '';
+    if (dayTofdMeters) dayTofdMeters.value = '';
+    
+    // Ẩn các trường PAUT/TOFD meters
+    const pautMetersField = document.getElementById('pautMetersField');
+    const tofdMetersField = document.getElementById('tofdMetersField');
+    
+    if (pautMetersField) pautMetersField.style.display = 'none';
+    if (tofdMetersField) tofdMetersField.style.display = 'none';
+    
+    console.log('Day construction fields reset successfully');
+}
+
+function resetNightConstructionFields() {
+    console.log('resetNightConstructionFields called');
+    
+    // Reset các trường liên quan đến công trường ca đêm
+    const nightConstructionName = document.getElementById('nightConstructionName');
+    const nightNdtMethod = document.getElementById('nightNdtMethod');
+    const nightPautMeters = document.getElementById('nightPautMeters');
+    const nightTofdMeters = document.getElementById('nightTofdMeters');
+    
+    // Reset giá trị
+    if (nightConstructionName) nightConstructionName.value = '';
+    if (nightNdtMethod) nightNdtMethod.value = '';
+    if (nightPautMeters) nightPautMeters.value = '';
+    if (nightTofdMeters) nightTofdMeters.value = '';
+    
+    // Ẩn các trường PAUT/TOFD meters
+    const nightPautMetersField = document.getElementById('nightPautMetersField');
+    const nightTofdMetersField = document.getElementById('nightTofdMetersField');
+    
+    if (nightPautMetersField) nightPautMetersField.style.display = 'none';
+    if (nightTofdMetersField) nightTofdMetersField.style.display = 'none';
+    
+    console.log('Night construction fields reset successfully');
+}
+
 function toggleMetersFields() {
     console.log('toggleMetersFields called');
-    const ndtMethod = document.getElementById('ndtMethod').value;
+    const ndtMethod = document.getElementById('dayNdtMethod').value;
     const pautMetersField = document.getElementById('pautMetersField');
     const tofdMetersField = document.getElementById('tofdMetersField');
     
@@ -1300,6 +1596,40 @@ function toggleMetersFields() {
         }
     } else {
         console.log('Hiding all meters fields for other methods');
+    }
+}
+
+function toggleNightMetersFields() {
+    console.log('toggleNightMetersFields called');
+    const ndtMethod = document.getElementById('nightNdtMethod').value;
+    const pautMetersField = document.getElementById('nightPautMetersField');
+    const tofdMetersField = document.getElementById('nightTofdMetersField');
+    
+    console.log('Night NDT Method selected:', ndtMethod);
+    console.log('Night PAUT meters field found:', !!pautMetersField);
+    console.log('Night TOFD meters field found:', !!tofdMetersField);
+    
+    // Ẩn tất cả trường nhập số mét vượt trước
+    if (pautMetersField) {
+        pautMetersField.style.display = 'none';
+    }
+    if (tofdMetersField) {
+        tofdMetersField.style.display = 'none';
+    }
+    
+    // Hiển thị trường tương ứng với phương pháp được chọn
+    if (ndtMethod === 'PAUT') {
+        if (pautMetersField) {
+            pautMetersField.style.display = 'block';
+            console.log('Showing night PAUT meters field');
+        }
+    } else if (ndtMethod === 'TOFD') {
+        if (tofdMetersField) {
+            tofdMetersField.style.display = 'block';
+            console.log('Showing night TOFD meters field');
+        }
+    } else {
+        console.log('Hiding all night meters fields for other methods');
     }
 }
 
@@ -1425,193 +1755,436 @@ async function saveAttendance() {
         return;
     }
     
+    // Kiểm tra có chọn ca nào không
+    const dayShift = document.getElementById('dayShift').checked;
+    const nightShift = document.getElementById('nightShift').checked;
+    
+    if (!dayShift && !nightShift) {
+        alert('Vui lòng chọn ít nhất 1 ca làm việc!');
+        return;
+    }
+    
+    // Kiểm tra dữ liệu ca ngày nếu được chọn
+    if (dayShift) {
+        const dayWorkType = document.getElementById('dayWorkType').value;
+        if (!dayWorkType) {
+            alert('Vui lòng chọn loại công việc cho ca ngày!');
+            return;
+        }
+    }
+    
+    // Kiểm tra dữ liệu ca đêm nếu được chọn
+    if (nightShift) {
+        const nightWorkType = document.getElementById('nightWorkType').value;
+        if (!nightWorkType) {
+            alert('Vui lòng chọn loại công việc cho ca đêm!');
+            return;
+        }
+    }
+    
+    // Tạo dữ liệu cho từng ca
     const attendanceData = {
         date: document.getElementById('attendanceDate').value,
-        workType: document.getElementById('workType').value,
-        constructionName: document.getElementById('constructionName').value,
-        ndtMethod: document.getElementById('ndtMethod').value,
-        pautMeters: parseFloat(document.getElementById('pautMeters')?.value) || 0,
-        tofdMeters: parseFloat(document.getElementById('tofdMeters')?.value) || 0,
-        dayShift: document.getElementById('dayShift').checked,
-        nightShift: document.getElementById('nightShift').checked,
-        dayOvertimeEnd: document.getElementById('dayOvertimeEnd')?.value || '',
-        nightOvertimeEnd: document.getElementById('nightOvertimeEnd')?.value || '',
-        overtimeHours: document.getElementById('overtimeHours')?.value || '0',
+        dayShift: dayShift,
+        nightShift: nightShift,
+        
+        // Dữ liệu ca ngày
+        dayWorkType: dayShift ? document.getElementById('dayWorkType').value : '',
+        dayConstructionName: dayShift ? document.getElementById('dayConstructionName').value : '',
+        dayNdtMethod: dayShift ? document.getElementById('dayNdtMethod').value : '',
+        dayPautMeters: dayShift ? parseFloat(document.getElementById('dayPautMeters').value) || 0 : 0,
+        dayTofdMeters: dayShift ? parseFloat(document.getElementById('dayTofdMeters').value) || 0 : 0,
+        dayOvertimeEnd: dayShift ? document.getElementById('dayOvertimeEnd').value : '',
+        dayWorkNote: dayShift ? document.getElementById('dayWorkNote').value : '',
+        
+        // Dữ liệu ca đêm
+        nightWorkType: nightShift ? document.getElementById('nightWorkType').value : '',
+        nightConstructionName: nightShift ? document.getElementById('nightConstructionName').value : '',
+        nightNdtMethod: nightShift ? document.getElementById('nightNdtMethod').value : '',
+        nightPautMeters: nightShift ? parseFloat(document.getElementById('nightPautMeters').value) || 0 : 0,
+        nightTofdMeters: nightShift ? parseFloat(document.getElementById('nightTofdMeters').value) || 0 : 0,
+        nightOvertimeEnd: nightShift ? document.getElementById('nightOvertimeEnd').value : '',
+        nightWorkNote: nightShift ? document.getElementById('nightWorkNote').value : '',
+        
+        // Chi phí chung
         hotelExpense: parseFloat(document.getElementById('hotelExpense').value) || 0,
         shoppingExpense: parseFloat(document.getElementById('shoppingExpense').value) || 0,
         phoneExpense: parseFloat(document.getElementById('phoneExpense').value) || 0,
         otherExpense: parseFloat(document.getElementById('otherExpense').value) || 0,
-        otherExpenseDesc: document.getElementById('otherExpenseDesc')?.value || '',
-        workNote: document.getElementById('workNote')?.value || '',
+        otherExpenseDesc: document.getElementById('otherExpenseDesc').value || '',
+        
         timestamp: new Date().toISOString()
     };
     
+    // Debug: Log dữ liệu gửi đi
+    console.log('Attendance Data to save:', attendanceData);
+    
     try {
-        // Save single record to API
-        const success = await setUserAttendanceData(attendanceData);
-        console.log('Save attendance result:', success);
+        // Hiển thị loading
+        const saveBtn = document.querySelector('button[type="submit"]');
+        const originalText = saveBtn.innerHTML;
+        saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Đang lưu...';
+        saveBtn.disabled = true;
         
-        if (success) {
-            // Update UI
+        // Xác định mode (tạo mới hoặc sửa)
+        const isEditMode = saveBtn.classList.contains('btn-warning');
+        const editDate = saveBtn.getAttribute('data-edit-date');
+        
+        let apiUrl = '/api/attendance/save/';
+        let method = 'POST';
+        
+        if (isEditMode && editDate) {
+            apiUrl = `/api/attendance/update/${editDate}/`;
+            method = 'PUT';
+            // Thêm ngày đang edit vào dữ liệu
+            attendanceData.editDate = editDate;
+        }
+        
+        // Lấy CSRF token
+        const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        
+        // Gọi API lưu/cập nhật chấm công
+        const response = await fetch(apiUrl, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken
+            },
+            body: JSON.stringify(attendanceData)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Hiển thị thông báo thành công
+            const message = isEditMode ? 'Cập nhật chấm công thành công!' : `Lưu chấm công thành công cho ${result.total_shifts} ca!`;
+            showAlert(message, 'success');
+            
+            // Ẩn form và refresh dữ liệu
             hideAttendanceForm();
             await loadAttendanceData();
-            await renderTodayAttendanceButton();
-            updateDetailedStatistics();
             
-            // Show success message
-            if (typeof Swal !== 'undefined') {
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Thành công!',
-                    text: 'Đã lưu chấm công thành công.',
-                    timer: 2000,
-                    showConfirmButton: false
-                });
-            }
+            // Refresh nút chấm công hôm nay
+            await renderTodayAttendanceButton();
+            
         } else {
-            console.error('setUserAttendanceData returned false');
-            if (typeof Swal !== 'undefined') {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Lỗi!',
-                    text: 'Không thể lưu chấm công. Vui lòng thử lại.',
-                });
-            }
+            showAlert(`Lỗi: ${result.message}`, 'danger');
         }
+        
     } catch (error) {
         console.error('Error saving attendance:', error);
-        if (typeof Swal !== 'undefined') {
-            Swal.fire({
-                icon: 'error',
-                title: 'Lỗi!',
-                text: 'Không thể lưu chấm công. Vui lòng thử lại.',
-            });
-        }
+        showAlert('Lỗi kết nối server. Vui lòng thử lại!', 'danger');
+        
+    } finally {
+        // Khôi phục button
+        const saveBtn = document.querySelector('button[type="submit"]');
+        saveBtn.innerHTML = originalText;
+        saveBtn.disabled = false;
     }
 }
 
 // Cập nhật hàm loadAttendanceData để sử dụng API
 async function loadAttendanceData() {
-    console.log('loadAttendanceData called for month:', currentFilterMonthValue);
     try {
-        const data = await getUserAttendanceData();
-        const container = document.getElementById('attendanceTableContainer');
+        // Lấy tháng và năm từ filter hiện tại
+        const [year, month] = currentFilterMonthValue.split('-').map(Number);
+        console.log(`loadAttendanceData: Loading data for month=${month}, year=${year}`);
+        const data = await getUserAttendanceData(month, year);
+        console.log(`loadAttendanceData: Received ${data.length} records for month ${month}/${year}`);
+        const container = document.getElementById('attendanceDataContainer');
         
-        // Filter data by selected month
-        const filteredData = data.filter(record => {
-            const recordMonth = record.date.substring(0, 7); // Get YYYY-MM from date
-            return recordMonth === currentFilterMonthValue;
-        });
-        
-        console.log('Total records:', data.length, 'Filtered records:', filteredData.length);
-        
-        if (filteredData.length === 0) {
-            container.innerHTML = `<p class="text-center text-muted">Chưa có dữ liệu chấm công tháng ${currentFilterMonthValue}</p>`;
+        if (!data || data.length === 0) {
+            container.innerHTML = '<p class="text-center text-muted">Chưa có dữ liệu chấm công</p>';
             return;
         }
         
         let html = '<div class="table-responsive"><table class="table table-hover">';
-        html += '<thead><tr><th>Ngày</th><th>Loại công việc</th><th>Công trình</th><th>Phương pháp</th><th>Số mét vượt</th><th>Ca làm việc</th><th>Tăng ca</th><th>Chi phí</th><th>Thao tác</th></tr></thead><tbody>';
+        html += '<thead class="table-dark"><tr>';
+        html += '<th>Ngày</th>';
+        html += '<th>Ca làm việc</th>';
+        html += '<th>Loại công việc</th>';
+        html += '<th>Địa điểm</th>';
+        html += '<th>Phương pháp NDT</th>';
+        html += '<th>Mét vượt PAUT/TOFD</th>';
+        html += '<th>Tăng ca</th>';
+        html += '<th>Chi phí</th>';
+        html += '<th>Ghi chú</th>';
+        html += '<th>Thao tác</th>';
+        html += '</tr></thead><tbody>';
         
-        filteredData.forEach(record => {
-            const workTypeMap = {
-                'W': 'Công trường',
-                'O': 'Văn phòng',
-                'T': 'Đào tạo',
-                'P': 'Nghỉ có phép',
-                'N': 'Nghỉ không phép'
-            };
-            const workTypeText = workTypeMap[record.workType] || record.workType;
-            const workTypeClass = record.workType === 'W' ? 'success' : 
-                                 record.workType === 'O' ? 'info' : 
-                                 record.workType === 'T' ? 'primary' : 
-                                 record.workType === 'P' ? 'warning' : 'danger';
+        // Sắp xếp theo ngày mới nhất
+        data.sort((a, b) => new Date(b.date) - new Date(a.date));
+        
+        for (const record of data) {
+            const date = new Date(record.date);
+            const dateStr = date.toLocaleDateString('vi-VN');
             
-            const date = new Date(record.date).toLocaleDateString('vi-VN');
-            const time = new Date(record.timestamp).toLocaleTimeString('vi-VN');
-            
-            // Ca làm việc
-            let shiftText = '';
+            // Xác định ca làm việc
+            let shiftInfo = '';
             if (record.dayShift && record.nightShift) {
-                shiftText = 'Ca ngày + Ca đêm';
+                shiftInfo = '<span class="badge bg-warning me-1">Ca ngày</span><span class="badge bg-info">Ca đêm</span>';
             } else if (record.dayShift) {
-                shiftText = 'Ca ngày';
+                shiftInfo = '<span class="badge bg-warning">Ca ngày</span>';
             } else if (record.nightShift) {
-                shiftText = 'Ca đêm';
-            } else {
-                shiftText = '-';
+                shiftInfo = '<span class="badge bg-info">Ca đêm</span>';
             }
             
-            // Tăng ca
-            const overtimeText = record.overtimeHours && parseFloat(record.overtimeHours) > 0 ? 
-                `${record.overtimeHours}h` : '-';
-            
-            // Chi phí
-            let expenseText = '';
-            const expenses = [];
-            let totalAmount = 0;
-            
-            if (record.hotelExpense && parseFloat(record.hotelExpense) > 0) {
-                expenses.push(`KS: ${parseFloat(record.hotelExpense).toLocaleString('vi-VN')}đ`);
-                totalAmount += parseFloat(record.hotelExpense);
-            }
-            if (record.shoppingExpense && parseFloat(record.shoppingExpense) > 0) {
-                expenses.push(`MS: ${parseFloat(record.shoppingExpense).toLocaleString('vi-VN')}đ`);
-                totalAmount += parseFloat(record.shoppingExpense);
-            }
-            if (record.phoneExpense && parseFloat(record.phoneExpense) > 0) {
-                expenses.push(`ĐT: ${parseFloat(record.phoneExpense).toLocaleString('vi-VN')}đ`);
-                totalAmount += parseFloat(record.phoneExpense);
-            }
-            if (record.otherExpense && parseFloat(record.otherExpense) > 0) {
-                expenses.push(`Khác: ${parseFloat(record.otherExpense).toLocaleString('vi-VN')}đ`);
-                totalAmount += parseFloat(record.otherExpense);
-            }
-            
-            if (expenses.length > 0) {
-                expenseText = expenses.join(', ');
-                if (totalAmount > 0) {
-                    expenseText += ` (Tổng: ${totalAmount.toLocaleString('vi-VN')}đ)`;
+            // Xác định loại công việc
+            let workTypeBadge = '';
+            // Sử dụng dữ liệu trực tiếp từ record
+            if (record.dayShift && record.nightShift) {
+                // Cả 2 ca
+                const dayWorkType = record.dayWorkType || record.workType || '';
+                const nightWorkType = record.nightWorkType || record.workType || '';
+                
+                if (dayWorkType) {
+                    const dayType = dayWorkType === 'W' ? 'Công trường' : 
+                                   dayWorkType === 'O' ? 'Văn phòng' : 
+                                   dayWorkType === 'T' ? 'Đào tạo' : dayWorkType;
+                    workTypeBadge += `<div><span class="badge bg-${dayWorkType === 'W' ? 'success' : dayWorkType === 'O' ? 'primary' : 'info'}">Ca ngày: ${dayType}</span></div>`;
+                }
+                
+                if (nightWorkType) {
+                    const nightType = nightWorkType === 'W' ? 'Công trường' : 
+                                    nightWorkType === 'O' ? 'Văn phòng' : 
+                                    nightWorkType === 'T' ? 'Đào tạo' : nightWorkType;
+                    workTypeBadge += `<div><span class="badge bg-${nightWorkType === 'W' ? 'success' : nightWorkType === 'O' ? 'primary' : 'info'}">Ca đêm: ${nightType}</span></div>`;
+                }
+            } else if (record.dayShift) {
+                // Chỉ ca ngày
+                const workType = record.dayWorkType || record.workType || '';
+                switch (workType) {
+                    case 'W':
+                        workTypeBadge = '<span class="badge bg-success">Ca ngày: Công trường</span>';
+                        break;
+                    case 'O':
+                        workTypeBadge = '<span class="badge bg-primary">Ca ngày: Văn phòng</span>';
+                        break;
+                    case 'T':
+                        workTypeBadge = '<span class="badge bg-info">Ca ngày: Đào tạo</span>';
+                        break;
+                    default:
+                        workTypeBadge = '<span class="badge bg-secondary">Ca ngày: Khác</span>';
+                }
+            } else if (record.nightShift) {
+                // Chỉ ca đêm
+                const workType = record.nightWorkType || record.workType || '';
+                switch (workType) {
+                    case 'W':
+                        workTypeBadge = '<span class="badge bg-success">Ca đêm: Công trường</span>';
+                        break;
+                    case 'O':
+                        workTypeBadge = '<span class="badge bg-primary">Ca đêm: Văn phòng</span>';
+                        break;
+                    case 'T':
+                        workTypeBadge = '<span class="badge bg-info">Ca đêm: Đào tạo</span>';
+                        break;
+                    default:
+                        workTypeBadge = '<span class="badge bg-secondary">Ca đêm: Khác</span>';
                 }
             } else {
-                expenseText = '-';
+                // Fallback cho dữ liệu cũ
+                switch (record.workType) {
+                    case 'W':
+                        workTypeBadge = '<span class="badge bg-success">Công trường</span>';
+                        break;
+                    case 'O':
+                        workTypeBadge = '<span class="badge bg-primary">Văn phòng</span>';
+                        break;
+                    case 'T':
+                        workTypeBadge = '<span class="badge bg-info">Đào tạo</span>';
+                        break;
+                    default:
+                        workTypeBadge = '<span class="badge bg-secondary">Khác</span>';
+                }
             }
             
-            // Số mét vượt
-            let metersText = '';
-            if (record.ndtMethod === 'PAUT' && record.pautMeters && parseFloat(record.pautMeters) > 0) {
-                metersText = `PAUT: ${parseFloat(record.pautMeters).toFixed(2)}m`;
-            } else if (record.ndtMethod === 'TOFD' && record.tofdMeters && parseFloat(record.tofdMeters) > 0) {
-                metersText = `TOFD: ${parseFloat(record.tofdMeters).toFixed(2)}m`;
+            // Xử lý địa điểm
+            let locationInfo = '';
+            if (record.dayShift && record.nightShift) {
+                // Cả 2 ca
+                const dayLocation = record.dayConstructionName || record.constructionName || '-';
+                const nightLocation = record.nightConstructionName || record.constructionName || '-';
+                locationInfo = `<div><strong>Ca ngày:</strong> ${dayLocation}</div><div><strong>Ca đêm:</strong> ${nightLocation}</div>`;
+            } else if (record.dayShift) {
+                // Chỉ ca ngày
+                locationInfo = record.dayConstructionName || record.constructionName || '-';
+            } else if (record.nightShift) {
+                // Chỉ ca đêm
+                locationInfo = record.nightConstructionName || record.constructionName || '-';
             } else {
-                metersText = '-';
+                // Fallback cho dữ liệu cũ
+                locationInfo = record.constructionName || '-';
             }
             
-            // Thêm nút chỉnh sửa nếu có thể
-            const editButton = record.canBeEdited ? 
-                `<button class="btn btn-sm btn-outline-primary" onclick="editAttendanceRecord('${record.date}')">
-                    <i class="fas fa-edit"></i>
-                </button>` : '';
+            // Xử lý phương pháp NDT
+            let ndtInfo = '';
+            if (record.dayShift && record.nightShift) {
+                // Cả 2 ca
+                const dayNdt = record.dayNdtMethod || record.ndtMethod || '-';
+                const nightNdt = record.nightNdtMethod || record.ndtMethod || '-';
+                ndtInfo = `<div><strong>Ca ngày:</strong> ${dayNdt}</div><div><strong>Ca đêm:</strong> ${nightNdt}</div>`;
+            } else if (record.dayShift) {
+                // Chỉ ca ngày
+                ndtInfo = record.dayNdtMethod || record.ndtMethod || '-';
+            } else if (record.nightShift) {
+                // Chỉ ca đêm
+                ndtInfo = record.nightNdtMethod || record.ndtMethod || '-';
+            } else {
+                // Fallback cho dữ liệu cũ
+                ndtInfo = record.ndtMethod || '-';
+            }
             
-            html += `<tr>
-                <td>${date}</td>
-                <td><span class="badge bg-${workTypeClass}">${workTypeText}</span></td>
-                <td>${record.constructionName || '-'}</td>
-                <td>${record.ndtMethod || '-'}</td>
-                <td>${metersText}</td>
-                <td>${shiftText}</td>
-                <td>${overtimeText}</td>
-                <td>${expenseText}</td>
-                <td>${editButton}</td>
-            </tr>`;
-        });
+            // Xử lý mét vượt PAUT/TOFD
+            let metersInfo = '';
+            if (record.dayShift && record.nightShift) {
+                // Cả 2 ca
+                let dayMeters = '';
+                let nightMeters = '';
+                
+                if (record.dayPautMeters > 0) {
+                    dayMeters += `<div><small>PAUT: ${record.dayPautMeters}m</small></div>`;
+                }
+                if (record.dayTofdMeters > 0) {
+                    dayMeters += `<div><small>TOFD: ${record.dayTofdMeters}m</small></div>`;
+                }
+                if (dayMeters) {
+                    dayMeters = `<div><strong>Ca ngày:</strong> ${dayMeters}</div>`;
+                }
+                
+                if (record.nightPautMeters > 0) {
+                    nightMeters += `<div><small>PAUT: ${record.nightPautMeters}m</small></div>`;
+                }
+                if (record.nightTofdMeters > 0) {
+                    nightMeters += `<div><small>TOFD: ${record.nightTofdMeters}m</small></div>`;
+                }
+                if (nightMeters) {
+                    nightMeters = `<div><strong>Ca đêm:</strong> ${nightMeters}</div>`;
+                }
+                
+                metersInfo = dayMeters + nightMeters;
+            } else if (record.dayShift) {
+                // Chỉ ca ngày
+                if (record.dayPautMeters > 0) {
+                    metersInfo += `<div><small>PAUT: ${record.dayPautMeters}m</small></div>`;
+                }
+                if (record.dayTofdMeters > 0) {
+                    metersInfo += `<div><small>TOFD: ${record.dayTofdMeters}m</small></div>`;
+                }
+            } else if (record.nightShift) {
+                // Chỉ ca đêm
+                if (record.nightPautMeters > 0) {
+                    metersInfo += `<div><small>PAUT: ${record.nightPautMeters}m</small></div>`;
+                }
+                if (record.nightTofdMeters > 0) {
+                    metersInfo += `<div><small>TOFD: ${record.nightTofdMeters}m</small></div>`;
+                }
+            }
+            
+            if (!metersInfo) {
+                metersInfo = '<span class="text-muted">Không có</span>';
+            }
+            
+            // Xử lý tăng ca
+            let overtimeInfo = '';
+            if (record.dayOvertimeEnd || record.nightOvertimeEnd) {
+                if (record.dayOvertimeEnd) {
+                    overtimeInfo += `<div><small>Ca ngày: ${record.dayOvertimeEnd}</small></div>`;
+                }
+                if (record.nightOvertimeEnd) {
+                    overtimeInfo += `<div><small>Ca đêm: ${record.nightOvertimeEnd}</small></div>`;
+                }
+                if (record.overtimeHours && parseFloat(record.overtimeHours) > 0) {
+                    overtimeInfo += `<div><strong>Tổng: ${record.overtimeHours}h</strong></div>`;
+                }
+            } else {
+                overtimeInfo = '<span class="text-muted">Không có</span>';
+            }
+            
+            // Xử lý chi phí
+            let expenseInfo = '';
+            const totalExpense = (record.hotelExpense || 0) + (record.shoppingExpense || 0) + 
+                               (record.phoneExpense || 0) + (record.otherExpense || 0);
+            if (totalExpense > 0) {
+                expenseInfo = `<div><strong>Tổng: ${totalExpense.toLocaleString('vi-VN')} VNĐ</strong></div>`;
+                if (record.hotelExpense > 0) {
+                    expenseInfo += `<div><small>Khách sạn: ${record.hotelExpense.toLocaleString('vi-VN')}</small></div>`;
+                }
+                if (record.shoppingExpense > 0) {
+                    expenseInfo += `<div><small>Mua sắm: ${record.shoppingExpense.toLocaleString('vi-VN')}</small></div>`;
+                }
+                if (record.phoneExpense > 0) {
+                    expenseInfo += `<div><small>Điện thoại: ${record.phoneExpense.toLocaleString('vi-VN')}</small></div>`;
+                }
+                if (record.otherExpense > 0) {
+                    expenseInfo += `<div><small>Khác: ${record.otherExpense.toLocaleString('vi-VN')}</small></div>`;
+                }
+            } else {
+                expenseInfo = '<span class="text-muted">Không có</span>';
+            }
+            
+            // Xử lý ghi chú
+            let noteInfo = '';
+            if (record.dayShift && record.nightShift) {
+                // Cả 2 ca
+                const dayNote = record.dayWorkNote || record.workNote || '';
+                const nightNote = record.nightWorkNote || record.workNote || '';
+                noteInfo = '';
+                if (dayNote) {
+                    noteInfo += `<div><strong>Ca ngày:</strong> ${dayNote}</div>`;
+                }
+                if (nightNote) {
+                    noteInfo += `<div><strong>Ca đêm:</strong> ${nightNote}</div>`;
+                }
+            } else if (record.dayShift) {
+                // Chỉ ca ngày
+                noteInfo = record.dayWorkNote || record.workNote || '';
+            } else if (record.nightShift) {
+                // Chỉ ca đêm
+                noteInfo = record.nightWorkNote || record.workNote || '';
+            } else {
+                // Fallback cho dữ liệu cũ
+                noteInfo = record.workNote || '';
+            }
+            
+            html += '<tr>';
+            html += `<td><strong>${dateStr}</strong></td>`;
+            html += `<td>${shiftInfo}</td>`;
+            html += `<td>${workTypeBadge}</td>`;
+            html += `<td>${locationInfo}</td>`;
+            html += `<td>${ndtInfo}</td>`;
+            html += `<td>${metersInfo}</td>`;
+            html += `<td>${overtimeInfo}</td>`;
+            html += `<td>${expenseInfo}</td>`;
+            html += `<td>${noteInfo || '-'}</td>`;
+            
+            // Cột thao tác
+            let actionButtons = '';
+            if (record.canBeEdited) {
+                actionButtons = `
+                    <div class="btn-group btn-group-sm" role="group">
+                        <button type="button" class="btn btn-outline-primary" onclick="editAttendanceRecord('${record.date}')" title="Sửa">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button type="button" class="btn btn-outline-danger" onclick="deleteAttendanceRecord('${record.date}')" title="Xóa">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+            } else {
+                actionButtons = '<span class="text-muted">Không thể sửa</span>';
+            }
+            html += `<td>${actionButtons}</td>`;
+            
+            html += '</tr>';
+        }
         
         html += '</tbody></table></div>';
         container.innerHTML = html;
         
     } catch (error) {
         console.error('Error loading attendance data:', error);
-        const container = document.getElementById('attendanceTableContainer');
+        const container = document.getElementById('attendanceDataContainer');
         container.innerHTML = '<p class="text-center text-danger">Lỗi tải dữ liệu chấm công</p>';
     }
 }
@@ -1619,54 +2192,134 @@ async function loadAttendanceData() {
 // Thêm hàm chỉnh sửa bản ghi chấm công
 async function editAttendanceRecord(date) {
     try {
-        const data = await getUserAttendanceData();
+        // Lấy dữ liệu chấm công của ngày này
+        const [year, month] = currentFilterMonthValue.split('-').map(Number);
+        const data = await getUserAttendanceData(month, year);
         const record = data.find(r => r.date === date);
         
         if (!record) {
-            console.error('Record not found');
+            showAlert('Không tìm thấy dữ liệu chấm công cho ngày này!', 'danger');
             return;
         }
         
+        // Debug: Log dữ liệu record
+        console.log('Edit record data:', record);
+        
+        // Hiển thị form với dữ liệu hiện tại
+        showAttendanceForm('edit');
+        
         // Điền dữ liệu vào form
         document.getElementById('attendanceDate').value = record.date;
-        document.getElementById('workType').value = record.workType;
-        document.getElementById('constructionName').value = record.constructionName || '';
-        document.getElementById('ndtMethod').value = record.ndtMethod || '';
-        document.getElementById('dayShift').checked = record.dayShift;
-        document.getElementById('nightShift').checked = record.nightShift;
-        document.getElementById('dayOvertimeEnd').value = record.dayOvertimeEnd || '';
-        document.getElementById('nightOvertimeEnd').value = record.nightOvertimeEnd || '';
-        document.getElementById('overtimeHours').value = record.overtimeHours || '0';
-        document.getElementById('hotelExpense').value = record.hotelExpense || 0;
-        document.getElementById('shoppingExpense').value = record.shoppingExpense || 0;
-        document.getElementById('phoneExpense').value = record.phoneExpense || 0;
-        document.getElementById('otherExpense').value = record.otherExpense || 0;
-        document.getElementById('otherExpenseDesc').value = record.otherExpenseDesc || '';
-        document.getElementById('workNote').value = record.workNote || '';
         
-        // Hiển thị form
-        showAttendanceForm('edit');
+        // Điền dữ liệu ca ngày
+        if (record.dayShift) {
+            document.getElementById('dayShift').checked = true;
+            // Xử lý dữ liệu ca ngày từ record trực tiếp
+            document.getElementById('dayWorkType').value = record.dayWorkType || record.workType || '';
+            document.getElementById('dayConstructionName').value = record.dayConstructionName || record.constructionName || '';
+            document.getElementById('dayNdtMethod').value = record.dayNdtMethod || record.ndtMethod || '';
+            document.getElementById('dayPautMeters').value = record.dayPautMeters || record.pautMeters || '';
+            document.getElementById('dayTofdMeters').value = record.dayTofdMeters || record.tofdMeters || '';
+            document.getElementById('dayOvertimeEnd').value = record.dayOvertimeEnd || record.overtimeEnd || '';
+            document.getElementById('dayWorkNote').value = record.dayWorkNote || record.workNote || '';
+        } else {
+            document.getElementById('dayShift').checked = false;
+        }
+        
+        // Điền dữ liệu ca đêm
+        if (record.nightShift) {
+            document.getElementById('nightShift').checked = true;
+            // Xử lý dữ liệu ca đêm từ record trực tiếp
+            document.getElementById('nightWorkType').value = record.nightWorkType || record.workType || '';
+            document.getElementById('nightConstructionName').value = record.nightConstructionName || record.constructionName || '';
+            document.getElementById('nightNdtMethod').value = record.nightNdtMethod || record.ndtMethod || '';
+            document.getElementById('nightPautMeters').value = record.nightPautMeters || record.pautMeters || '';
+            document.getElementById('nightTofdMeters').value = record.nightTofdMeters || record.tofdMeters || '';
+            document.getElementById('nightOvertimeEnd').value = record.nightOvertimeEnd || record.overtimeEnd || '';
+            document.getElementById('nightWorkNote').value = record.nightWorkNote || record.workNote || '';
+        } else {
+            document.getElementById('nightShift').checked = false;
+        }
+        
+        // Điền chi phí
+        document.getElementById('hotelExpense').value = record.hotelExpense || '';
+        document.getElementById('shoppingExpense').value = record.shoppingExpense || '';
+        document.getElementById('phoneExpense').value = record.phoneExpense || '';
+        document.getElementById('otherExpense').value = record.otherExpense || '';
+        document.getElementById('otherExpenseDesc').value = record.otherExpenseDesc || '';
+        
+        // Cập nhật hiển thị form
+        handleShiftSelection();
+        
+        // Đợi một chút để DOM được cập nhật
+        setTimeout(() => {
+            // Hiển thị form công trường nếu cần
+            toggleDayConstructionFields();
+            toggleNightConstructionFields();
+            
+            // Hiển thị trường PAUT/TOFD meters nếu cần
+            toggleMetersFields();
+            toggleNightMetersFields();
+        }, 100);
+        
+        // Thay đổi tiêu đề form
+        document.getElementById('formTitle').innerHTML = '<i class="fas fa-edit text-warning me-2"></i>Sửa chấm công';
+        
+        // Thay đổi nút submit
+        const submitBtn = document.querySelector('button[type="submit"]');
+        submitBtn.innerHTML = '<i class="fas fa-save me-2"></i>Cập nhật chấm công';
+        
+        // Thêm class để phân biệt mode edit
+        submitBtn.classList.add('btn-warning');
+        submitBtn.classList.remove('btn-primary');
+        
+        // Lưu ngày đang edit để biết cập nhật record nào
+        submitBtn.setAttribute('data-edit-date', date);
         
     } catch (error) {
         console.error('Error editing attendance record:', error);
+        showAlert('Lỗi khi tải dữ liệu chấm công!', 'danger');
+    }
+}
+
+// Hàm xóa chấm công
+async function deleteAttendanceRecord(date) {
+    if (!confirm('Bạn có chắc chắn muốn xóa chấm công ngày ' + new Date(date).toLocaleDateString('vi-VN') + '?')) {
+        return;
+    }
+    
+    try {
+        // Lấy CSRF token
+        const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        
+        const response = await fetch(`/api/attendance/delete/${date}/`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showAlert('Xóa chấm công thành công!', 'success');
+            await loadAttendanceData();
+            await renderTodayAttendanceButton();
+        } else {
+            showAlert(`Lỗi: ${result.message}`, 'danger');
+        }
+        
+    } catch (error) {
+        console.error('Error deleting attendance record:', error);
+        showAlert('Lỗi khi xóa chấm công!', 'danger');
     }
 }
 
 // Helper function để lấy CSRF token
 function getCSRFToken() {
-    const name = 'csrftoken';
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-            }
-        }
-    }
-    return cookieValue;
+    return document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
+           document.cookie.split('; ').find(row => row.startsWith('csrftoken='))?.split('=')[1] || '';
 }
 
 // Function to calculate working days in a month (Monday to Saturday, excluding Sunday)
@@ -1694,23 +2347,17 @@ function calculateWorkingDaysInMonth(year, month) {
 async function updateDetailedStatistics() {
     console.log('updateDetailedStatistics called for month:', currentFilterMonthValue);
     try {
-        const data = await getUserAttendanceData();
+        // Lấy tháng và năm từ filter
+        const [year, month] = currentFilterMonthValue.split('-').map(Number);
+        const data = await getUserAttendanceData(month, year);
         
-        // Filter data by selected month
-        const filteredData = data.filter(record => {
-            const recordMonth = record.date.substring(0, 7);
-            return recordMonth === currentFilterMonthValue;
-        });
-        
+        const filteredData = data;
         console.log('Calculating statistics for', filteredData.length, 'records');
         
-        // Calculate working days in the selected month
-        const [year, month] = currentFilterMonthValue.split('-').map(Number);
+        // Tính số ngày làm việc (thứ 2-7)
         const totalWorkingDaysInMonth = calculateWorkingDaysInMonth(year, month);
-        
         console.log(`Working days in ${month}/${year}: ${totalWorkingDaysInMonth}`);
         
-        // Calculate statistics
         const stats = {
             totalWorkDays: 0,
             constructionDays: 0,
@@ -1718,37 +2365,69 @@ async function updateDetailedStatistics() {
             trainingDays: 0,
             leaveWithPermission: 0,
             leaveWithoutPermission: 0,
-            overtimeHours: 0
+            overtimeHours: 0,
+            totalPautMeters: 0,
+            totalTofdMeters: 0
         };
         
+        function parseTimeToMinutes(hhmm) {
+            if (!hhmm) return null;
+            const parts = hhmm.split(':');
+            if (parts.length !== 2) return null;
+            const h = parseInt(parts[0], 10); const m = parseInt(parts[1], 10);
+            if (Number.isNaN(h) || Number.isNaN(m)) return null;
+            return h * 60 + m;
+        }
+        
         filteredData.forEach(record => {
-            stats.totalWorkDays++;
-            
-            switch(record.workType) {
-                case 'W':
-                    stats.constructionDays++;
-                    break;
-                case 'O':
-                    stats.officeDays++;
-                    break;
-                case 'T':
-                    stats.trainingDays++;
-                    break;
-                case 'P':
-                    stats.leaveWithPermission++;
-                    break;
-                case 'N':
-                    stats.leaveWithoutPermission++;
-                    break;
+            // Tăng số ngày có chấm công (nếu có bất kỳ ca nào)
+            if (record.dayShift || record.nightShift) {
+                stats.totalWorkDays += 1;
             }
             
-            // Add overtime hours
-            if (record.overtimeHours) {
-                stats.overtimeHours += parseFloat(record.overtimeHours) || 0;
+            // Đếm theo loại công việc từ ca ngày/đêm
+            if (record.dayShift && record.dayWorkType) {
+                switch(record.dayWorkType) {
+                    case 'W': stats.constructionDays++; break;
+                    case 'O': stats.officeDays++; break;
+                    case 'T': stats.trainingDays++; break;
+                    case 'P': stats.leaveWithPermission++; break;
+                    case 'N': stats.leaveWithoutPermission++; break;
+                }
             }
+            if (record.nightShift && record.nightWorkType) {
+                switch(record.nightWorkType) {
+                    case 'W': stats.constructionDays++; break;
+                    case 'O': stats.officeDays++; break;
+                    case 'T': stats.trainingDays++; break;
+                    case 'P': stats.leaveWithPermission++; break;
+                    case 'N': stats.leaveWithoutPermission++; break;
+                }
+            }
+            
+            // Tính tăng ca theo quy tắc mới
+            let ot = 0;
+            if (record.dayShift && record.nightShift) {
+                ot = 0; // cả hai ca thì không tính OT
+            } else if (record.dayShift) {
+                const end = parseTimeToMinutes(record.dayOvertimeEnd);
+                const base = 17 * 60; // 17:00
+                if (end !== null && end > base) ot = (end - base) / 60;
+            } else if (record.nightShift) {
+                const end = parseTimeToMinutes(record.nightOvertimeEnd);
+                const base = 4 * 60; // 04:00
+                if (end !== null && end > base) ot = (end - base) / 60;
+            }
+            stats.overtimeHours += ot;
+            
+            // Cộng mét PAUT/TOFD
+            if (record.dayPautMeters) stats.totalPautMeters += parseFloat(record.dayPautMeters) || 0;
+            if (record.dayTofdMeters) stats.totalTofdMeters += parseFloat(record.dayTofdMeters) || 0;
+            if (record.nightPautMeters) stats.totalPautMeters += parseFloat(record.nightPautMeters) || 0;
+            if (record.nightTofdMeters) stats.totalTofdMeters += parseFloat(record.nightTofdMeters) || 0;
         });
         
-        // Update UI
+        // Cập nhật UI
         document.getElementById('totalWorkDays').textContent = `${stats.totalWorkDays}/${totalWorkingDaysInMonth}`;
         document.getElementById('constructionDays').textContent = stats.constructionDays;
         document.getElementById('officeDays').textContent = stats.officeDays;
@@ -1756,6 +2435,8 @@ async function updateDetailedStatistics() {
         document.getElementById('leaveWithPermission').textContent = stats.leaveWithPermission;
         document.getElementById('leaveWithoutPermission').textContent = stats.leaveWithoutPermission;
         document.getElementById('overtimeHours').textContent = `${stats.overtimeHours}h`;
+        document.getElementById('totalPautMeters').textContent = `${stats.totalPautMeters.toFixed(2)}m`;
+        document.getElementById('totalTofdMeters').textContent = `${stats.totalTofdMeters.toFixed(2)}m`;
         
         console.log('Statistics updated:', stats);
         console.log(`Total working days: ${stats.totalWorkDays}/${totalWorkingDaysInMonth}`);
@@ -2815,15 +3496,15 @@ function getCurrentUserApprovalLevel(request) {
 function showAlert(message, type = 'info') {
     // Tạo alert element
     const alertDiv = document.createElement('div');
-    alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
-    alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
     alertDiv.innerHTML = `
         ${message}
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     `;
     
-    // Thêm vào body
-    document.body.appendChild(alertDiv);
+    // Thêm vào đầu trang
+    const container = document.querySelector('.container-fluid');
+    container.insertBefore(alertDiv, container.firstChild);
     
     // Tự động ẩn sau 5 giây
     setTimeout(() => {
@@ -2861,10 +3542,10 @@ function exportAttendanceData() {
     exportBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Đang xuất...';
     exportBtn.disabled = true;
     
-    // Tạo URL export (sử dụng relative path để giữ session)
-    const exportUrl = `/export/attendance/?month=${month}&year=${year}`;
+    // Tạo URL export JSON đầy đủ
+    const exportUrl = `/api/attendance/export-json/?month=${month}&year=${year}`;
     
-    // Sử dụng fetch để kiểm tra response trước khi download
+    // Sử dụng fetch để lấy dữ liệu JSON đầy đủ
     fetch(exportUrl, {
         method: 'GET',
         headers: {
@@ -2875,9 +3556,13 @@ function exportAttendanceData() {
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
-        return response.blob();
+        return response.json();
     })
-    .then(blob => {
+    .then(data => {
+        // Tạo file JSON để download
+        const jsonString = JSON.stringify(data, null, 2);
+        const blob = new Blob([jsonString], { type: 'application/json' });
+        
         // Tạo URL cho blob
         const url = window.URL.createObjectURL(blob);
         
@@ -2897,7 +3582,7 @@ function exportAttendanceData() {
         // Khôi phục button và hiển thị thông báo thành công
         exportBtn.innerHTML = originalText;
         exportBtn.disabled = false;
-        showAlert(`Đã xuất dữ liệu chấm công tháng ${month}/${year} thành công!`, 'success');
+        showAlert(`Đã xuất dữ liệu chấm công JSON tháng ${month}/${year} thành công!`, 'success');
     })
     .catch(error => {
         console.error('Export error:', error);
@@ -2909,7 +3594,233 @@ function exportAttendanceData() {
     });
 }
 
+// Export attendance data as JSON function
+function exportAttendanceJson() {
+    // Kiểm tra quyền admin
+    if (!CURRENT_USER || (CURRENT_USER.role !== 'admin' && CURRENT_USER.role !== 'company')) {
+        showAlert('Bạn không có quyền xuất dữ liệu!', 'danger');
+        return;
+    }
+    
+    // Lấy tháng và năm hiện tại
+    const currentMonth = document.getElementById('currentMonthDisplay').textContent;
+    const currentYear = document.getElementById('currentYearDisplay').textContent;
+    
+    // Chuyển đổi tên tháng thành số
+    const monthMap = {
+        'Tháng 1': '01', 'Tháng 2': '02', 'Tháng 3': '03', 'Tháng 4': '04',
+        'Tháng 5': '05', 'Tháng 6': '06', 'Tháng 7': '07', 'Tháng 8': '08',
+        'Tháng 9': '09', 'Tháng 10': '10', 'Tháng 11': '11', 'Tháng 12': '12'
+    };
+    
+    const month = monthMap[currentMonth] || '01';
+    const year = currentYear || new Date().getFullYear();
+    
+    // Hiển thị loading
+    const exportBtn = document.getElementById('exportJsonBtn');
+    const originalText = exportBtn.innerHTML;
+    exportBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Đang xuất...';
+    exportBtn.disabled = true;
+    
+    // Tạo URL export JSON
+    const exportUrl = `/api/attendance/export-json/?month=${month}&year=${year}`;
+    
+    // Sử dụng fetch để lấy dữ liệu JSON
+    fetch(exportUrl, {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+        },
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        // Tạo file JSON để download
+        const jsonString = JSON.stringify(data, null, 2);
+        const blob = new Blob([jsonString], { type: 'application/json' });
+        
+        // Tạo URL cho blob
+        const url = window.URL.createObjectURL(blob);
+        
+        // Tạo link download
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `chamcong_${month}_${year}.json`;
+        
+        // Thêm vào DOM và click
+        document.body.appendChild(link);
+        link.click();
+        
+        // Cleanup
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+        
+        // Khôi phục button và hiển thị thông báo thành công
+        exportBtn.innerHTML = originalText;
+        exportBtn.disabled = false;
+        showAlert(`Đã xuất dữ liệu chấm công JSON tháng ${month}/${year} thành công!`, 'success');
+    })
+    .catch(error => {
+        console.error('Export JSON error:', error);
+        
+        // Khôi phục button và hiển thị thông báo lỗi
+        exportBtn.innerHTML = originalText;
+        exportBtn.disabled = false;
+        showAlert(`Lỗi xuất dữ liệu JSON: ${error.message}`, 'danger');
+    });
+}
 
+// Hàm xử lý khi chọn ca làm việc
+function handleShiftSelection() {
+    const dayShift = document.getElementById('dayShift').checked;
+    const nightShift = document.getElementById('nightShift').checked;
+    
+    // Ẩn/hiện form ca ngày
+    const dayShiftForm = document.getElementById('dayShiftForm');
+    if (dayShiftForm) {
+        dayShiftForm.style.display = dayShift ? 'block' : 'none';
+    }
+    
+    // Ẩn/hiện form ca đêm
+    const nightShiftForm = document.getElementById('nightShiftForm');
+    if (nightShiftForm) {
+        nightShiftForm.style.display = nightShift ? 'block' : 'none';
+    }
+    
+    // Hiển thị/ẩn phần chi phí nếu có ca nào được chọn
+    const expenseSection = document.getElementById('expenseSection');
+    if (expenseSection) {
+        expenseSection.style.display = (dayShift || nightShift) ? 'block' : 'none';
+    }
+    
+    // Cập nhật validation
+    updateShiftValidation();
+}
+
+// Hàm xử lý công trình ca ngày
+function toggleDayConstructionFields() {
+    const workType = document.getElementById('dayWorkType').value;
+    const constructionFields = document.getElementById('dayConstructionFields');
+    
+    if (workType === 'W') {
+        constructionFields.style.display = 'block';
+    } else {
+        constructionFields.style.display = 'none';
+        // Reset các trường liên quan đến công trường khi đổi sang loại khác
+        resetDayConstructionFields();
+    }
+}
+
+// Hàm xử lý công trình ca đêm
+function toggleNightConstructionFields() {
+    const workType = document.getElementById('nightWorkType').value;
+    const constructionFields = document.getElementById('nightConstructionFields');
+    
+    if (workType === 'W') {
+        constructionFields.style.display = 'block';
+    } else {
+        constructionFields.style.display = 'none';
+        // Reset các trường liên quan đến công trường khi đổi sang loại khác
+        resetNightConstructionFields();
+    }
+}
+
+// Hàm cập nhật validation cho ca làm việc
+function updateShiftValidation() {
+    const dayShift = document.getElementById('dayShift').checked;
+    const nightShift = document.getElementById('nightShift').checked;
+    
+    // Nếu không chọn ca nào, hiển thị cảnh báo
+    const shiftWarning = document.getElementById('shiftWarning');
+    if (shiftWarning) {
+        shiftWarning.style.display = (!dayShift && !nightShift) ? 'block' : 'none';
+    }
+}
+
+// Thêm event listeners khi trang load
+document.addEventListener('DOMContentLoaded', function() {
+    // Thêm event listeners cho ca làm việc
+    const dayShiftCheckbox = document.getElementById('dayShift');
+    const nightShiftCheckbox = document.getElementById('nightShift');
+    
+    if (dayShiftCheckbox) {
+        dayShiftCheckbox.addEventListener('change', handleShiftSelection);
+    }
+    
+    if (nightShiftCheckbox) {
+        nightShiftCheckbox.addEventListener('change', handleShiftSelection);
+    }
+    
+    // Thêm event listener cho form submit
+    const attendanceForm = document.getElementById('attendanceForm');
+    if (attendanceForm) {
+        attendanceForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            saveAttendance();
+        });
+    }
+
+    // Thêm event listener cho nút chấm công bù
+    const makeupBtn = document.getElementById('makeupBtn');
+    if (makeupBtn) {
+        makeupBtn.addEventListener('click', showMakeupForm);
+    }
+
+    // Thêm event listener cho nút chấm công hôm nay
+    const todayBtn = document.getElementById('todayBtn');
+    if (todayBtn) {
+        todayBtn.addEventListener('click', () => showAttendanceForm('today'));
+    }
+    
+    // Khởi tạo trạng thái ban đầu
+    handleShiftSelection();
+    
+    // Load dữ liệu chấm công
+    loadAttendanceData();
+    
+    // Hiển thị form chấm công nếu chưa chấm công hôm nay
+    renderTodayAttendanceButton();
+});
+
+// Hàm test PAUT/TOFD fields
+function testPautTofdFields() {
+    console.log('=== TESTING PAUT/TOFD FIELDS ===');
+    
+    // Test 1: Kiểm tra các field có tồn tại không
+    const fields = [
+        'dayPautMeters', 'dayTofdMeters', 'nightPautMeters', 'nightTofdMeters',
+        'pautMetersField', 'tofdMetersField', 'nightPautMetersField', 'nightTofdMetersField'
+    ];
+    
+    fields.forEach(fieldId => {
+        const element = document.getElementById(fieldId);
+        console.log(`Field ${fieldId}:`, element ? 'EXISTS' : 'MISSING');
+    });
+    
+    // Test 2: Kiểm tra toggle functions
+    console.log('Testing toggle functions...');
+    toggleMetersFields();
+    toggleNightMetersFields();
+    
+    // Test 3: Thử điền dữ liệu test
+    document.getElementById('dayNdtMethod').value = 'PAUT';
+    document.getElementById('nightNdtMethod').value = 'TOFD';
+    
+    toggleMetersFields();
+    toggleNightMetersFields();
+    
+    // Test 4: Điền giá trị test
+    document.getElementById('dayPautMeters').value = '123.45';
+    document.getElementById('nightTofdMeters').value = '678.90';
+    
+    console.log('Test values set. Check if fields are visible and values are preserved.');
+    
+    alert('Kiểm tra Console để xem kết quả test PAUT/TOFD fields!');
+}
 
 </script>
 {% endblock %} 

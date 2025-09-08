@@ -96,6 +96,7 @@ urlpatterns = [
     path('documents/<slug:slug>/download/', views.document_download, name='document_download'),
     path('documents/<slug:slug>/edit/', views.document_edit, name='document_edit'),
     path('documents/<slug:slug>/delete/', views.document_delete, name='document_delete'),
+    path('documents/<slug:slug>/share/', views.document_share, name='document_share'),
     path('manage/categories/', views.manage_categories, name='manage_categories'),
     path('manage/tags/', views.manage_tags, name='manage_tags'),
     path('dashboard/quality/', views.quality_management, name='quality_management'),
@@ -151,8 +152,11 @@ urlpatterns = [
     path('api/users/handovers/', views.get_handover_candidates, name='get_handover_candidates'),
     path('api/notifications/', views.get_system_notifications, name='get_system_notifications'),
     
-    # Attendance APIs
-    path('api/attendance/', views.get_attendance_data, name='get_attendance_data'),
+    # Attendance URLs
     path('api/attendance/save/', views.save_attendance_data, name='save_attendance_data'),
-    path('api/attendance/<int:record_id>/delete/', views.delete_attendance_record, name='delete_attendance_record'),
+    path('api/attendance/update/<str:date>/', views.update_attendance_data, name='update_attendance_data'),
+    path('api/attendance/delete/<str:date>/', views.delete_attendance_data, name='delete_attendance_data'),
+    path('api/attendance/', views.get_attendance_data, name='get_attendance_data'),
+    path('api/attendance/export/', views.export_attendance_data, name='export_attendance_data'),
+    path('api/attendance/export-json/', views.export_attendance_json, name='export_attendance_json'),
 ]

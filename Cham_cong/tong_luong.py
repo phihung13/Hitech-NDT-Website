@@ -4,6 +4,8 @@ from PyQt5.QtCore import Qt, QTimer
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 import numpy as np
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning)
 from data_manager import DataManager
 import json
 import os
@@ -385,10 +387,10 @@ class TabTongLuong(QWidget):
 
     def update_display(self):
         """Cập nhật hiển thị bảng và biểu đồ"""
-        print("=== CẬP NHẬT HIỂN THỊ TỔNG LƯƠNG ===")
-        print(f"Debug: salary_data = {self.salary_data}")
+        # print("=== CẬP NHẬT HIỂN THỊ TỔNG LƯƠNG ===")
+        # print(f"Debug: salary_data = {self.salary_data}")
         if not self.salary_data:
-            print("Debug: Không có dữ liệu lương")
+            # print("Debug: Không có dữ liệu lương")
             self.table.setRowCount(0)
             self.tong_chi_label.setText("<b>TỔNG CHI (VNĐ):</b> <span style='color:red; font-weight:bold;'>0</span>")
             self.update_empty_charts()
@@ -515,9 +517,9 @@ class TabTongLuong(QWidget):
 
     def update_bar_chart(self, names, values):
         """Cập nhật biểu đồ cột"""
-        print(f"=== CẬP NHẬT BIỂU ĐỒ CỘT ===")
-        print(f"Debug: names = {names}")
-        print(f"Debug: values = {values}")
+        # print(f"=== CẬP NHẬT BIỂU ĐỒ CỘT ===")
+        # print(f"Debug: names = {names}")
+        # print(f"Debug: values = {values}")
         self.bar_canvas.figure.clear()
         ax = self.bar_canvas.figure.add_subplot(111)
         
@@ -560,8 +562,8 @@ class TabTongLuong(QWidget):
 
     def update_pie_chart(self, values):
         """Cập nhật biểu đồ tròn"""
-        print(f"=== CẬP NHẬT BIỂU ĐỒ TRÒN ===")
-        print(f"Debug: values = {values}")
+        # print(f"=== CẬP NHẬT BIỂU ĐỒ TRÒN ===")
+        # print(f"Debug: values = {values}")
         self.pie_canvas.figure.clear()
         ax = self.pie_canvas.figure.add_subplot(111)
         
@@ -696,7 +698,7 @@ class TabTongLuong(QWidget):
             # Áp dụng chiều cao cho bảng
             self.table.setFixedHeight(int(calculated_height))
             
-            print(f"Debug: Điều chỉnh chiều cao bảng - {num_employees} nhân viên, chiều cao: {calculated_height}px")
+            # print(f"Debug: Điều chỉnh chiều cao bảng - {num_employees} nhân viên, chiều cao: {calculated_height}px")
             
         except Exception as e:
             print(f"Lỗi điều chỉnh chiều cao bảng: {e}") 

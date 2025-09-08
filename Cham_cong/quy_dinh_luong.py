@@ -486,21 +486,28 @@ class TabQuyDinhLuong(QWidget):
 
     def capnhat_bang_luong(self):
         self.tableLuong.setRowCount(0)
-        # print(f"Debug: ds_luong_nv = {self.ds_luong_nv}")
-        for luong in self.ds_luong_nv:
-            # print(f"Debug: luong = {luong}")
+        print(f" DEBUG - Cập nhật bảng lương:")
+        print(f"   📊 Số lượng bản ghi: {len(self.ds_luong_nv)}")
+        
+        for i, luong in enumerate(self.ds_luong_nv):
+            print(f"   📋 Bản ghi {i}: {luong}")
             row = self.tableLuong.rowCount()
             self.tableLuong.insertRow(row)
+            
             # Chuyển dữ liệu cũ 13 cột về 12 cột (bỏ index 8 nếu có)
             if len(luong) >= 13:
                 try:
                     luong = luong.copy()
                     luong.pop(8)
+                    print(f"   🔄 Đã chuyển từ 13 cột về 12 cột")
                 except Exception:
                     pass
+            
             # Đảm bảo đủ 12 cột
             while len(luong) < 12:
                 luong.append("")
+            
+            print(f"    Dữ liệu cuối cùng: {luong}")
             for col, val in enumerate(luong):
                 self.tableLuong.setItem(row, col, QTableWidgetItem(str(val)))
 

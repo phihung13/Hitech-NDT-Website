@@ -33,10 +33,16 @@
             </h1>
             <p class="text-muted mb-0">Quản lý danh mục để phân loại tài liệu</p>
         </div>
-        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createCategoryModal">
-            <i class="fas fa-plus me-1"></i>
-            Tạo danh mục
-        </button>
+        <div class="d-flex gap-2">
+            <a href="{% url 'document_upload' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-upload me-1"></i>
+                Quay lại upload
+            </a>
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createCategoryModal">
+                <i class="fas fa-plus me-1"></i>
+                Tạo danh mục
+            </button>
+        </div>
     </div>
 
     <!-- Messages -->

@@ -12,10 +12,102 @@ class DataManager:
         self.quydinh_file = os.path.join(self.data_dir, "quydinh_luong.json")
         self.chamcong_file = os.path.join(self.data_dir, "chamcong_3_nhanvien_08_2025.json")
         
+        # File cấu hình để lưu trữ file đã import
+        self.imported_files_config = os.path.join(self.data_dir, "imported_files.json")
+        
     def ensure_data_directory(self):
         """Tạo thư mục data nếu chưa có"""
         if not os.path.exists(self.data_dir):
             os.makedirs(self.data_dir)
+    
+    def save_imported_file(self, file_type, file_path, file_info=None):
+        """Lưu thông tin file đã import"""
+        try:
+            imported_files = self.load_imported_files()
+            
+            if file_info is None:
+                file_info = {
+                    "filename": os.path.basename(file_path),
+                    "imported_at": datetime.now().isoformat(),
+                    "file_size": os.path.getsize(file_path) if os.path.exists(file_path) else 0
+                }
+            
+            imported_files[file_type] = {
+                "file_path": file_path,
+                "file_info": file_info
+            }
+            
+            self._save_data(self.imported_files_config, imported_files)
+            print(f"✅ Đã lưu file {file_type}: {file_path}")
+            
+        except Exception as e:
+            print(f"❌ Lỗi lưu file đã import: {e}")
+    
+    def load_imported_files(self):
+        """Load danh sách file đã import"""
+        try:
+            data = self._load_data(self.imported_files_config)
+            return data if data else {}
+        except Exception as e:
+            print(f"❌ Lỗi load file đã import: {e}")
+            return {}
+    
+    def get_imported_file_path(self, file_type):
+        """Lấy đường dẫn file đã import theo loại"""
+        try:
+            imported_files = self.load_imported_files()
+            if file_type in imported_files:
+                file_path = imported_files[file_type]["file_path"]
+                # Kiểm tra file còn tồn tại không
+                if os.path.exists(file_path):
+                    return file_path
+                else:
+                    print(f"⚠️ File đã import không còn tồn tại: {file_path}")
+                    # Xóa file không tồn tại khỏi danh sách
+                    self.remove_imported_file(file_type)
+            return None
+        except Exception as e:
+            print(f"❌ Lỗi lấy file đã import: {e}")
+            return None
+    
+    def remove_imported_file(self, file_type):
+        """Xóa file khỏi danh sách đã import"""
+        try:
+            imported_files = self.load_imported_files()
+            if file_type in imported_files:
+                del imported_files[file_type]
+                self._save_data(self.imported_files_config, imported_files)
+                print(f"✅ Đã xóa file {file_type} khỏi danh sách đã import")
+        except Exception as e:
+            print(f"❌ Lỗi xóa file đã import: {e}")
+    
+    def clear_all_imported_files(self):
+        """Xóa tất cả file đã import"""
+        try:
+            self._save_data(self.imported_files_config, {})
+            print("✅ Đã xóa tất cả file đã import")
+        except Exception as e:
+            print(f"❌ Lỗi xóa tất cả file đã import: {e}")
+    
+    def get_imported_files_info(self):
+        """Lấy thông tin tất cả file đã import"""
+        try:
+            imported_files = self.load_imported_files()
+            info = {}
+            for file_type, file_data in imported_files.items():
+                file_path = file_data["file_path"]
+                file_info = file_data.get("file_info", {})
+                info[file_type] = {
+                    "file_path": file_path,
+                    "filename": file_info.get("filename", os.path.basename(file_path)),
+                    "imported_at": file_info.get("imported_at", ""),
+                    "file_size": file_info.get("file_size", 0),
+                    "exists": os.path.exists(file_path)
+                }
+            return info
+        except Exception as e:
+            print(f"❌ Lỗi lấy thông tin file đã import: {e}")
+            return {}
     
     def save_nhanvien(self, ds_nhanvien):
         """Lưu danh sách nhân viên"""
@@ -64,7 +156,21 @@ class DataManager:
         """Tải quy định lương"""
         data = self._load_data(self.quydinh_file)
         if data:
-            return data.get("luong_nv", []), data.get("phu_cap_ct", [])
+            luong_nv = data.get("luong_nv", [])
+            phu_cap_ct = data.get("phu_cap_ct", [])
+            
+            # Debug: In ra dữ liệu lương để kiểm tra
+            print(f"🔍 DEBUG - Load quy định lương:")
+            print(f"   📁 File: {self.quydinh_file}")
+            print(f"    Số lượng bản ghi lương: {len(luong_nv)}")
+            
+            for i, luong in enumerate(luong_nv):
+                if isinstance(luong, list) and len(luong) >= 4:
+                    name = luong[1] if len(luong) > 1 else "N/A"
+                    salary = luong[3] if len(luong) > 3 else "N/A"
+                    print(f"   👤 {i}: {name} - Lương: {salary}")
+            
+            return luong_nv, phu_cap_ct
         return [], []
     
     def save_chamcong(self, chamcong_data):
@@ -95,15 +201,21 @@ class DataManager:
                 
                 for msnv, employee_info in employees_data.items():
                     employee_name = employee_info.get("info", {}).get("name", "")
+                    employee_msnv = employee_info.get("info", {}).get("msnv", msnv)
+                    
                     if employee_name:
-                        # Tạo cấu trúc dữ liệu theo format mong đợi
-                        chamcong_data[employee_name] = {
+                        # Tạo cấu trúc dữ liệu theo format mong đợi - sử dụng cả tên và MSNV
+                        employee_data = {
                             month_year: {
                                 "days_detail": employee_info.get("attendance", {}).get("days", {}),
                                 "summary": employee_info.get("attendance", {}).get("summary", {})
                             }
                         }
-                        print(f"   ✅ Loaded {employee_name} for {month_year}")
+                        
+                        # Lưu theo cả tên và MSNV để dễ tìm kiếm
+                        chamcong_data[employee_name] = employee_data
+                        chamcong_data[employee_msnv] = employee_data
+                        print(f"   ✅ Loaded {employee_name} ({employee_msnv}) for {month_year}")
             
             elif "chamcong_data" in data:
                 # Format từ ứng dụng desktop (cũ) 

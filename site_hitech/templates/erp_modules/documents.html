@@ -426,6 +426,9 @@
                                 <a href="{% url 'document_download' document.slug %}" class="btn btn-success btn-compact">
                                     <i class="fas fa-download me-1"></i>Tải xuống
                                 </a>
+                                <button type="button" class="btn btn-outline-primary btn-compact" onclick="copyShareLink('{% url 'document_share' document.slug %}')">
+                                    <i class="fas fa-share-alt me-1"></i>Chia sẻ
+                                </button>
                                 
                                 <!-- Edit/Delete buttons for authorized users -->
                                 {% if user_role == 'admin' or user_role == 'manager' or document.created_by == user %}
@@ -498,6 +501,18 @@
 
 {% block extra_js %}
 <script>
+function copyShareLink(path) {
+    const url = window.location.origin + path;
+    navigator.clipboard.writeText(url).then(function() {
+        if (window.toastr) {
+            toastr.success('Đã sao chép link chia sẻ');
+        } else {
+            alert('Đã sao chép link: ' + url);
+        }
+    }, function() {
+        alert('Không thể sao chép link. Vui lòng thử lại.');
+    });
+}
 $(document).ready(function() {
     // Auto submit search form on input
     let searchTimeout;

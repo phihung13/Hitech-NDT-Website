@@ -7,6 +7,8 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import Qt, QSize, QDate, QTimer
 from PyQt5.QtGui import QFont, QColor, QPalette, QPixmap
 import calendar
+import glob
+import os
 from datetime import datetime, date
 from data_manager import DataManager
 from company_matcher import CompanyMatcher
@@ -405,7 +407,10 @@ class TabPhieuLuong(QWidget):
         # Load dữ liệu
         self.ds_nhanvien = self.data_manager.load_nhanvien()
         self.ds_luong = self.data_manager.load_quydinh_luong()
-        self.data_chamcong = {}  # Sẽ được cập nhật từ tab bảng công
+        
+        # Load dữ liệu chấm công từ file JSON mới nhất
+        self.data_chamcong = {}
+        self.load_chamcong_data_from_files()
         
         # Thông tin hiện tại
         self.current_employee = None
@@ -414,6 +419,10 @@ class TabPhieuLuong(QWidget):
         # Mức lương cơ sở BHXH (có thể thay đổi)
         self.bhxh_salary_base = 5307200  # Mặc định 5,307,200 VNĐ
         
+        # Hệ số phụ cấp đào tạo và văn phòng (có thể thay đổi)
+        self.phu_cap_dao_tao_coefficient = 0.0  # Mặc định 0%
+        self.phu_cap_van_phong_coefficient = 0.0  # Mặc định 0%
+        
         # Lưu trữ dữ liệu tạm ứng và vi phạm cho từng nhân viên/tháng
         self.tam_ung_vi_pham_data = {}  # Format: {employee_name: {month_year: {"tam_ung": amount, "vi_pham": amount}}}
         
@@ -421,6 +430,37 @@ class TabPhieuLuong(QWidget):
         self.load_tam_ung_vi_pham_from_file()
         
         self.init_ui()
+
+    def load_chamcong_data_from_files(self):
+        """Tự động load dữ liệu chấm công từ file JSON mới nhất trong thư mục data"""
+        try:
+            # Tìm tất cả file JSON chấm công trong thư mục data
+            json_files = glob.glob(os.path.join(self.data_manager.data_dir, "*.json"))
+            chamcong_files = [f for f in json_files if "chamcong" in os.path.basename(f).lower()]
+            
+            if chamcong_files:
+                # Sắp xếp theo thời gian sửa đổi, lấy file mới nhất
+                latest_file = max(chamcong_files, key=os.path.getmtime)
+                print(f"🔄 Tự động load file chấm công mới nhất: {latest_file}")
+                
+                # Cập nhật đường dẫn file chấm công trong data manager
+                self.data_manager.chamcong_file = latest_file
+                
+                # Load dữ liệu
+                self.data_chamcong = self.data_manager.load_chamcong()
+                print(f"✅ Đã load {len(self.data_chamcong)} nhân viên từ chấm công")
+                
+                # Debug: In ra danh sách nhân viên có dữ liệu
+                print(f"📋 Danh sách nhân viên có dữ liệu chấm công: {list(self.data_chamcong.keys())}")
+            else:
+                print("⚠️ Không tìm thấy file chấm công nào trong thư mục data")
+                self.data_chamcong = {}
+                
+        except Exception as e:
+            print(f"❌ Lỗi load dữ liệu chấm công: {e}")
+            import traceback
+            traceback.print_exc()
+            self.data_chamcong = {}
 
     def calculate_working_days(self, year, month):
         """
@@ -555,6 +595,8 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
         main_layout.setSpacing(5)  # Giảm spacing từ 10 xuống 5
         main_layout.setContentsMargins(10, 10, 10, 10)
 
+
+
         # Panel chọn thông tin (nằm ngoài scroll area)
         filter_panel = self.create_filter_panel()
         main_layout.addWidget(filter_panel, 0, Qt.AlignHCenter)
@@ -592,8 +634,8 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
         # Widget chứa nội dung phiếu lương
         content_widget = QWidget()
         content_layout = QVBoxLayout(content_widget)
-        content_layout.setSpacing(3)  # Giảm spacing từ 8 xuống 3
-        content_layout.setContentsMargins(5, 5, 5, 5)
+        content_layout.setSpacing(0)  # Loại bỏ spacing hoàn toàn
+        content_layout.setContentsMargins(0, 0, 0, 0)  # Loại bỏ margins
 
         # Phiếu lương container
         phieu_luong_container = QGroupBox()
@@ -612,21 +654,31 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
                 font-family: "Times New Roman";
             }
         """)
+        
+        # Tạo và cấu hình logo trong phiếu lương
+        logo_size_w = 60
+        logo_size_h = 60
+        self.logo_label = QLabel(phieu_luong_container)  # Đặt logo trong phiếu lương container
+        logo_pixmap = QPixmap("logo_hitech.png")
+        scaled_logo = logo_pixmap.scaled(logo_size_w, logo_size_h, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        self.logo_label.setPixmap(scaled_logo)
+        self.logo_label.setFixedSize(logo_size_w, logo_size_h)
+        self.logo_label.setStyleSheet("background: transparent;")
+        self.logo_label.move(20, 20)  # Đặt vị trí tuyệt đối trong phiếu lương
+        self.logo_label.raise_()  # Đưa logo lên trên cùng
+        self.logo_label.show()
+        
         phieu_layout = QVBoxLayout(phieu_luong_container)
-        phieu_layout.setSpacing(3)  # Giảm spacing từ 8 xuống 3
-        phieu_layout.setContentsMargins(8, 8, 8, 8)  # Giảm margins từ 10 xuống 8
+        phieu_layout.setSpacing(1)  # Giảm spacing xuống tối thiểu
+        phieu_layout.setContentsMargins(5, 5, 5, 5)  # Giảm margins xuống tối thiểu
 
         # Tiêu đề phiếu lương
         title = self.create_title()
         phieu_layout.addWidget(title)
 
-        # Thông tin cơ bản
-        info_panel = self.create_info_panel()
-        phieu_layout.addWidget(info_panel)
-
-        # Thông tin kỳ lương và ngày xuất
-        period_panel = self.create_period_panel()
-        phieu_layout.addWidget(period_panel)
+        # Thông tin tổng hợp (gộp thông tin cá nhân và kỳ lương)
+        combined_info_panel = self.create_combined_info_panel()
+        phieu_layout.addWidget(combined_info_panel)
 
         # Các phần chi tiết lương
         # Tạo các bảng và gán tên
@@ -675,6 +727,8 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
         content_main_layout.addWidget(right_panel)
 
         main_layout.addLayout(content_main_layout)
+
+
 
         # Panel nút thao tác (nằm ngoài scroll area)
         action_panel = self.create_action_panel()
@@ -930,19 +984,19 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
         """Xử lý khi thay đổi nhân viên"""
         try:
             selected_employee = self.comboNhanVien.currentText()
-            # print(f"Debug: on_employee_changed - selected_employee = {selected_employee}")
+            print(f"Debug: on_employee_changed - selected_employee = {selected_employee}")
             
             # Xóa dữ liệu cũ trước khi tải dữ liệu mới
             self.clear_salary_data()
             
             if selected_employee and selected_employee != "---":
                 self.current_employee = selected_employee
-                # print(f"Debug: Đã chọn nhân viên: {self.current_employee}")
+                print(f"Debug: Đã chọn nhân viên: {self.current_employee}")
                 self.update_employee_info()
                 self.auto_fill_salary_data()
             else:
                 self.current_employee = None
-                # print("Debug: Không chọn nhân viên nào")
+                print("Debug: Không chọn nhân viên nào")
                 self.update_employee_info()
         except Exception as e:
             print(f"Lỗi khi thay đổi nhân viên: {e}")
@@ -952,57 +1006,62 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
     def auto_fill_salary_data(self):
         """Tự động điền dữ liệu lương dựa trên nhân viên và tháng được chọn"""
         try:
-            # print("=== BẮT ĐẦU auto_fill_salary_data ===")
+            print("=== BẮT ĐẦU auto_fill_salary_data ===")
             
             if not self.current_employee:
-                # print("Debug: Không có nhân viên được chọn")
+                print("Debug: Không có nhân viên được chọn")
                 return
             
-            # print(f"Debug: Nhân viên hiện tại = {self.current_employee}")
+            print(f"Debug: Nhân viên hiện tại = {self.current_employee}")
             
-            # Lấy tháng và năm được chọn
-            month, year = self.get_selected_month_year()
-            # print(f"Debug: Tháng/Năm được chọn = {month}/{year}")
+            # Ưu tiên sử dụng period từ JSON được import, fallback về combo box
+            if hasattr(self, 'current_period') and self.current_period:
+                month_year = self.current_period
+                print(f"📅 Sử dụng period từ JSON: {month_year}")
+            else:
+                # Lấy tháng và năm được chọn từ combo box
+                month, year = self.get_selected_month_year()
+                month_year = f"{month:02d}/{year}"
+                print(f"📅 Sử dụng period từ combo box: {month_year}")
             
-            # Lấy dữ liệu chấm công
-            month_year = f"{month:02d}/{year}"
-            # print(f"Debug: month_year = {month_year}")
+            # Debug: Kiểm tra dữ liệu chấm công có tồn tại không
+            print(f"Debug: self.data_chamcong keys = {list(self.data_chamcong.keys()) if hasattr(self, 'data_chamcong') and self.data_chamcong else 'KHÔNG CÓ'}")
             
             chamcong_data = self.get_chamcong_data(month_year)
-            # print(f"Debug: chamcong_data từ get_chamcong_data = {chamcong_data}")
+            print(f"Debug: chamcong_data từ get_chamcong_data = {type(chamcong_data)} - {bool(chamcong_data)}")
             
             # Lấy dữ liệu lương
             luong_data = self.get_luong_data()
-            # print(f"Debug: luong_data = {luong_data}")
+            print(f"Debug: luong_data = {type(luong_data)} - {bool(luong_data)}")
             
             # Điền dữ liệu chấm công
             if chamcong_data:
-                # print("Debug: Có dữ liệu chấm công, gọi fill_chamcong_data")
+                print("🟢 Debug: Có dữ liệu chấm công, gọi fill_chamcong_data")
                 try:
                     self.fill_chamcong_data(chamcong_data)
-                    # print("Debug: Đã gọi xong fill_chamcong_data")
+                    print("✅ Debug: Đã gọi xong fill_chamcong_data THÀNH CÔNG")
                 except Exception as e:
-                    # print(f"Debug: LỖI khi gọi fill_chamcong_data: {e}")
-                    pass
+                    print(f"❌ Debug: LỖI khi gọi fill_chamcong_data: {e}")
                     import traceback
                     traceback.print_exc()
             else:
-                # print("Debug: KHÔNG CÓ dữ liệu chấm công!")
-                pass
+                print("🔴 Debug: KHÔNG CÓ dữ liệu chấm công!")
+                print(f"   - Tháng/năm tìm kiếm: {month_year}")
+                print(f"   - Nhân viên hiện tại: {self.current_employee}")
+                print(f"   - MSNV hiện tại: {self.get_current_msnv()}")
                 # Xóa dữ liệu cũ nếu không có dữ liệu mới
                 self.clear_salary_data()
             
             # Điền dữ liệu lương
             if luong_data:
-                # print("Debug: Có dữ liệu lương, gọi fill_luong_data")
+                print("Debug: Có dữ liệu lương, gọi fill_luong_data")
                 self.fill_luong_data(luong_data)
             else:
-                # print("Debug: KHÔNG CÓ dữ liệu lương!")
-                pass
+                print("Debug: KHÔNG CÓ dữ liệu lương!")
                 # Xóa dữ liệu cũ nếu không có dữ liệu mới
                 self.clear_salary_data()
             
-            # print("=== KẾT THÚC auto_fill_salary_data ===")
+            print("=== KẾT THÚC auto_fill_salary_data ===")
             
             # Đảm bảo tổng cộng được cập nhật cuối cùng
             self.update_totals()
@@ -1022,8 +1081,54 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
             import traceback
             traceback.print_exc()
 
+    def get_current_msnv(self):
+        """Lấy MSNV của nhân viên hiện tại từ EmployeeMapper"""
+        try:
+            if not self.current_employee:
+                return None
+            
+            employee_name = self.current_employee
+            if isinstance(employee_name, dict):
+                employee_name = employee_name.get('ho_ten', '')
+            
+            # Sử dụng EmployeeMapper để lấy MSNV
+            from employee_mapper import EmployeeMapper
+            mapper = EmployeeMapper()
+            mapper.load_mapping()
+            
+            # Thử lấy MSNV theo tên chính xác
+            msnv = mapper.get_msnv_by_name(employee_name)
+            if msnv:
+                print(f"✅ Tìm thấy MSNV: {msnv} cho nhân viên: {employee_name}")
+                return msnv
+            
+            # Thử tìm bằng fuzzy search
+            msnv = mapper.find_employee_by_name_fuzzy(employee_name)
+            if msnv:
+                print(f"✅ Tìm thấy MSNV (fuzzy): {msnv} cho nhân viên: {employee_name}")
+                return msnv
+            
+            print(f"❌ Không tìm thấy MSNV cho nhân viên: {employee_name}")
+            return None
+            
+        except Exception as e:
+            print(f"❌ Lỗi lấy MSNV: {e}")
+            import traceback
+            traceback.print_exc()
+            return None
+
+    def normalize_name_for_search(self, name):
+        """Chuẩn hóa tên để tìm kiếm linh hoạt"""
+        if not name:
+            return ""
+        # Loại bỏ dấu và chuyển thành chữ thường, bỏ khoảng trắng
+        import unicodedata
+        normalized = unicodedata.normalize('NFD', name)
+        ascii_name = ''.join(c for c in normalized if unicodedata.category(c) != 'Mn')
+        return ascii_name.lower().replace(' ', '')
+    
     def get_chamcong_data(self, month_year):
-        """Lấy dữ liệu chấm công cho tháng/năm cụ thể"""
+        """Lấy dữ liệu chấm công cho tháng/năm cụ thể - CHỈ TÌM THEO MSNV"""
         try:
             print(f"🔍 TÌM DỮ LIỆU CHẤM CÔNG: {self.current_employee} - {month_year}")
             
@@ -1035,42 +1140,68 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
                 print("❌ Không có nhân viên được chọn!")
                 return None
             
-            # Lấy tên nhân viên
-            employee_name = self.current_employee
-            if isinstance(employee_name, dict):
-                employee_name = employee_name.get('ho_ten', '')
-            
-            # Tìm dữ liệu cho nhân viên theo tên
-            employee_data = self.data_chamcong.get(employee_name, {})
-            
-            if not employee_data:
-                print(f"❌ Không tìm thấy dữ liệu cho nhân viên: {employee_name}")
-                print(f"   Danh sách nhân viên có dữ liệu: {list(self.data_chamcong.keys())}")
+            # Lấy MSNV - CHỈ TÌM THEO MSNV
+            current_msnv = self.get_current_msnv()
+            if not current_msnv:
+                print("❌ Không tìm thấy MSNV cho nhân viên này!")
                 return None
+            
+            print(f"🔍 Tìm dữ liệu theo MSNV: {current_msnv}")
+            
+            # Tìm dữ liệu theo MSNV
+            employee_data = self.data_chamcong.get(current_msnv, {})
+            if not employee_data:
+                print(f"❌ Không tìm thấy dữ liệu cho MSNV: {current_msnv}")
+                print(f"   Danh sách MSNV có dữ liệu: {list(self.data_chamcong.keys())}")
+                return None
+            
+            print(f"✅ Tìm thấy dữ liệu cho MSNV: {current_msnv}")
             
             # Lấy dữ liệu cho tháng/năm cụ thể
             chamcong_data = employee_data.get(month_year, {})
             
+            # Nếu không tìm thấy với format hiện tại, thử các format khác
             if not chamcong_data:
-                # Thử tìm với tháng/năm khác nếu không tìm thấy
-                available_months = [key for key in employee_data.keys() if isinstance(key, str) and '/' in key]
-                print(f"❌ Không tìm thấy dữ liệu cho tháng {month_year}")
+                available_months = [key for key in employee_data.keys() if isinstance(key, str) and ('/' in key or '-' in key)]
+                print(f"🔄 Không tìm thấy dữ liệu cho tháng {month_year}")
                 print(f"   Các tháng có sẵn: {available_months}")
                 
-                if available_months:
-                    # Lấy tháng đầu tiên có dữ liệu
-                    chamcong_data = employee_data.get(available_months[0], {})
-                    print(f"✅ Sử dụng dữ liệu tháng: {available_months[0]}")
+                # Thử các format khác
+                target_formats = []
+                if '/' in month_year:
+                    parts = month_year.split('/')
+                    if len(parts) == 2:
+                        month, year = parts[0], parts[1]
+                        target_formats = [
+                            f"{month}-{year}",  # 07-2025
+                            f"{year}-{month}",  # 2025-07
+                            f"{year}/{month}",  # 2025/07
+                            f"{int(month)}/{year}",  # 7/2025 (bỏ số 0 đầu)
+                            f"{year}-{int(month):02d}",  # 2025-07
+                        ]
+                
+                # Tìm kiếm với các format khác
+                for target_format in target_formats:
+                    if target_format in employee_data:
+                        chamcong_data = employee_data[target_format]
+                        print(f"✅ Tìm thấy dữ liệu với format: {target_format}")
+                        break
+                
+                if not chamcong_data:
+                    print(f"❌ KHÔNG TÌM THẤY dữ liệu cho tháng {month_year}")
+                    print(f"   Đã thử các format: {target_formats}")
+                    return None
+            else:
+                print(f"✅ Tìm thấy dữ liệu cho tháng {month_year}")
             
             if chamcong_data:
-                pass
+                print(f"✅ Trả về dữ liệu chấm công - Keys: {list(chamcong_data.keys())}")
+                return chamcong_data
             else:
-                pass
-            
-            return chamcong_data
+                return None
             
         except Exception as e:
-            print(f"Lỗi lấy dữ liệu chấm công: {e}")
+            print(f"❌ Lỗi lấy dữ liệu chấm công: {e}")
             import traceback
             traceback.print_exc()
             return None
@@ -1081,27 +1212,71 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
             if not self.current_employee:
                 return {}
             
+            print(f"🔍 DEBUG: current_employee = '{self.current_employee}'")
+            
+            # Thử lấy MSNV từ EmployeeMapper theo tên hiện tại nếu có
+            msnv_current = None
+            try:
+                from employee_mapper import EmployeeMapper
+                mapper = EmployeeMapper()
+                mapper.load_mapping()
+                # Tìm tất cả msnv -> name, so khớp theo tên hiện tại
+                for msnv in mapper.get_all_msnv():
+                    if mapper.get_name_by_msnv(msnv) == self.current_employee:
+                        msnv_current = msnv
+                        break
+            except Exception:
+                msnv_current = None
+            
+            print(f"🔍 DEBUG: msnv_current = '{msnv_current}'")
+            print(f"🔍 DEBUG: ds_luong type = {type(self.ds_luong)}")
+            if self.ds_luong and isinstance(self.ds_luong, tuple) and len(self.ds_luong) >= 2:
+                print(f"🔍 DEBUG: nhan_vien_list length = {len(self.ds_luong[0])}")
+                for i, luong in enumerate(self.ds_luong[0][:3]):  # Chỉ in 3 record đầu
+                    if isinstance(luong, list) and len(luong) >= 2:
+                        print(f"   Record {i}: MSNV='{luong[0]}', Tên='{luong[1]}'")
+            
             if self.ds_luong:
                 # ds_luong là tuple với 2 phần: (nhan_vien_list, cong_ty_list)
                 if isinstance(self.ds_luong, tuple) and len(self.ds_luong) >= 2:
                     nhan_vien_list = self.ds_luong[0]  # Phần 1: danh sách nhân viên
                     
+                    # Ưu tiên tìm theo MSNV nếu có
+                    if msnv_current:
+                        for luong in nhan_vien_list:
+                            if isinstance(luong, list) and len(luong) > 0:
+                                if str(luong[0]).strip() == str(msnv_current).strip():
+                                    print(f"✅ TÌM THẤY THEO MSNV: {msnv_current}")
+                                    return luong
+                    
+                    # Thử tìm theo MSNV nếu current_employee có thể là MSNV
+                    for luong in nhan_vien_list:
+                        if isinstance(luong, list) and len(luong) > 0:
+                            if str(luong[0]).strip() == str(self.current_employee).strip():
+                                print(f"✅ TÌM THẤY THEO MSNV TRỰC TIẾP: {self.current_employee}")
+                                return luong
+                    
+                    # Fallback: tìm theo tên
                     for i, luong in enumerate(nhan_vien_list):
                         # Format: [msnv, ho_ten, cccd, luong_co_ban, ...]
                         if isinstance(luong, list) and len(luong) > 1:
                             ho_ten = luong[1] if luong[1] else ""  # Index 1 là họ tên
                             
                             if ho_ten == self.current_employee:
-                                # print(f"🔍 TÌM THẤY DỮ LIỆU LƯƠNG: {ho_ten}")
-                                # print(f"   MSNV: {luong[0]}")
-                                # try:
-                                #     luong_co_ban = int(luong[3]) if luong[3] else 0
-                                #     print(f"   Lương cơ bản: {luong_co_ban:,} VNĐ")
-                                # except:
-                                #     print(f"   Lương cơ bản: {luong[3]} VNĐ")
+                                print(f"✅ TÌM THẤY THEO TÊN: {self.current_employee}")
                                 return luong
                 else:
                     # Fallback: xử lý như list thông thường
+                    # Thử theo MSNV
+                    if msnv_current:
+                        for luong in self.ds_luong:
+                            if isinstance(luong, list) and len(luong) > 0 and str(luong[0]).strip() == str(msnv_current).strip():
+                                return luong
+                    # Thử theo MSNV trực tiếp
+                    for luong in self.ds_luong:
+                        if isinstance(luong, list) and len(luong) > 0 and str(luong[0]).strip() == str(self.current_employee).strip():
+                            return luong
+                    # Fallback: theo tên
                     for i, luong in enumerate(self.ds_luong):
                         if isinstance(luong, list) and len(luong) > 0:
                             ho_ten = luong[0] if luong[0] else ""
@@ -1111,7 +1286,6 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
                             continue
                         
                         if ho_ten == self.current_employee:
-                            # print(f"🔍 TÌM THẤY DỮ LIỆU LƯƠNG: {ho_ten}")
                             return luong
                 
             print(f"❌ KHÔNG TÌM THẤY dữ liệu lương cho: {self.current_employee}")
@@ -1126,55 +1300,135 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
         """Điền dữ liệu từ chấm công vào các bảng"""
         try:
             print("=== BẮT ĐẦU fill_chamcong_data ===")
+            print(f"🔍 Dữ liệu đầu vào: {type(chamcong_data)} - Keys: {list(chamcong_data.keys()) if isinstance(chamcong_data, dict) else 'N/A'}")
             
             # Xử lý cấu trúc dữ liệu mới từ file JSON
             days_detail = chamcong_data.get('days_detail', {})
+            summary_data = chamcong_data.get('summary', {})
+            
+            print(f"📋 days_detail: {len(days_detail)} ngày")
+            print(f"📊 summary_data: {summary_data}")
+            
             if not days_detail:
-                # print("Debug: Không có days_detail trong chamcong_data")
+                print("⚠️ Không có days_detail trong chamcong_data")
                 return
             
-            # Tính toán từ dữ liệu chi tiết
-            ngay_tinh_luong = 0
-            ot_150_hours = 0
+            print(f"📋 Dữ liệu summary từ bảng công: {summary_data}")
+            
+            # Lấy dữ liệu đã tính toán từ summary (ưu tiên)
+            total_work_days = summary_data.get('total_work_days', 0)
+            total_office_days = summary_data.get('total_office_days', 0)
+            total_training_days = summary_data.get('total_training_days', 0)
+            ot_150_hours = summary_data.get('total_overtime_hours', 0)
+            sunday_200_hours = summary_data.get('sunday_200_hours', 0)
+            holiday_300_hours = summary_data.get('holiday_300_hours', 0)
+            
+            # Tính toán 200%/300% từ dữ liệu chi tiết ngày (vì summary không có)
+            print("🔄 Tính toán dữ liệu 200%/300% từ chi tiết ngày...")
+            
+            # Lấy tháng/năm hiện tại để tính số chủ nhật
+            if hasattr(self, 'current_period') and self.current_period:
+                month_str, year_str = self.current_period.split('/')
+                current_month = int(month_str)
+                current_year = int(year_str)
+            else:
+                current_month, current_year = self.get_selected_month_year()
+            
+            # Tính 200% và 300% từ dữ liệu chi tiết
             sunday_200_hours = 0
             holiday_300_hours = 0
-            ngay_cong_truong = 0
-            ngay_dao_tao = 0
-            ngay_van_phong = 0
-            ngay_nghi_co_phep = 0  # Số ngày nghỉ có phép
-            ngay_nghi_khong_phep = 0  # Số ngày nghỉ không phép
-            tong_xang_xe = 0  # Tổng xăng xe từ tất cả ngày
-            tong_dien_thoai = 0  # Tổng điện thoại từ tất cả ngày
-            tong_khach_san = 0  # Tổng khách sạn từ tất cả ngày
-            nang_suat_paut = 0  # Tổng số mét vượt PAUT
-            nang_suat_tofd = 0  # Tổng số mét vượt TOFD
             
-            # Xử lý từng ngày
+            for day_key, day_data in days_detail.items():
+                if isinstance(day_data, dict):
+                    # Parse ngày từ key (format: "2025-07-01")
+                    try:
+                        day_parts = day_key.split('-')
+                        if len(day_parts) == 3:
+                            year_check = int(day_parts[0])
+                            month_check = int(day_parts[1])
+                            day_check = int(day_parts[2])
+                            check_date = date(year_check, month_check, day_check)
+                            
+                            # Kiểm tra có làm việc không
+                            day_type = day_data.get('type', '')
+                            if day_type in ['W', 'O', 'T']:  # Có làm việc
+                                # Chủ nhật = 200%
+                                if check_date.weekday() == 6:  # Chủ nhật
+                                    sunday_200_hours += 8  # 8 tiếng/ngày
+                                    print(f"📅 Chủ nhật {day_key}: +8 tiếng 200%")
+                                
+                                # TODO: Thêm logic cho ngày lễ = 300% nếu cần
+                    except:
+                        continue
+            
+            print(f"📊 Kết quả tính toán: 200%={sunday_200_hours}h, 300%={holiday_300_hours}h")
+            ngay_cong_truong = summary_data.get('total_work_days', 0)
+            ngay_dao_tao = summary_data.get('total_training_days', 0)  
+            ngay_van_phong = summary_data.get('total_office_days', 0)
+            ngay_nghi_co_phep = summary_data.get('total_leave_days', 0)
+            ngay_nghi_khong_phep = summary_data.get('total_absent_days', 0)
+            tong_xang_xe = 0  # Tính từ chi tiết
+            tong_dien_thoai = summary_data.get('total_phone', 0)
+            tong_khach_san = summary_data.get('total_hotel', 0)
+            
+            # Khởi tạo năng suất từ summary hoặc 0
+            nang_suat_paut = summary_data.get('total_paut_meters', 0)
+            nang_suat_tofd = summary_data.get('total_tofd_meters', 0)
+            
+            # Tính ngày làm việc bình thường = Số ngày tối đa trong tháng - Chủ nhật - Lễ tết
+            # Đây là số ngày cần làm đủ để nhận lương cơ bản
+            
+            # Lấy tháng/năm hiện tại
+            if hasattr(self, 'current_period') and self.current_period:
+                month_str, year_str = self.current_period.split('/')
+                current_month = int(month_str)
+                current_year = int(year_str)
+            else:
+                current_month, current_year = self.get_selected_month_year()
+            
+            # Tính số ngày tối đa trong tháng
+            import calendar
+            max_days_in_month = calendar.monthrange(current_year, current_month)[1]
+            
+            # Đếm số chủ nhật trong tháng
+            sundays_in_month = 0
+            holidays_in_month = 0
+            sunday_dates = []  # Debug: lưu danh sách ngày chủ nhật
+            
+            for day in range(1, max_days_in_month + 1):
+                check_date = date(current_year, current_month, day)
+                if check_date.weekday() == 6:  # Chủ nhật
+                    sundays_in_month += 1
+                    sunday_dates.append(day)
+                if hasattr(self, 'holiday_dates') and check_date in self.holiday_dates:
+                    holidays_in_month += 1
+            
+            print(f"🔍 DEBUG: Các ngày chủ nhật trong tháng {current_month}/{current_year}: {sunday_dates}")
+            
+            # Ngày làm việc bình thường = Tổng ngày - Chủ nhật - Lễ tết
+            ngay_tinh_luong = max_days_in_month - sundays_in_month - holidays_in_month
+            
+            print(f"📊 Tính ngày làm việc bình thường (chuẩn để nhận lương cơ bản):")
+            print(f"   Tổng ngày trong tháng {current_month}/{current_year}: {max_days_in_month}")
+            print(f"   Số chủ nhật: {sundays_in_month}")
+            print(f"   Số ngày lễ tết: {holidays_in_month}")
+            print(f"   Ngày làm việc bình thường (chuẩn): {ngay_tinh_luong}")
+            print(f"   Chủ nhật 200%: {sunday_200_hours} giờ")
+            print(f"   Lễ tết 300%: {holiday_300_hours} giờ")
+            print(f"🔍 DEBUG THÊM GIỜ:")
+            print(f"   ot_150_hours = {ot_150_hours}")
+            print(f"   sunday_200_hours = {sunday_200_hours}")  
+            print(f"   holiday_300_hours = {holiday_300_hours}")
+            
+            # Xử lý từng ngày (chỉ tính những thứ chưa có trong summary)
             for day_key, day_data in days_detail.items():
                 if isinstance(day_data, dict):
                     day_type = day_data.get('type', '')
                     overtime_hours = day_data.get('overtime_hours', 0)
                     location = day_data.get('location', '')
                     
-                    # Đếm ngày làm việc
-                    if day_type in ['W', 'O', 'T']:
-                        ngay_tinh_luong += 1
-                    
-                    # Phân loại ngày
-                    if day_type == 'W':  # Công trường
-                        ngay_cong_truong += 1
-                    elif day_type == 'O':  # Văn phòng
-                        ngay_van_phong += 1
-                    elif day_type == 'T':  # Đào tạo
-                        ngay_dao_tao += 1
-                    elif day_type == 'P':  # Nghỉ có phép
-                        ngay_nghi_co_phep += 1
-                    elif day_type == 'N':  # Nghỉ không phép
-                        ngay_nghi_khong_phep += 1
-                    
-                    # Tính thêm giờ (giả sử tất cả là OT 150%)
-                    if overtime_hours > 0:
-                        ot_150_hours += overtime_hours
+                    # Không cần tính lại ngày làm việc, đã có trong summary
+                    # Chỉ tính xăng xe từ chi tiết ngày
                     
                     # Tính xăng xe cho ngày công trường có địa điểm
                     if day_type == 'W' and location:
@@ -1273,11 +1527,52 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
             print(f"Phụ cấp: Xăng xe={tong_xang_xe:,}, Điện thoại={tong_dien_thoai:,}, Khách sạn={tong_khach_san:,}")
             print(f"Năng suất: PAUT={nang_suat_paut:.2f}m, TOFD={nang_suat_tofd:.2f}m")
             
-            # A) LƯƠNG CƠ BẢN - Số ngày làm việc
+            # A) LƯƠNG CƠ BẢN - Số ngày làm việc bình thường vào cột 0 (CHÍNH XÁC!)
+            print(f"Debug: hasattr tableLuongCoBan = {hasattr(self, 'tableLuongCoBan')}")
             if hasattr(self, 'tableLuongCoBan'):
+                print(f"Debug: Điền ngày làm việc vào bảng lương cơ bản: {ngay_tinh_luong}")
+                # CỘT 0 (index 0) là số ngày làm việc bình thường - SỬA LỖI!
                 self.tableLuongCoBan.setItem(0, 0, QTableWidgetItem(str(ngay_tinh_luong)))
+                print(f"✅ Đã điền {ngay_tinh_luong} vào ô (0,0) của bảng lương cơ bản")
+                
+                # Force refresh giao diện
+                self.tableLuongCoBan.viewport().update()
+                self.tableLuongCoBan.repaint()
+                
+                # Debug: Kiểm tra nội dung thực tế của ô
+                item_check = self.tableLuongCoBan.item(0, 0)
+                if item_check:
+                    print(f"🔍 Kiểm tra ô (0,0): Text='{item_check.text()}' - Type: {type(item_check)}")
+                else:
+                    print("❌ Ô (0,0) không tồn tại!")
+                    
+                # Debug: Kiểm tra kích thước bảng
+                print(f"📊 Kích thước bảng: {self.tableLuongCoBan.rowCount()}x{self.tableLuongCoBan.columnCount()}")
+                
+                # Debug: Kiểm tra tất cả các ô trong bảng
+                for row in range(self.tableLuongCoBan.rowCount()):
+                    for col in range(self.tableLuongCoBan.columnCount()):
+                        item = self.tableLuongCoBan.item(row, col)
+                        if item:
+                            print(f"🔍 Ô ({row},{col}): '{item.text()}'")
+                        else:
+                            print(f"❌ Ô ({row},{col}): None")
+                
+                # Tính thành tiền lương cơ bản
+                luong_data = self.get_luong_data()
+                if luong_data and isinstance(luong_data, list) and len(luong_data) > 3:
+                    luong_co_ban = float(str(luong_data[3]).replace(',', '')) if luong_data[3] else 0
+                    
+                    # Lương cơ bản = lương cơ bản đầy đủ (không chia theo ngày)
+                    thanh_tien_luong_co_ban = luong_co_ban
+                    
+                    # Điền thành tiền vào cột 1 (index 1) - SỬA LỖI!
+                    thanh_tien_item = QTableWidgetItem(f"{thanh_tien_luong_co_ban:,.0f}")
+                    thanh_tien_item.setToolTip(f"🔍 CÔNG THỨC\nLương cơ bản = {luong_co_ban:,} VNĐ (lương tháng đầy đủ)")
+                    self.tableLuongCoBan.setItem(0, 1, thanh_tien_item)
         
             # B) THÊM GIỜ - Lấy từ dữ liệu chấm công
+            print(f"Debug: hasattr tableThemGio = {hasattr(self, 'tableThemGio')}")
             if hasattr(self, 'tableThemGio'):
                 # Lấy lương cơ bản để tính thành tiền thêm giờ
                 luong_data = self.get_luong_data()
@@ -1286,45 +1581,69 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
                     luong_co_ban = float(str(luong_data[3]).replace(',', '')) if luong_data[3] else 0  # Index 3 là lương cơ bản
                 
                 # Tính thành tiền thêm giờ
-                luong_1_gio = luong_co_ban / 176  # Lương 1 giờ
-                thanh_tien_150 = luong_1_gio * ot_150_hours * 1.5  # 150%
-                thanh_tien_200 = luong_1_gio * sunday_200_hours * 2.0  # 200%
-                thanh_tien_300 = luong_1_gio * holiday_300_hours * 3.0  # 300%
+                # Lấy số ngày làm việc trong tháng (trừ chủ nhật)
+                month_year = self.get_selected_month_year()
+                if month_year:
+                    year, month = month_year
+                    working_days_in_month = self.calculate_working_days(year, month)
+                else:
+                    working_days_in_month = 26  # Giá trị mặc định
                 
-                            # Điền số giờ và thành tiền vào bảng với tooltip
-            self.tableThemGio.setItem(0, 1, QTableWidgetItem(f"{ot_150_hours:.2f}"))
-            thanh_tien_150_item = QTableWidgetItem(f"{thanh_tien_150:,.0f}")
-            thanh_tien_150_item.setToolTip("🔍 CÔNG THỨC\nThêm giờ 150% = Số giờ × Lương 1 giờ × 1.5")
-            self.tableThemGio.setItem(0, 2, thanh_tien_150_item)
-            
-            self.tableThemGio.setItem(1, 1, QTableWidgetItem(f"{sunday_200_hours:.2f}"))
-            thanh_tien_200_item = QTableWidgetItem(f"{thanh_tien_200:,.0f}")
-            thanh_tien_200_item.setToolTip("🔍 CÔNG THỨC\nThêm giờ 200% = Số giờ × Lương 1 giờ × 2.0")
-            self.tableThemGio.setItem(1, 2, thanh_tien_200_item)
-            
-            self.tableThemGio.setItem(2, 1, QTableWidgetItem(f"{holiday_300_hours:.2f}"))
-            thanh_tien_300_item = QTableWidgetItem(f"{thanh_tien_300:,.0f}")
-            thanh_tien_300_item.setToolTip("🔍 CÔNG THỨC\nThêm giờ 300% = Số giờ × Lương 1 giờ × 3.0")
-            self.tableThemGio.setItem(2, 2, thanh_tien_300_item)
-            
-            # Tính tổng thu nhập thêm giờ
-            total_overtime_hours = ot_150_hours + sunday_200_hours + holiday_300_hours
-            total_overtime_amount = thanh_tien_150 + thanh_tien_200 + thanh_tien_300
-            
-            self.tableThemGio.setItem(3, 1, QTableWidgetItem(f"{total_overtime_hours:.2f}"))
-            total_overtime_item = QTableWidgetItem(f"{total_overtime_amount:,.0f}")
-            total_overtime_item.setToolTip("🔍 CÔNG THỨC\nTổng thêm giờ = Thành tiền 150% + Thành tiền 200% + Thành tiền 300%")
-            self.tableThemGio.setItem(3, 2, total_overtime_item)
+                # Tính thành tiền theo từng hệ số với số ngày làm việc khác nhau
+                # 150% (ngày thường): chia 26 ngày
+                luong_1_gio_150 = luong_co_ban / 26 / 8 if 26 > 0 else 0
+                thanh_tien_150 = luong_1_gio_150 * ot_150_hours * 1.5  # 150%
+                
+                # 200% (chủ nhật) và 300% (ngày lễ): chia 27 ngày
+                luong_1_gio_200_300 = luong_co_ban / 27 / 8 if 27 > 0 else 0
+                thanh_tien_200 = luong_1_gio_200_300 * sunday_200_hours * 2.0  # 200%
+                thanh_tien_300 = luong_1_gio_200_300 * holiday_300_hours * 3.0  # 300%
+                
+                # Debug log
+                print(f"🔍 Debug 150%: Lương 1 giờ = {luong_co_ban:,} ÷ 26 ÷ 8 = {luong_1_gio_150:,.0f}")
+                print(f"🔍 Debug 150%: Thành tiền = {ot_150_hours} giờ × {luong_1_gio_150:,.0f} × 1.5 = {thanh_tien_150:,.0f}")
+                print(f"🔍 Debug 200%/300%: Lương 1 giờ = {luong_co_ban:,} ÷ 27 ÷ 8 = {luong_1_gio_200_300:,.0f}")
+                print(f"🔍 Debug 200%: Thành tiền = {sunday_200_hours} giờ × {luong_1_gio_200_300:,.0f} × 2.0 = {thanh_tien_200:,.0f}")
+                print(f"🔍 Debug 300%: Thành tiền = {holiday_300_hours} giờ × {luong_1_gio_200_300:,.0f} × 3.0 = {thanh_tien_300:,.0f}")
+                
+                # Điền số giờ vào cột 1 (index 1) và thành tiền vào cột 2 (index 2)
+                # Hàng 0: Thêm giờ 150%
+                self.tableThemGio.setItem(0, 1, QTableWidgetItem(f"{ot_150_hours:.2f}"))
+                thanh_tien_150_item = QTableWidgetItem(f"{thanh_tien_150:,.0f}")
+                thanh_tien_150_item.setToolTip(f"🔍 CÔNG THỨC\nThêm giờ 150% = {ot_150_hours} giờ × {luong_1_gio_150:,.0f} × 1.5 = {thanh_tien_150:,.0f}\n\nLương 1 giờ 150% = {luong_co_ban:,} ÷ 26 ngày ÷ 8 giờ")
+                self.tableThemGio.setItem(0, 2, thanh_tien_150_item)
+                
+                # Hàng 1: Thêm giờ 200%
+                self.tableThemGio.setItem(1, 1, QTableWidgetItem(f"{sunday_200_hours:.2f}"))
+                thanh_tien_200_item = QTableWidgetItem(f"{thanh_tien_200:,.0f}")
+                thanh_tien_200_item.setToolTip(f"🔍 CÔNG THỨC\nThêm giờ 200% = {sunday_200_hours} giờ × {luong_1_gio_200_300:,.0f} × 2.0 = {thanh_tien_200:,.0f}\n\nLương 1 giờ 200% = {luong_co_ban:,} ÷ 27 ngày ÷ 8 giờ")
+                self.tableThemGio.setItem(1, 2, thanh_tien_200_item)
+                
+                # Hàng 2: Thêm giờ 300%
+                self.tableThemGio.setItem(2, 1, QTableWidgetItem(f"{holiday_300_hours:.2f}"))
+                thanh_tien_300_item = QTableWidgetItem(f"{thanh_tien_300:,.0f}")
+                thanh_tien_300_item.setToolTip(f"🔍 CÔNG THỨC\nThêm giờ 300% = {holiday_300_hours} giờ × {luong_1_gio_200_300:,.0f} × 3.0 = {thanh_tien_300:,.0f}\n\nLương 1 giờ 300% = {luong_co_ban:,} ÷ 27 ngày ÷ 8 giờ")
+                self.tableThemGio.setItem(2, 2, thanh_tien_300_item)
+                
+                # Hàng 3: Tổng thu nhập thêm giờ - chỉ điền vào ô thành tiền
+                total_overtime_hours = ot_150_hours + sunday_200_hours + holiday_300_hours
+                total_overtime_amount = thanh_tien_150 + thanh_tien_200 + thanh_tien_300
+                
+                # Chỉ điền tổng số tiền vào cột thành tiền, không điền số giờ
+                total_overtime_item = QTableWidgetItem(f"{total_overtime_amount:,.0f}")
+                total_overtime_item.setToolTip(f"🔍 CÔNG THỨC\nTổng thu nhập thêm giờ = {thanh_tien_150:,.0f} + {thanh_tien_200:,.0f} + {thanh_tien_300:,.0f} = {total_overtime_amount:,.0f}")
+                self.tableThemGio.setItem(3, 2, total_overtime_item)
             
             # print(f"=== DEBUG: THÊM GIỜ ===")
                         # print(f"Lương cơ bản: {luong_co_ban:,}")
-            # print(f"Lương 1 giờ: {luong_1_gio:,.0f} = {luong_co_ban:,} ÷ 176")
+            # print(f"Lương 1 giờ: {luong_1_gio:,.0f} = {luong_co_ban:,} ÷ {working_days_in_month} ngày ÷ 8 giờ")
             # print(f"150%: {ot_150_hours} giờ × {luong_1_gio:,.0f} × 1.5 = {thanh_tien_150:,.0f}")
             # print(f"200%: {sunday_200_hours} giờ × {luong_1_gio:,.0f} × 2.0 = {thanh_tien_200:,.0f}")
             # print(f"300%: {holiday_300_hours} giờ × {luong_1_gio:,.0f} × 3.0 = {thanh_tien_300:,.0f}")
             # print(f"Tổng thêm giờ: {total_overtime_amount:,.0f}")
             
             # C) PHỤ CẤP - Đếm số ngày theo loại
+            print(f"Debug: hasattr tablePhuCap = {hasattr(self, 'tablePhuCap')}")
             if hasattr(self, 'tablePhuCap'):
                 # Điền số ngày vào bảng phụ cấp với kiểm tra
                 try:
@@ -1348,10 +1667,10 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
                         # print(f"PC-chức danh: {pc_chuc_danh:,}")
                         # print(f"Số ngày: Công trường={ngay_cong_truong}, Đào tạo={ngay_dao_tao}, Văn phòng={ngay_van_phong}")
                         
-                        # Tính thành tiền theo công thức
+                        # Tính thành tiền theo công thức với hệ số có thể thay đổi
                         thanh_tien_cong_truong = ngay_cong_truong * pc_cong_truong
-                        thanh_tien_dao_tao = ngay_dao_tao * (pc_cong_truong * 0.4)
-                        thanh_tien_van_phong = ngay_van_phong * (pc_cong_truong * 0.2)
+                        thanh_tien_dao_tao = ngay_dao_tao * (pc_cong_truong * self.phu_cap_dao_tao_coefficient)
+                        thanh_tien_van_phong = ngay_van_phong * (pc_cong_truong * self.phu_cap_van_phong_coefficient)
                         
                         # print(f"Công trường: {ngay_cong_truong} ngày × {pc_cong_truong:,} = {thanh_tien_cong_truong:,}")
                         # print(f"Đào tạo: {ngay_dao_tao} ngày × {pc_cong_truong:,} × 0.4 = {thanh_tien_dao_tao:,}")
@@ -1383,11 +1702,11 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
                         self.tablePhuCap.setItem(0, 2, pc_cong_truong_item)
                         
                         pc_dao_tao_item = QTableWidgetItem(f"{thanh_tien_dao_tao:,.0f}")
-                        pc_dao_tao_item.setToolTip("🔍 CÔNG THỨC\nPC Đào tạo = Số ngày đào tạo × (Mức phụ cấp công trường × 0.4)")
+                        pc_dao_tao_item.setToolTip(f"🔍 CÔNG THỨC\nPC Đào tạo = Số ngày đào tạo × (Mức phụ cấp công trường × {self.phu_cap_dao_tao_coefficient})\n\nHệ số hiện tại: {self.phu_cap_dao_tao_coefficient} ({self.phu_cap_dao_tao_coefficient*100:.0f}%)")
                         self.tablePhuCap.setItem(1, 2, pc_dao_tao_item)
                         
                         pc_van_phong_item = QTableWidgetItem(f"{thanh_tien_van_phong:,.0f}")
-                        pc_van_phong_item.setToolTip("🔍 CÔNG THỨC\nPC Văn phòng = Số ngày văn phòng × (Mức phụ cấp công trường × 0.2)")
+                        pc_van_phong_item.setToolTip(f"🔍 CÔNG THỨC\nPC Văn phòng = Số ngày văn phòng × (Mức phụ cấp công trường × {self.phu_cap_van_phong_coefficient})\n\nHệ số hiện tại: {self.phu_cap_van_phong_coefficient} ({self.phu_cap_van_phong_coefficient*100:.0f}%)")
                         self.tablePhuCap.setItem(2, 2, pc_van_phong_item)
                         
                         self.tablePhuCap.setItem(3, 1, QTableWidgetItem(f"{ngay_chuc_danh:.2f}"))
@@ -1421,11 +1740,9 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
                     import traceback
                     traceback.print_exc()
             
-            # D) KPI - Năng suất
+            # D) KPI - Năng suất (số mét vượt và thành tiền)
+            print(f"Debug: hasattr tableKPI = {hasattr(self, 'tableKPI')}")
             if hasattr(self, 'tableKPI'):
-                nang_suat_ut = chamcong_data.get('nang_suat_ut', 0)
-                # Số mét vượt PAUT/TOFD lấy từ tính toán ở trên
-                
                 # Lấy dữ liệu lương để tính phụ cấp năng suất
                 luong_data = self.get_luong_data()
                 pc_nang_suat_paut = 0
@@ -1440,23 +1757,22 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
                 tien_nang_suat_paut = nang_suat_paut * pc_nang_suat_paut
                 tien_nang_suat_tofd = nang_suat_tofd * pc_nang_suat_tofd
                 
-                # Hàng 0 = PAUT, Hàng 1 = TOFD
+                # Hàng 0 = PAUT: Điền số mét vượt vào cột 1, thành tiền vào cột 2
                 self.tableKPI.setItem(0, 1, QTableWidgetItem(f"{nang_suat_paut:.2f}"))
-                self.tableKPI.setItem(1, 1, QTableWidgetItem(f"{nang_suat_tofd:.2f}"))
-                
-                # Điền thành tiền vào cột 2 với tooltip
                 kpi_paut_item = QTableWidgetItem(f"{tien_nang_suat_paut:,.0f}")
-                kpi_paut_item.setToolTip("🔍 CÔNG THỨC\nKPI PAUT = Số mét vượt PAUT × Đơn giá phụ cấp PAUT")
+                kpi_paut_item.setToolTip(f"🔍 CÔNG THỨC\nKPI PAUT = {nang_suat_paut:.2f} mét × {pc_nang_suat_paut:,} = {tien_nang_suat_paut:,.0f}")
                 self.tableKPI.setItem(0, 2, kpi_paut_item)
                 
+                # Hàng 1 = TOFD: Điền số mét vượt vào cột 1, thành tiền vào cột 2
+                self.tableKPI.setItem(1, 1, QTableWidgetItem(f"{nang_suat_tofd:.2f}"))
                 kpi_tofd_item = QTableWidgetItem(f"{tien_nang_suat_tofd:,.0f}")
-                kpi_tofd_item.setToolTip("🔍 CÔNG THỨC\nKPI TOFD = Số mét vượt TOFD × Đơn giá phụ cấp TOFD")
+                kpi_tofd_item.setToolTip(f"🔍 CÔNG THỨC\nKPI TOFD = {nang_suat_tofd:.2f} mét × {pc_nang_suat_tofd:,} = {tien_nang_suat_tofd:,.0f}")
                 self.tableKPI.setItem(1, 2, kpi_tofd_item)
                 
-                # Hàng tổng (row 2) = PAUT + TOFD
+                # Hàng 2 = Tổng: Chỉ điền thành tiền vào cột 2
                 tong_ns_amount = tien_nang_suat_paut + tien_nang_suat_tofd
                 tong_kpi_item = QTableWidgetItem(f"{tong_ns_amount:,.0f}")
-                tong_kpi_item.setToolTip("🔍 CÔNG THỨC\nTổng KPI = Thành tiền KPI PAUT + Thành tiền KPI TOFD")
+                tong_kpi_item.setToolTip(f"🔍 CÔNG THỨC\nTổng KPI = {tien_nang_suat_paut:,.0f} + {tien_nang_suat_tofd:,.0f} = {tong_ns_amount:,.0f}")
                 self.tableKPI.setItem(2, 2, tong_kpi_item)
                 
                 # print(f"=== DEBUG: KPI NĂNG SUẤT ===")
@@ -1464,12 +1780,10 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
                 # print(f"TOFD: {nang_suat_tofd:.2f}m × {pc_nang_suat_tofd:,} = {tien_nang_suat_tofd:,.0f}")
                 # print(f"Tổng KPI: {tong_ns_amount:,.0f}")
 
-            # Điền vào bảng khấu trừ
-            if hasattr(self, 'tableKhauTru'):
-                tam_ung = chamcong_data.get('tam_ung', 0)
-                # Tạm ứng nên ở ô (5,1), không phải (0,1)
-                # Ô (0,1) là cho BHXH
-                # self.tableKhauTru.setItem(0, 1, QTableWidgetItem(str(tam_ung)))  # Dòng cũ, sai vị trí
+            # E) KHẤU TRỪ - Tự động tính bảo hiểm 10.5% và các khoản khác
+            # Bảo hiểm sẽ được tự động tính trong hàm update_bhxh_calculation()
+            # Thuế TNCN sẽ được tự động tính dựa trên tổng thu nhập
+            # Chỉ cần load dữ liệu tạm ứng và vi phạm đã lưu
             
             # Điền vào bảng mua sắm (lấy từ bảng công)
             if hasattr(self, 'tableMuaSam'):
@@ -1497,6 +1811,20 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
             self.update_attendance_info(ngay_nghi_co_phep, ngay_nghi_khong_phep)
             
             # print("=== KẾT THÚC fill_chamcong_data ===")
+            
+            # Debug: Kiểm tra dữ liệu CUỐI CÙNG trong bảng lương cơ bản
+            print("\n🔍 KIỂM TRA CUỐI CÙNG - Dữ liệu trong bảng lương cơ bản:")
+            if hasattr(self, 'tableLuongCoBan'):
+                for row in range(self.tableLuongCoBan.rowCount()):
+                    for col in range(self.tableLuongCoBan.columnCount()):
+                        item = self.tableLuongCoBan.item(row, col)
+                        if item and item.text():
+                            print(f"✅ CUỐI: Ô ({row},{col}): '{item.text()}'")
+                        else:
+                            print(f"❌ CUỐI: Ô ({row},{col}): Trống")
+            else:
+                print("❌ CUỐI: tableLuongCoBan không tồn tại!")
+            print("🔍 KẾT THÚC KIỂM TRA CUỐI CÙNG\n")
                 
         except Exception as e:
             print(f"Lỗi điền dữ liệu chấm công: {e}")
@@ -1533,25 +1861,30 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
             if isinstance(luong_data, list) and len(luong_data) > 0:
                 # Format: [msnv, ho_ten, cccd, luong_co_ban, ngay_tinh_luong, pc_cong_trinh, pc_chuc_danh, pc_xang, pc_dien_thoai, ...]
                 luong_co_ban = luong_data[3] if len(luong_data) > 3 and luong_data[3] else ""
-                ngay_tinh_luong = luong_data[4] if len(luong_data) > 4 and luong_data[4] else ""
+                # KHÔNG GHI ĐÈ ngay_tinh_luong - đã được tính toán chính xác ở trên
+                # ngay_tinh_luong = luong_data[4] if len(luong_data) > 4 and luong_data[4] else ""
                 pc_cong_trinh = luong_data[5] if len(luong_data) > 5 and luong_data[5] else ""
                 pc_chuc_danh = luong_data[6] if len(luong_data) > 6 and luong_data[6] else ""
                 pc_xang = luong_data[7] if len(luong_data) > 7 and luong_data[7] else ""
                 pc_dien_thoai = luong_data[8] if len(luong_data) > 8 and luong_data[8] else ""
                 print(f"   Lấy từ list - Lương cơ bản: {luong_co_ban}")
+                # print(f"   Giữ nguyên ngay_tinh_luong đã tính: {ngay_tinh_luong}")  # Tạm comment để tránh lỗi
             elif isinstance(luong_data, dict):
                 # Format: dict
                 luong_co_ban = luong_data.get('luong_co_ban', "")
-                ngay_tinh_luong = luong_data.get('ngay_tinh_luong', "")
+                # KHÔNG GHI ĐÈ ngay_tinh_luong - đã được tính toán chính xác ở trên
+                # ngay_tinh_luong = luong_data.get('ngay_tinh_luong', "")
                 pc_cong_trinh = luong_data.get('pc_cong_trinh', "")
                 pc_chuc_danh = luong_data.get('pc_chuc_danh', "")
                 pc_xang = luong_data.get('pc_xang', "")
                 pc_dien_thoai = luong_data.get('pc_dien_thoai', "")
                 print(f"   Lấy từ dict - Lương cơ bản: {luong_co_ban}")
+                # print(f"   Giữ nguyên ngay_tinh_luong đã tính: {ngay_tinh_luong}")  # Tạm comment để tránh lỗi
             else:
-                # Fallback
-                luong_co_ban = ngay_tinh_luong = pc_cong_trinh = pc_chuc_danh = pc_xang = pc_dien_thoai = ""
+                # Fallback - CHỈ reset các giá trị phụ cấp, KHÔNG động vào ngay_tinh_luong
+                luong_co_ban = pc_cong_trinh = pc_chuc_danh = pc_xang = pc_dien_thoai = ""
                 print(f"   Fallback - Lương cơ bản: {luong_co_ban}")
+                # print(f"   Giữ nguyên ngay_tinh_luong đã tính: {ngay_tinh_luong}")  # Tạm comment để tránh lỗi
             
             # Định dạng lương cơ bản với dấu phẩy
             def format_currency(value):
@@ -1573,29 +1906,40 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
                 month_year = f"{month:02d}/{year}"
                 chamcong_data = self.get_chamcong_data(month_year)
                 
-                # Tính số ngày làm việc thực tế
+                # Tính số ngày làm việc bình thường (loại trừ chủ nhật) - CÙNG LOGIC VỚI fill_chamcong_data
                 total_working_days = 0
                 if chamcong_data:
-                    # Kiểm tra format dữ liệu
-                    days_data = None
-                    if 'days_detail' in chamcong_data:
-                        # Format mới từ website
-                        days_data = chamcong_data['days_detail']
-                        # print("Debug: Sử dụng format mới (days_detail)")
-                        # Đếm số ngày có type W, O, T
-                        for day_key, day_info in days_data.items():
-                            if isinstance(day_info, dict):
-                                day_type = day_info.get('type', '')
-                                if day_type in ['W', 'O', 'T']:  # Công trường, Văn phòng, Đào tạo
+                    # Ưu tiên sử dụng summary data đã tính toán
+                    summary_data = chamcong_data.get('summary', {})
+                    if summary_data:
+                        total_work_days = summary_data.get('total_work_days', 0)
+                        total_office_days = summary_data.get('total_office_days', 0) 
+                        total_training_days = summary_data.get('total_training_days', 0)
+                        sunday_200_hours = summary_data.get('sunday_200_hours', 0)
+                        
+                        # Loại trừ chủ nhật
+                        ngay_chu_nhat = sunday_200_hours / 8 if sunday_200_hours > 0 else 0
+                        total_working_days = total_work_days + total_office_days + total_training_days - ngay_chu_nhat
+                        
+                        print(f"📊 Sử dụng summary data - Ngày làm việc bình thường: {total_working_days}")
+                    else:
+                        # Fallback: đếm từ days_detail
+                        days_data = None
+                        if 'days_detail' in chamcong_data:
+                            days_data = chamcong_data['days_detail']
+                            # Đếm số ngày có type W, O, T (tạm thời chưa loại trừ chủ nhật vì cần period)
+                            for day_key, day_info in days_data.items():
+                                if isinstance(day_info, dict):
+                                    day_type = day_info.get('type', '')
+                                    if day_type in ['W', 'O', 'T']:
+                                        total_working_days += 1
+                            print(f"⚠️ Fallback: đếm từ days_detail = {total_working_days}")
+                        elif 'days' in chamcong_data:
+                            days_data = chamcong_data['days']
+                            for day_key, day_type in days_data.items():
+                                if day_type in ['W', 'O', 'T']:
                                     total_working_days += 1
-                    elif 'days' in chamcong_data:
-                        # Format cũ
-                        days_data = chamcong_data['days']
-                        print("Debug: Sử dụng format cũ (days)")
-                        # Đếm số ngày có dữ liệu chấm công (loại W, O, T)
-                        for day_key, day_type in days_data.items():
-                            if day_type in ['W', 'O', 'T']:  # Công trường, Văn phòng, Đào tạo
-                                total_working_days += 1
+                            print(f"⚠️ Fallback: đếm từ days = {total_working_days}")
                 
                 # Nếu không có dữ liệu chấm công, sử dụng số ngày làm việc trong tháng
                 if total_working_days == 0:
@@ -1621,8 +1965,8 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
                 working_days_in_month = self.calculate_working_days(year, month)
                 luong_1_ngay = luong_co_ban_so / working_days_in_month if working_days_in_month > 0 else 0
                 
-                # Tính lương cơ bản cho số ngày làm việc thực tế
-                luong_co_ban_thuc_te = luong_1_ngay * total_working_days
+                # Tính lương cơ bản cho số ngày làm việc chuẩn
+                luong_co_ban_thuc_te = luong_co_ban_so  # Luôn trả lương cơ bản đầy đủ
                 
                 print(f"🧮 TÍNH TOÁN LƯƠNG CƠ BẢN:")
                 print(f"   Lương cơ bản tháng: {luong_co_ban_so:,} VNĐ")
@@ -1643,16 +1987,16 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
                     print(f"   - Lương cơ bản tháng: {luong_co_ban_so:,}")
                     print(f"   - Số ngày làm việc thực tế: {total_working_days}")
                 
-                # Điền vào bảng với tooltip
-                ngay_lam_item = QTableWidgetItem(str(total_working_days))
-                ngay_lam_item.setToolTip("🔍 CÔNG THỨC\nSố ngày làm việc thực tế = Tổng số ngày có type W, O, T")
+                # Điền vào bảng với tooltip - SỬ DỤNG NGÀY CHUẨN (không phải ngày thực tế)
+                ngay_lam_item = QTableWidgetItem(str(working_days_in_month))
+                ngay_lam_item.setToolTip("🔍 CÔNG THỨC\nSố ngày làm việc bình thường = Tổng ngày trong tháng - Chủ nhật - Lễ tết\n\n📋 Đây là số ngày chuẩn cần làm để nhận lương cơ bản đầy đủ")
                 self.tableLuongCoBan.setItem(0, 0, ngay_lam_item)
                 
                 luong_co_ban_item = QTableWidgetItem(f"{luong_co_ban_thuc_te:,.0f}")
                 luong_co_ban_item.setToolTip("🔍 CÔNG THỨC\nLương cơ bản = Số ngày làm việc thực tế × (Lương cơ bản tháng ÷ Số ngày làm việc chuẩn tháng)")
-                self.tableLuongCoBan.setItem(0, 2, luong_co_ban_item)
+                self.tableLuongCoBan.setItem(0, 1, luong_co_ban_item)
                 
-                ngay_tinh_item = QTableWidgetItem(str(ngay_tinh_luong))
+                ngay_tinh_item = QTableWidgetItem(str(working_days_in_month))
                 ngay_tinh_item.setToolTip("🔍 CÔNG THỨC\nSố ngày làm việc chuẩn trong tháng")
                 self.tableLuongCoBan.setItem(1, 1, ngay_tinh_item)
             
@@ -1687,32 +2031,33 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
             if hasattr(self, 'labelChucVu'):
                 self.labelChucVu.setText("")
             
-            # Xóa bảng lương cơ bản
-            if hasattr(self, 'tableLuongCoBan'):
-                for row in range(self.tableLuongCoBan.rowCount()):
-                    for col in range(self.tableLuongCoBan.columnCount()):
-                        self.tableLuongCoBan.setItem(row, col, QTableWidgetItem(""))
+            # KHÔNG XÓA bảng lương cơ bản - giữ nguyên dữ liệu từ fill_chamcong_data()
+            # if hasattr(self, 'tableLuongCoBan'):
+            #     for row in range(self.tableLuongCoBan.rowCount()):
+            #         for col in range(self.tableLuongCoBan.columnCount()):
+            #             self.tableLuongCoBan.setItem(row, col, QTableWidgetItem(""))
             
-            # Xóa bảng thêm giờ
-            if hasattr(self, 'tableThemGio'):
-                for row in range(self.tableThemGio.rowCount()):
-                    for col in range(self.tableThemGio.columnCount()):
-                        if col > 0:  # Giữ lại cột đầu (loại thêm giờ)
-                            self.tableThemGio.setItem(row, col, QTableWidgetItem(""))
+            # KHÔNG XÓA các bảng đã được điền từ fill_chamcong_data()
+            # # Xóa bảng thêm giờ
+            # if hasattr(self, 'tableThemGio'):
+            #     for row in range(self.tableThemGio.rowCount()):
+            #         for col in range(self.tableThemGio.columnCount()):
+            #             if col > 0:  # Giữ lại cột đầu (loại thêm giờ)
+            #                 self.tableThemGio.setItem(row, col, QTableWidgetItem(""))
             
-            # Xóa bảng phụ cấp
-            if hasattr(self, 'tablePhuCap'):
-                for row in range(self.tablePhuCap.rowCount()):
-                    for col in range(self.tablePhuCap.columnCount()):
-                        if col > 0:  # Giữ lại cột đầu (loại phụ cấp)
-                            self.tablePhuCap.setItem(row, col, QTableWidgetItem(""))
+            # # Xóa bảng phụ cấp
+            # if hasattr(self, 'tablePhuCap'):
+            #     for row in range(self.tablePhuCap.rowCount()):
+            #         for col in range(self.tablePhuCap.columnCount()):
+            #             if col > 0:  # Giữ lại cột đầu (loại phụ cấp)
+            #                 self.tablePhuCap.setItem(row, col, QTableWidgetItem(""))
             
-            # Xóa bảng KPI
-            if hasattr(self, 'tableKPI'):
-                for row in range(self.tableKPI.rowCount()):
-                    for col in range(self.tableKPI.columnCount()):
-                        if col > 0:  # Giữ lại cột đầu
-                            self.tableKPI.setItem(row, col, QTableWidgetItem(""))
+            # # Xóa bảng KPI
+            # if hasattr(self, 'tableKPI'):
+            #     for row in range(self.tableKPI.rowCount()):
+            #         for col in range(self.tableKPI.columnCount()):
+            #             if col > 0:  # Giữ lại cột đầu
+            #                 self.tableKPI.setItem(row, col, QTableWidgetItem(""))
             
             # Xóa bảng khấu trừ
             if hasattr(self, 'tableKhauTru'):
@@ -1749,62 +2094,115 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
             import traceback
             traceback.print_exc()
 
+    def update_employee_info_from_attendance(self, employee_name):
+        """Cập nhật thông tin nhân viên từ dữ liệu chấm công"""
+        try:
+            if not self.data_chamcong:
+                print("❌ Không có dữ liệu chấm công")
+                return
+            
+            # Tìm theo tên hoặc MSNV
+            found_msnv = None
+            found_data = None
+            
+            # Tìm theo tên trước
+            for key, data in self.data_chamcong.items():
+                employee_info = data.get('employee_info', {})
+                name_in_data = employee_info.get('name', '')
+                if name_in_data == employee_name:
+                    found_msnv = key if key.startswith('HTNV-') else employee_info.get('msnv', '')
+                    found_data = data
+                    break
+            
+            # Nếu không tìm thấy theo tên, tìm theo MSNV
+            if not found_data:
+                current_msnv = self.get_current_msnv()
+                if current_msnv and current_msnv in self.data_chamcong:
+                    found_msnv = current_msnv
+                    found_data = self.data_chamcong[current_msnv]
+            
+            if found_data:
+                employee_info = found_data.get('employee_info', {})
+                print(f"✅ Tìm thấy thông tin từ dữ liệu chấm công: MSNV={found_msnv}")
+                
+                # Cập nhật MSNV
+                if hasattr(self, 'labelMSNV') and found_msnv:
+                    self.labelMSNV.setText(found_msnv)
+                    print(f"   MSNV: {found_msnv}")
+                
+                # Cập nhật tên (nếu có trong dữ liệu)
+                name_in_data = employee_info.get('name', '')
+                if name_in_data and hasattr(self, 'labelHoTen'):
+                    self.labelHoTen.setText(name_in_data.upper())
+                
+                # Thông tin khác có thể không có trong dữ liệu chấm công
+                if hasattr(self, 'labelChucVu'):
+                    self.labelChucVu.setText("(Chưa có thông tin)")
+                if hasattr(self, 'labelPhongBan'):
+                    self.labelPhongBan.setText("(Chưa có thông tin)")
+                    
+                print(f"📋 Đã cập nhật thông tin từ dữ liệu chấm công")
+            else:
+                print(f"❌ Không tìm thấy thông tin cho '{employee_name}' trong dữ liệu chấm công")
+                
+        except Exception as e:
+            print(f"Lỗi cập nhật thông tin từ dữ liệu chấm công: {e}")
+
     def update_employee_info(self):
         """Cập nhật thông tin nhân viên từ dropdown"""
         try:
             if hasattr(self, 'comboNhanVien'):
                 selected_name = self.comboNhanVien.currentText()
-                print(f"🔍 Đang cập nhật thông tin cho: {selected_name}")
+                # print(f"🔍 Đang cập nhật thông tin cho: {selected_name}")
                 
                 if selected_name and selected_name != "-- Chọn nhân viên --":
                     # Cập nhật họ tên
                     if hasattr(self, 'labelHoTen'):
                         self.labelHoTen.setText(selected_name.upper())
-                        print(f"✅ Đã cập nhật họ tên: {selected_name.upper()}")
+                        # print(f"✅ Đã cập nhật họ tên: {selected_name.upper()}")
                     
                     # Tìm thông tin chi tiết từ dữ liệu nhân viên
                     if self.ds_nhanvien:
-                        print(f"📋 Tìm kiếm trong {len(self.ds_nhanvien)} nhân viên")
+                        # print(f"📋 Tìm kiếm trong {len(self.ds_nhanvien)} nhân viên")
                         found = False
                         
                         for i, nv in enumerate(self.ds_nhanvien):
                             if isinstance(nv, list) and len(nv) >= 8:
                                 # Cấu trúc: [ho_ten, cccd, msnv, sdt, ngay_sinh, que_quan, chuc_vu, phong_ban, trinh_do, ...]
                                 ho_ten = nv[0] if nv[0] else ""
-                                print(f"   So sánh: '{ho_ten}' vs '{selected_name}'")
+                                # print(f"   So sánh: '{ho_ten}' vs '{selected_name}'")
                                 
                                 if ho_ten == selected_name:  # So sánh họ tên
                                     found = True
-                                    print(f"✅ Tìm thấy nhân viên tại index {i}")
+                                    # print(f"✅ Tìm thấy nhân viên tại index {i}")
                                     
                                     # Cập nhật thông tin chi tiết
                                     if hasattr(self, 'labelChucVu'):
                                         chuc_vu = nv[6] if len(nv) > 6 and nv[6] else ""
                                         self.labelChucVu.setText(chuc_vu)
-                                        print(f"   Chức vụ: {chuc_vu}")
+                                        # print(f"   Chức vụ: {chuc_vu}")
                                     
                                     if hasattr(self, 'labelMSNV'):
                                         msnv = nv[2] if len(nv) > 2 and nv[2] else ""
                                         self.labelMSNV.setText(msnv)
-                                        print(f"   MSNV: {msnv}")
+                                        # print(f"   MSNV: {msnv}")
                                     
                                     if hasattr(self, 'labelPhongBan'):
                                         phong_ban = nv[7] if len(nv) > 7 and nv[7] else ""
                                         self.labelPhongBan.setText(phong_ban)
-                                        print(f"   Phòng ban: {phong_ban}")
+                                        # print(f"   Phòng ban: {phong_ban}")
                                     break
                         
                         if not found:
-                            print(f"❌ Không tìm thấy nhân viên '{selected_name}' trong danh sách")
-                            # Hiển thị danh sách nhân viên có sẵn để debug
-                            print("📋 Danh sách nhân viên có sẵn:")
-                            for i, nv in enumerate(self.ds_nhanvien[:5]):  # Chỉ hiển thị 5 nhân viên đầu
-                                if isinstance(nv, list) and len(nv) > 0:
-                                    print(f"   {i}: {nv[0]}")
+                            # Thử tìm thông tin từ dữ liệu chấm công
+                            print(f"🔍 Không tìm thấy trong DS nhân viên, tìm trong dữ liệu chấm công...")
+                            self.update_employee_info_from_attendance(selected_name)
                     else:
-                        print("❌ Không có dữ liệu nhân viên (self.ds_nhanvien)")
+                        # print("❌ Không có dữ liệu nhân viên (self.ds_nhanvien)")
+                        pass
                 else:
-                    print("❌ Không có nhân viên được chọn")
+                    # print("❌ Không có nhân viên được chọn")
+                    pass
                     # Xóa thông tin khi không chọn nhân viên
                     if hasattr(self, 'labelHoTen'):
                         self.labelHoTen.setText("")
@@ -1821,33 +2219,43 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
 
     def create_title(self):
         """Tạo tiêu đề phiếu lương"""
+        # Tạo container chính
+        main_container = QWidget()
+        main_container.setFixedHeight(80)  # Chiều cao cho phần title
+
+        # Layout chính
+        main_layout = QVBoxLayout(main_container)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setSpacing(0)
+
+        # Container cho tiêu đề
         title_container = QWidget()
         title_layout = QHBoxLayout(title_container)
         title_layout.setContentsMargins(0, 0, 0, 0)
 
-        # Thêm logo
-        logo_label = QLabel()
-        logo_pixmap = QPixmap("logo_hitech.png")
-        scaled_logo = logo_pixmap.scaled(60, 60, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-        logo_label.setPixmap(scaled_logo)
-        logo_label.setFixedSize(60, 60)
-        title_layout.addWidget(logo_label)
+        # Thêm spacer bên trái để đẩy tiêu đề sang phải
+        spacer = QSpacerItem(0, 10, QSizePolicy.Fixed, QSizePolicy.Minimum)
+        title_layout.addItem(spacer)
 
         # Tiêu đề chính
         title_label = QLabel("PHIẾU LƯƠNG")
         title_label.setAlignment(Qt.AlignCenter)
         title_label.setStyleSheet("""
-            font-size: 20px;
+            font-size: 28px;
             font-weight: bold;
             color: #2196F3;
-            margin-top: 10px;
-            margin-bottom: 10px;
+            margin-top: 3px;
+            margin-bottom: 3px;
         """)
         title_layout.addWidget(title_label)
 
-        return title_container
+        # Thêm title container vào main layout
+        main_layout.addWidget(title_container)
+
+        return main_container
 
     def create_info_panel(self):
+        # Tạo group cho phần thông tin
         group = QGroupBox()
         group.setStyleSheet("""
             QGroupBox {
@@ -1861,18 +2269,29 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
                 font-family: "Times New Roman";
             }
         """)
+        
+        # Layout chính cho group
+        group_layout = QHBoxLayout(group)
+        group_layout.setContentsMargins(0, 0, 0, 0)
+        group_layout.setSpacing(0)
+
+        # Thêm spacer bên trái để đẩy nội dung sang phải
+        spacer = QSpacerItem(250, 10, QSizePolicy.Fixed, QSizePolicy.Minimum)
+        group_layout.addItem(spacer)
+
+        # Container cho nội dung thông tin
+        content_container = QWidget()
+        content_container.setFixedWidth(530)  # Giảm chiều rộng để không bị tràn
+        content_layout = QHBoxLayout(content_container)
+        content_layout.setSpacing(30)  # Khoảng cách giữa 2 cột
+        content_layout.setContentsMargins(8, 5, 8, 5)  # Giảm khoảng cách từ chữ đến mép
+
+        # Thêm content container vào group layout
+        group_layout.addWidget(content_container)
+        
         # Giảm chiều cao để vừa đủ với nội dung
         group.setMaximumHeight(80)  # Thu hẹp để fit với chữ
-        group.setFixedWidth(800) 
-        # Layout chính ngang để chia 2 cột
-        main_layout = QHBoxLayout(group)
-        main_layout.setSpacing(30)  # Khoảng cách giữa 2 cột
-        main_layout.setContentsMargins(8, 5, 8, 5)  # Giảm khoảng cách từ chữ đến mép trên/dưới
         
-        # Thêm spacer bên trái để đẩy nội dung sang phải
-        spacer = QSpacerItem(200, 10, QSizePolicy.Fixed, QSizePolicy.Minimum)
-        main_layout.addItem(spacer)
-
         # Layout cho cột trái
         left_layout = QFormLayout()
         left_layout.setSpacing(5)  # Giảm spacing để gọn hơn
@@ -1897,18 +2316,14 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
         right_layout.addRow("Chức vụ:", self.labelChucVu)
         right_layout.addRow("Phòng ban:", self.labelPhongBan)
         
-        # Thêm 2 cột vào layout chính
+        # Thêm 2 cột vào content layout
         left_widget = QWidget()
         left_widget.setLayout(left_layout)
         right_widget = QWidget()
         right_widget.setLayout(right_layout)
         
-        main_layout.addWidget(left_widget)
-        main_layout.addWidget(right_widget)
-        
-        # Thêm spacer bên phải để cân đối
-        spacer = QSpacerItem(20, 10, QSizePolicy.Fixed, QSizePolicy.Minimum)
-        main_layout.addItem(spacer)
+        content_layout.addWidget(left_widget)
+        content_layout.addWidget(right_widget)
         
         return group
 
@@ -1927,14 +2342,23 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
                 font-family: "Times New Roman";
             }
         """)
-        # Giảm chiều cao để vừa đủ với nội dung
-        group.setMaximumHeight(60)  # Giảm thêm để ôm sát nội dung
         
-        # Layout chính ngang để chia 2 cột
-        main_layout = QHBoxLayout(group)
-        main_layout.setSpacing(30)  # Khoảng cách giữa 2 cột
-        main_layout.setContentsMargins(8, 1, 8, 1)  # Giảm khoảng cách từ chữ đến mép trên/dưới
-        
+        # Layout chính cho group
+        group_layout = QHBoxLayout(group)
+        group_layout.setContentsMargins(0, 0, 0, 0)
+        group_layout.setSpacing(0)
+
+        # Thêm spacer bên trái để đẩy nội dung sang phải
+        spacer = QSpacerItem(250, 10, QSizePolicy.Fixed, QSizePolicy.Minimum)
+        group_layout.addItem(spacer)
+
+        # Container cho nội dung thông tin
+        content_container = QWidget()
+        content_container.setFixedWidth(530)  # Giảm chiều rộng để không bị tràn
+        content_layout = QHBoxLayout(content_container)
+        content_layout.setSpacing(30)  # Khoảng cách giữa 2 cột
+        content_layout.setContentsMargins(8, 5, 8, 5)  # Giảm khoảng cách từ chữ đến mép
+
         # Cột trái - Kỳ lương
         left_layout = QFormLayout()
         left_layout.setSpacing(5)  # Giảm spacing để gọn hơn
@@ -1955,44 +2379,181 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
         
         right_layout.addRow("Ngày xuất:", self.labelNgayXuat)
         
-        # Thêm 2 cột vào layout chính
+        # Thêm 2 cột vào content layout
         left_widget = QWidget()
         left_widget.setLayout(left_layout)
         right_widget = QWidget()
         right_widget.setLayout(right_layout)
         
-        main_layout.addWidget(left_widget)
-        main_layout.addWidget(right_widget)
+        content_layout.addWidget(left_widget)
+        content_layout.addWidget(right_widget)
+
+        # Thêm content container vào group layout
+        group_layout.addWidget(content_container)
+        
+        # Giảm chiều cao để vừa đủ với nội dung
+        group.setMaximumHeight(60)  # Thu hẹp để fit với chữ
 
         return group
 
-    def create_section(self, title, content):
+    def create_combined_info_panel(self):
+        """Tạo panel thông tin tổng hợp (gộp thông tin cá nhân và kỳ lương)"""
         group = QGroupBox()
-        group.setFixedWidth(self.PHIEU_LUONG_WIDTH - 40)  # Trừ đi padding
+        group.setStyleSheet("""
+            QGroupBox {
+                border: none;
+                background-color: #f8f9fa;
+                padding: 1px;
+                font-family: "Times New Roman";
+            }
+            QLabel {
+                color: #495057;
+                font-family: "Times New Roman";
+            }
+        """)
+        
+        # Layout chính sử dụng QFormLayout để các cột thẳng hàng
+        main_layout = QHBoxLayout(group)
+        main_layout.setContentsMargins(5, 2, 5, 2)  # Tối ưu margins
+        main_layout.setSpacing(30)  # Giảm khoảng cách giữa 2 cột
+
+        # Tạo các label thông tin
+        self.labelHoTen = QLabel("")
+        self.labelMSNV = QLabel("")
+        self.labelChucVu = QLabel("")
+        self.labelPhongBan = QLabel("")
+        
+        # Cập nhật thông tin từ dropdown
+        self.update_employee_info()
+        
+        # Lấy tháng và năm đã chọn
+        selected_month, selected_year = self.get_selected_month_year()
+        self.labelThangNam = QLabel(f"Tháng {selected_month:02d}/{selected_year}")
+        
+        # Ngày xuất phiếu
+        current_date = datetime.now()
+        self.labelNgayXuat = QLabel(current_date.strftime("%d/%m/%Y %H:%M"))
+
+        # Cột trái
+        left_layout = QFormLayout()
+        left_layout.setSpacing(5)
+        left_layout.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)
+        
+        left_layout.addRow("Họ và tên:", self.labelHoTen)
+        left_layout.addRow("Mã số:", self.labelMSNV)
+        left_layout.addRow("Kỳ lương:", self.labelThangNam)
+        
+        # Cột phải
+        right_layout = QFormLayout()
+        right_layout.setSpacing(5)
+        right_layout.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)
+        
+        right_layout.addRow("Chức vụ:", self.labelChucVu)
+        right_layout.addRow("Phòng ban:", self.labelPhongBan)
+        right_layout.addRow("Ngày xuất:", self.labelNgayXuat)
+        
+        # Tạo widget cho mỗi cột
+        left_widget = QWidget()
+        left_widget.setLayout(left_layout)
+        right_widget = QWidget()
+        right_widget.setLayout(right_layout)
+        
+        # Thêm các widget vào layout chính
+        main_layout.addWidget(left_widget)
+        main_layout.addWidget(right_widget)
+        
+        # Giảm chiều cao để vừa đủ với nội dung
+        group.setMaximumHeight(70)  # Giảm chiều cao xuống tối thiểu
+        
+        return group
+
+    def create_section(self, title, content):
+        """Tạo section với bảng có cột tiêu đề merged"""
+        # Tạo bảng mới với cột tiêu đề
+        table = QTableWidget()
+        
+        # Lấy thông tin từ bảng gốc
+        original_rows = content.rowCount()
+        original_cols = content.columnCount()
+        
+        # Tạo bảng mới: thêm 1 cột cho tiêu đề, thêm 1 dòng cho header
+        table.setRowCount(original_rows + 1)  # +1 cho dòng header
+        table.setColumnCount(original_cols + 1)
+        
+        # Set headers - bỏ header cho cột tiêu đề, chỉ giữ headers gốc
+        headers = [""]  # Cột đầu không có header
+        for col in range(original_cols):
+            header_item = content.horizontalHeaderItem(col)
+            if header_item:
+                headers.append(header_item.text())
+            else:
+                headers.append(f"Cột {col + 1}")
+        
+        table.setHorizontalHeaderLabels(headers)
+        
+        # Thêm headers vào dòng đầu tiên cho các cột còn lại (vì đã ẩn header)
+        for col in range(original_cols):
+            header_item = content.horizontalHeaderItem(col)
+            if header_item:
+                header_cell = QTableWidgetItem(header_item.text())
+                header_cell.setTextAlignment(Qt.AlignCenter)
+                header_cell.setBackground(QColor(220, 220, 220))  # Màu nền header
+                table.setItem(0, col + 1, header_cell)
+        
+        # Copy dữ liệu từ bảng gốc sang bảng mới (bắt đầu từ dòng 1, cột 1)
+        for row in range(original_rows):
+            for col in range(original_cols):
+                original_item = content.item(row, col)
+                if original_item:
+                    new_item = QTableWidgetItem(original_item.text())
+                    new_item.setTextAlignment(original_item.textAlignment())
+                    # Copy tooltip nếu có
+                    if original_item.toolTip():
+                        new_item.setToolTip(original_item.toolTip())
+                    # Copy background color nếu có
+                    if original_item.background().color().isValid():
+                        new_item.setBackground(original_item.background())
+                    # Copy font nếu có
+                    if original_item.font():
+                        new_item.setFont(original_item.font())
+                    table.setItem(row + 1, col + 1, new_item)  # +1 cho row vì dòng 0 là header
+        
+        # Thêm tiêu đề vào cột đầu tiên - ghi đầy đủ
+        title_item = QTableWidgetItem(title)
+        title_item.setTextAlignment(Qt.AlignCenter | Qt.AlignVCenter)
+        title_item.setBackground(QColor(240, 240, 240))  # Màu nền nhạt
+        table.setItem(0, 0, title_item)
+        
+        # Merge các cell trong cột đầu tiên (bao gồm cả dòng header)
+        table.setSpan(0, 0, original_rows + 1, 1)  # +1 để bao gồm dòng header
+        
+        # Ẩn header để tạo hiệu ứng merge với header
+        table.horizontalHeader().setVisible(False)
+        
+        # Tăng chiều cao dòng đầu tiên để bù cho việc ẩn header
+        table.setRowHeight(0, 35)  # Giảm chiều cao header để tối ưu không gian
+        
+        # Áp dụng style cho bảng mới
+        self.format_table(table)
+        
+        # Tạo group container
+        group = QGroupBox()
+        group.setFixedWidth(self.PHIEU_LUONG_WIDTH - 40)
         group.setStyleSheet("""
             QGroupBox {
                 border: 1px solid #e9ecef;
                 border-radius: 4px;
-                margin-top: 5px;
-                padding: 5px;
-            }
-            QLabel {
-                color: #2c3e50;
-                font-weight: bold;
-                margin-bottom: 2px;
+                margin-top: 1px;
+                margin-bottom: 1px;
+                padding: 2px;
             }
         """)
+        
         layout = QVBoxLayout(group)
-        layout.setSpacing(1)  # Giảm spacing từ 2 xuống 1
-        layout.setContentsMargins(3, 3, 3, 3)  # Giảm margins từ 5 xuống 3
+        layout.setSpacing(0)
+        layout.setContentsMargins(1, 1, 1, 1)
+        layout.addWidget(table)
         
-        label = QLabel(title)
-        font = QFont()
-        font.setBold(True)
-        label.setFont(font)
-        
-        layout.addWidget(label)
-        layout.addWidget(content)
         return group
 
     def format_table(self, table):
@@ -2016,14 +2577,14 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
             }
             QHeaderView::section {
                 background-color: #f8f9fa;
-                padding: 3px;
+                padding: 1px;
                 border: 1px solid #dee2e6;
                 font-weight: bold;
                 color: #495057;
                 font-family: "Times New Roman";
             }
             QTableWidget::item {
-                padding: 3px;
+                padding: 1px;
                 border: 1px solid #dee2e6;
                 font-family: "Times New Roman";
             }
@@ -2051,20 +2612,34 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
         if num_columns == 2:
             col_widths = [int(table_width * 0.6), int(table_width * 0.4)]
         elif num_columns == 3:
-            # Điều chỉnh độ rộng cho bảng khấu trừ có 3 cột
-            if table == getattr(self, 'tableKhauTru', None):
-                col_widths = [int(table_width * 0.35), int(table_width * 0.25), int(table_width * 0.4)]
+            # Bảng có 3 cột: có thể là bảng gốc hoặc bảng mới (tiêu đề + 2 cột gốc)
+            # Kiểm tra xem có phải bảng mới không (cột đầu có header rỗng)
+            header_item = table.horizontalHeaderItem(0)
+            if header_item and header_item.text() == "":
+                # Bảng mới: Tiêu đề + 2 cột gốc
+                col_widths = [int(table_width * 0.15), int(table_width * 0.5), int(table_width * 0.35)]
             else:
-                col_widths = [int(table_width * 0.4), int(table_width * 0.3), int(table_width * 0.3)]
+                # Bảng gốc có 3 cột
+                if table == getattr(self, 'tableKhauTru', None):
+                    col_widths = [int(table_width * 0.35), int(table_width * 0.25), int(table_width * 0.4)]
+                else:
+                    col_widths = [int(table_width * 0.4), int(table_width * 0.3), int(table_width * 0.3)]
+        elif num_columns == 4:
+            # Bảng có 4 cột: Tiêu đề + 3 cột gốc
+            col_widths = [int(table_width * 0.1), int(table_width * 0.4), int(table_width * 0.25), int(table_width * 0.25)]
+        else:
+            # Trường hợp khác, chia đều
+            col_width = int(table_width / num_columns)
+            col_widths = [col_width] * num_columns
         
         for col, width in enumerate(col_widths):
             table.setColumnWidth(col, width)
 
         # Cố định kích thước bảng - chiều cao = header + các dòng nội dung
         rows = table.rowCount()
-        header_height = 30  # Header thường cao hơn
-        row_height = 28     # Chiều cao mỗi dòng nội dung
-        total_height = header_height + (rows * (row_height+4))
+        header_height = 0   # Đã ẩn header nên không cần tính
+        row_height = 30     # Giảm chiều cao mỗi dòng
+        total_height = header_height + (rows * row_height)  # Loại bỏ +4 gây khoảng trắng
         table.setFixedHeight(total_height)
         
         # Căn chỉnh text và cố định các ô
@@ -2167,17 +2742,17 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
 
     # [Giữ nguyên các hàm tạo bảng và xử lý sự kiện như cũ]
     def create_luong_coban_table(self):
-        table = QTableWidget(1, 3)
-        table.setHorizontalHeaderLabels(["Số ngày làm việc bình thường", "", "Thành tiền (vnđ)"])
+        table = QTableWidget(1, 2)
+        table.setHorizontalHeaderLabels(["Số ngày làm việc bình thường", "Thành tiền (vnđ)"])
         
         # Tạo item với tooltip
         ngay_lam_item = QTableWidgetItem("")
-        ngay_lam_item.setToolTip("🔍 CÔNG THỨC\nSố ngày làm việc thực tế = Tổng số ngày có type W, O, T")
+        ngay_lam_item.setToolTip("🔍 CÔNG THỨC\nSố ngày làm việc bình thường = Tổng ngày làm việc (W, O, T) - Ngày chủ nhật\n\n📋 LÝ DO:\n• Chủ nhật được tính riêng trong 'Thêm giờ 200%'\n• Tránh tính 2 lần cho cùng 1 ngày")
         table.setItem(0, 0, ngay_lam_item)
         
         luong_co_ban_item = QTableWidgetItem("")
         luong_co_ban_item.setToolTip("🔍 CÔNG THỨC\nLương cơ bản = Số ngày làm việc thực tế × (Lương cơ bản tháng ÷ Số ngày làm việc chuẩn tháng)")
-        table.setItem(0, 2, luong_co_ban_item)
+        table.setItem(0, 1, luong_co_ban_item)  # Chuyển từ cột 2 sang cột 1
         
         self.format_table(table)
         return table
@@ -2229,8 +2804,8 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
         
         tooltips = [
             "🔍 CÔNG THỨC\nPC Công trường = Số ngày công trường × Mức phụ cấp công trường",
-            "🔍 CÔNG THỨC\nPC Đào tạo = Số ngày đào tạo × (Mức phụ cấp công trường × 0.4)",
-            "🔍 CÔNG THỨC\nPC Văn phòng = Số ngày văn phòng × (Mức phụ cấp công trường × 0.2)",
+            f"🔍 CÔNG THỨC\nPC Đào tạo = Số ngày đào tạo × (Mức phụ cấp công trường × {self.phu_cap_dao_tao_coefficient})\n\nHệ số hiện tại: {self.phu_cap_dao_tao_coefficient} ({self.phu_cap_dao_tao_coefficient*100:.0f}%)",
+            f"🔍 CÔNG THỨC\nPC Văn phòng = Số ngày văn phòng × (Mức phụ cấp công trường × {self.phu_cap_van_phong_coefficient})\n\nHệ số hiện tại: {self.phu_cap_van_phong_coefficient} ({self.phu_cap_van_phong_coefficient*100:.0f}%)",
             "🔍 CÔNG THỨC\nPC Chức danh = (Số ngày công trường ÷ Số ngày làm việc chuẩn tháng) × Mức phụ cấp chức danh",
             "🔍 CÔNG THỨC\nXăng xe = Tổng chi phí xăng xe từ dữ liệu chấm công (theo công ty)",
             "🔍 CÔNG THỨC\nĐiện thoại = Tổng chi phí điện thoại từ dữ liệu chấm công",
@@ -2289,6 +2864,91 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
         self.format_table(table)
         return table
 
+    def create_phu_cap_coefficient_panel(self):
+        """Tạo panel để điều chỉnh hệ số phụ cấp đào tạo và văn phòng"""
+        group = QGroupBox("Điều chỉnh hệ số phụ cấp")
+        group.setFixedWidth(self.PHIEU_LUONG_WIDTH - 40)
+        group.setStyleSheet("""
+            QGroupBox {
+                border: 1px solid #17a2b8;
+                border-radius: 4px;
+                background-color: #e3f2fd;
+                font-weight: bold;
+                color: #17a2b8;
+                padding-top: 15px;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 10px;
+                padding: 0 5px 0 5px;
+                background-color: #e3f2fd;
+            }
+            QLabel {
+                color: #2c3e50;
+                font-weight: normal;
+            }
+            QLineEdit {
+                border: 1px solid #bdc3c7;
+                border-radius: 3px;
+                padding: 4px;
+                background-color: white;
+            }
+            QPushButton {
+                background-color: #17a2b8;
+                color: white;
+                border: none;
+                border-radius: 3px;
+                padding: 6px 12px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #138496;
+            }
+        """)
+        
+        layout = QHBoxLayout(group)
+        layout.setSpacing(15)
+        layout.setContentsMargins(15, 20, 15, 15)
+        
+        # Hệ số đào tạo
+        dao_tao_layout = QVBoxLayout()
+        dao_tao_label = QLabel("Hệ số Đào tạo:")
+        dao_tao_label.setAlignment(Qt.AlignCenter)
+        self.dao_tao_coefficient = QLineEdit(str(self.phu_cap_dao_tao_coefficient))
+        self.dao_tao_coefficient.setFixedWidth(80)
+        self.dao_tao_coefficient.setAlignment(Qt.AlignCenter)
+        self.dao_tao_coefficient.setToolTip(f"Hệ số nhân cho phụ cấp đào tạo\nHiện tại: {self.phu_cap_dao_tao_coefficient} ({self.phu_cap_dao_tao_coefficient*100:.0f}% của phụ cấp công trường)")
+        dao_tao_layout.addWidget(dao_tao_label)
+        dao_tao_layout.addWidget(self.dao_tao_coefficient)
+        
+        # Hệ số văn phòng
+        van_phong_layout = QVBoxLayout()
+        van_phong_label = QLabel("Hệ số Văn phòng:")
+        van_phong_label.setAlignment(Qt.AlignCenter)
+        self.van_phong_coefficient = QLineEdit(str(self.phu_cap_van_phong_coefficient))
+        self.van_phong_coefficient.setFixedWidth(80)
+        self.van_phong_coefficient.setAlignment(Qt.AlignCenter)
+        self.van_phong_coefficient.setToolTip(f"Hệ số nhân cho phụ cấp văn phòng\nHiện tại: {self.phu_cap_van_phong_coefficient} ({self.phu_cap_van_phong_coefficient*100:.0f}% của phụ cấp công trường)")
+        van_phong_layout.addWidget(van_phong_label)
+        van_phong_layout.addWidget(self.van_phong_coefficient)
+        
+        # Nút cập nhật
+        update_layout = QVBoxLayout()
+        update_label = QLabel("Cập nhật:")
+        update_label.setAlignment(Qt.AlignCenter)
+        self.update_coefficient_btn = QPushButton("Áp dụng")
+        self.update_coefficient_btn.setFixedWidth(80)
+        self.update_coefficient_btn.clicked.connect(self.update_phu_cap_coefficients)
+        update_layout.addWidget(update_label)
+        update_layout.addWidget(self.update_coefficient_btn)
+        
+        # Thêm vào layout chính
+        layout.addLayout(dao_tao_layout)
+        layout.addLayout(van_phong_layout)
+        layout.addLayout(update_layout)
+        
+        return group
+
     def create_tong_cong_panel(self):
         group = QGroupBox()
         group.setFixedWidth(self.PHIEU_LUONG_WIDTH - 40)  # Đồng nhất với các bảng
@@ -2304,7 +2964,7 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
             }
         """)
         layout = QHBoxLayout(group)
-        layout.setContentsMargins(8, 5, 8, 5)  # Giảm margins của tổng cộng
+        layout.setContentsMargins(5, 2, 5, 2)  # Tối ưu margins của tổng cộng
         layout.addWidget(QLabel("(I)Tổng cộng (vnđ)=(A)+(B)+(C)+(D):"))
         tong = QLabel("")
         tong.setAlignment(Qt.AlignCenter)  # Căn giữa như cột thành tiền
@@ -2315,6 +2975,38 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
         self.tong_cong_label = tong
         
         return group
+
+    def update_phu_cap_coefficients(self):
+        """Cập nhật hệ số phụ cấp đào tạo và văn phòng"""
+        try:
+            # Lấy giá trị từ input
+            dao_tao_coef = float(self.dao_tao_coefficient.text())
+            van_phong_coef = float(self.van_phong_coefficient.text())
+            
+            # Kiểm tra giá trị hợp lệ
+            if dao_tao_coef < 0 or van_phong_coef < 0:
+                QMessageBox.warning(self, "Cảnh báo", "Hệ số không được âm!")
+                return
+            
+            # Lưu giá trị mới
+            self.phu_cap_dao_tao_coefficient = dao_tao_coef
+            self.phu_cap_van_phong_coefficient = van_phong_coef
+            
+            # Hiển thị thông báo thành công
+            QMessageBox.information(self, "Thành công", 
+                f"Hệ số đã được cập nhật:\n"
+                f"Đào tạo: {dao_tao_coef}\n"
+                f"Văn phòng: {van_phong_coef}\n\n"
+                f"Bây giờ hãy tính lại lương để áp dụng hệ số mới!")
+            
+            # Cập nhật tooltip
+            self.dao_tao_coefficient.setToolTip(f"Hệ số nhân cho phụ cấp đào tạo\nHiện tại: {dao_tao_coef} ({dao_tao_coef*100:.0f}% của phụ cấp công trường)")
+            self.van_phong_coefficient.setToolTip(f"Hệ số nhân cho phụ cấp văn phòng\nHiện tại: {van_phong_coef} ({van_phong_coef*100:.0f}% của phụ cấp công trường)")
+            
+        except ValueError:
+            QMessageBox.warning(self, "Lỗi", "Vui lòng nhập số hợp lệ!")
+        except Exception as e:
+            QMessageBox.critical(self, "Lỗi", f"Có lỗi xảy ra: {str(e)}")
 
     def create_thuc_nhan_panel(self):
         group = QGroupBox()
@@ -2327,7 +3019,7 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
             }
         """)
         layout = QHBoxLayout(group)
-        layout.setContentsMargins(10, 10, 10, 10)
+        layout.setContentsMargins(5, 3, 5, 3)  # Tối ưu margins của thực nhận
         
         # Label tiêu đề với font lớn hơn một chút
         title_label = QLabel("THỰC NHẬN (VNĐ)=I-E+F:")
@@ -2558,6 +3250,64 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
         """)
         layout.addWidget(input_title)
         
+        # Nút chỉnh sửa xăng xe
+        btn_xang_xe = QPushButton("Chỉnh sửa xăng xe")
+        btn_xang_xe.setStyleSheet("""
+            QPushButton {
+                background-color: #20c997;
+                color: white;
+                border: none;
+                padding: 6px 10px;
+                border-radius: 4px;
+                font-size: 12px;
+                text-align: center;
+            }
+            QPushButton:hover {
+                background-color: #1ba37f;
+            }
+        """)
+        btn_xang_xe.clicked.connect(lambda: self.show_input_dialog("xang_xe", "Nhập số tiền xăng xe:"))
+        layout.addWidget(btn_xang_xe)
+
+        # Nút chỉnh sửa mua sắm
+        btn_mua_sam = QPushButton("Chỉnh sửa mua sắm")
+        btn_mua_sam.setStyleSheet("""
+            QPushButton {
+                background-color: #fd7e14;
+                color: white;
+                border: none;
+                padding: 6px 10px;
+                border-radius: 4px;
+                font-size: 12px;
+                text-align: center;
+            }
+            QPushButton:hover {
+                background-color: #e66a03;
+            }
+        """)
+        btn_mua_sam.clicked.connect(lambda: self.show_input_dialog("mua_sam", "Nhập số tiền mua sắm:"))
+        layout.addWidget(btn_mua_sam)
+
+        # Nút điều chỉnh hệ số phụ cấp
+        btn_phu_cap_coefficient = QPushButton("Điều chỉnh hệ số\nphụ cấp")
+        btn_phu_cap_coefficient.setStyleSheet("""
+            QPushButton {
+                background-color: #6f42c1;
+                color: white;
+                border: none;
+                padding: 6px 10px;
+                border-radius: 4px;
+                font-size: 11px;
+                text-align: center;
+                min-height: 40px;
+            }
+            QPushButton:hover {
+                background-color: #5a32a3;
+            }
+        """)
+        btn_phu_cap_coefficient.clicked.connect(self.show_phu_cap_coefficient_dialog)
+        layout.addWidget(btn_phu_cap_coefficient)
+        
         # Nút nhập tạm ứng
         btn_tam_ung = QPushButton("Nhập tạm ứng")
         btn_tam_ung.setStyleSheet("""
@@ -2607,6 +3357,143 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
         dialog = TaxTableDialog(self)
         dialog.exec_()
 
+    def show_phu_cap_coefficient_dialog(self):
+        """Hiển thị dialog điều chỉnh hệ số phụ cấp đào tạo và văn phòng"""
+        try:
+            # Tạo dialog đơn giản
+            dialog = QDialog(self)
+            dialog.setWindowTitle("Điều chỉnh hệ số phụ cấp")
+            dialog.setFixedSize(400, 300)
+            dialog.setStyleSheet("""
+                QDialog {
+                    background-color: #f8f9fa;
+                }
+                QLabel {
+                    color: #2c3e50;
+                    font-weight: bold;
+                    font-size: 12px;
+                }
+                QLineEdit {
+                    border: 1px solid #bdc3c7;
+                    border-radius: 3px;
+                    padding: 8px;
+                    background-color: white;
+                    font-size: 14px;
+                    text-align: center;
+                }
+                QPushButton {
+                    background-color: #17a2b8;
+                    color: white;
+                    border: none;
+                    border-radius: 3px;
+                    padding: 8px 16px;
+                    font-weight: bold;
+                    font-size: 12px;
+                }
+                QPushButton:hover {
+                    background-color: #138496;
+                }
+                QPushButton#cancel {
+                    background-color: #6c757d;
+                }
+                QPushButton#cancel:hover {
+                    background-color: #5a6268;
+                }
+            """)
+            
+            layout = QVBoxLayout(dialog)
+            layout.setSpacing(20)
+            layout.setContentsMargins(20, 20, 20, 20)
+            
+            # Tiêu đề
+            title = QLabel("Điều chỉnh hệ số phụ cấp")
+            title.setStyleSheet("font-size: 16px; color: #17a2b8; margin-bottom: 10px;")
+            title.setAlignment(Qt.AlignCenter)
+            layout.addWidget(title)
+            
+            # Hệ số đào tạo
+            dao_tao_layout = QHBoxLayout()
+            dao_tao_label = QLabel("Hệ số Đào tạo:")
+            dao_tao_label.setFixedWidth(120)
+            self.dao_tao_coefficient_input = QLineEdit(str(self.phu_cap_dao_tao_coefficient))
+            self.dao_tao_coefficient_input.setFixedWidth(100)
+            self.dao_tao_coefficient_input.setToolTip("Hệ số nhân cho phụ cấp đào tạo\nVí dụ: 0.4 = 40%, 0 = 0%, 1.0 = 100%")
+            dao_tao_layout.addWidget(dao_tao_label)
+            dao_tao_layout.addWidget(self.dao_tao_coefficient_input)
+            dao_tao_layout.addStretch()
+            layout.addLayout(dao_tao_layout)
+            
+            # Hệ số văn phòng
+            van_phong_layout = QHBoxLayout()
+            van_phong_label = QLabel("Hệ số Văn phòng:")
+            van_phong_label.setFixedWidth(120)
+            self.van_phong_coefficient_input = QLineEdit(str(self.phu_cap_van_phong_coefficient))
+            self.van_phong_coefficient_input.setFixedWidth(100)
+            self.van_phong_coefficient_input.setToolTip("Hệ số nhân cho phụ cấp văn phòng\nVí dụ: 0.2 = 20%, 0 = 0%, 1.0 = 100%")
+            van_phong_layout.addWidget(van_phong_label)
+            van_phong_layout.addWidget(self.van_phong_coefficient_input)
+            van_phong_layout.addStretch()
+            layout.addLayout(van_phong_layout)
+            
+            # Thông tin hiện tại
+            info_label = QLabel(f"Thông tin hiện tại:\n• Đào tạo: {self.phu_cap_dao_tao_coefficient} ({self.phu_cap_dao_tao_coefficient*100:.0f}%)\n• Văn phòng: {self.phu_cap_van_phong_coefficient} ({self.phu_cap_van_phong_coefficient*100:.0f}%)")
+            info_label.setStyleSheet("font-size: 11px; color: #6c757d; background-color: #e9ecef; padding: 10px; border-radius: 5px; border: 1px solid #dee2e6;")
+            info_label.setWordWrap(True)
+            layout.addWidget(info_label)
+            
+            # Nút cập nhật
+            button_layout = QHBoxLayout()
+            update_btn = QPushButton("Cập nhật")
+            update_btn.clicked.connect(self.update_phu_cap_coefficients_from_dialog)
+            cancel_btn = QPushButton("Hủy")
+            cancel_btn.setObjectName("cancel")
+            cancel_btn.clicked.connect(dialog.reject)
+            
+            button_layout.addWidget(update_btn)
+            button_layout.addWidget(cancel_btn)
+            layout.addLayout(button_layout)
+            
+            dialog.exec_()
+            
+        except Exception as e:
+            QMessageBox.critical(self, "Lỗi", f"Có lỗi xảy ra: {str(e)}")
+
+    def update_phu_cap_coefficients_from_dialog(self):
+        """Cập nhật hệ số phụ cấp từ dialog"""
+        try:
+            # Lấy giá trị từ input
+            dao_tao_coef = float(self.dao_tao_coefficient_input.text())
+            van_phong_coef = float(self.van_phong_coefficient_input.text())
+            
+            # Kiểm tra giá trị hợp lệ
+            if dao_tao_coef < 0 or van_phong_coef < 0:
+                QMessageBox.warning(self, "Cảnh báo", "Hệ số không được âm!")
+                return
+            
+            # Lưu giá trị mới
+            self.phu_cap_dao_tao_coefficient = dao_tao_coef
+            self.phu_cap_van_phong_coefficient = van_phong_coef
+            
+            # Hiển thị thông báo thành công
+            QMessageBox.information(self, "Thành công", 
+                f"Hệ số đã được cập nhật:\n"
+                f"Đào tạo: {dao_tao_coef} ({dao_tao_coef*100:.0f}%)\n"
+                f"Văn phòng: {van_phong_coef} ({van_phong_coef*100:.0f}%)\n\n"
+                f"Bây giờ hãy tính lại lương để áp dụng hệ số mới!")
+            
+            # Đóng dialog - tìm dialog cha gần nhất
+            current_widget = self.sender()
+            while current_widget and not isinstance(current_widget, QDialog):
+                current_widget = current_widget.parent()
+            
+            if current_widget and isinstance(current_widget, QDialog):
+                current_widget.accept()
+            
+        except ValueError:
+            QMessageBox.warning(self, "Lỗi", "Vui lòng nhập số hợp lệ!")
+        except Exception as e:
+            QMessageBox.critical(self, "Lỗi", f"Có lỗi xảy ra: {str(e)}")
+
     def show_bhxh_settings(self):
         """Hiển thị dialog cài đặt mức lương cơ sở BHXH"""
         dialog = BHXHSettingsDialog(self, self.bhxh_salary_base)
@@ -2616,18 +3503,30 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
             self.update_bhxh_calculation()
     
     def show_input_dialog(self, field_type, label_text):
-        """Hiển thị dialog nhập liệu cho tạm ứng hoặc vi phạm"""
+        """Hiển thị dialog nhập liệu cho tạm ứng, vi phạm, xăng xe hoặc mua sắm"""
         try:
             # Lấy giá trị hiện tại
             current_value = 0
-            if hasattr(self, 'tableKhauTru'):
+            if hasattr(self, 'tableKhauTru') and field_type in ["tam_ung", "vi_pham"]:
                 if field_type == "tam_ung":
                     item = self.tableKhauTru.item(5, 1)
                 elif field_type == "vi_pham":
                     item = self.tableKhauTru.item(6, 1)
-                else:
-                    return
                 
+                if item and item.text():
+                    try:
+                        current_value = int(item.text().replace(',', ''))
+                    except:
+                        current_value = 0
+            elif hasattr(self, 'tablePhuCap') and field_type == "xang_xe":
+                item = self.tablePhuCap.item(4, 2)  # Dòng xăng xe, cột thành tiền
+                if item and item.text():
+                    try:
+                        current_value = int(item.text().replace(',', ''))
+                    except:
+                        current_value = 0
+            elif hasattr(self, 'tableMuaSam') and field_type == "mua_sam":
+                item = self.tableMuaSam.item(0, 1)  # Dòng đầu tiên, cột thành tiền
                 if item and item.text():
                     try:
                         current_value = int(item.text().replace(',', ''))
@@ -2653,11 +3552,26 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
                         vi_pham_item.setToolTip(f"🔍 VI PHẠM\n💰 Số tiền phạt: {new_value:,} VNĐ\n\n👤 Nhân viên: {self.current_employee}\n📅 Tháng: {month_year}\n\n📋 Thông tin:\n• Vừa cập nhật số tiền phạt\n• Sẽ được trừ vào lương tháng này\n• Dữ liệu đã được lưu tự động\n\n✏️ Để chỉnh sửa: Click đúp vào ô này")
                         self.tableKhauTru.setItem(6, 1, vi_pham_item)
                 
-                # Lưu dữ liệu cho nhân viên và tháng hiện tại
-                self.save_tam_ung_vi_pham_data(field_type, new_value)
-                
-                # Cập nhật tổng khấu trừ và thực nhận
-                self.update_total_deduction()
+                # Xử lý theo loại dữ liệu
+                if field_type in ["tam_ung", "vi_pham"]:
+                    # Lưu dữ liệu tạm ứng/vi phạm
+                    self.save_tam_ung_vi_pham_data(field_type, new_value)
+                    # Cập nhật tổng khấu trừ và thực nhận
+                    self.update_total_deduction()
+                elif field_type == "xang_xe":
+                    # Cập nhật giá trị xăng xe trong bảng phụ cấp
+                    if hasattr(self, 'tablePhuCap'):
+                        xang_xe_item = QTableWidgetItem(f"{new_value:,}")
+                        xang_xe_item.setToolTip(f"🔍 XĂNG XE\n💰 Số tiền: {new_value:,} VNĐ\n\n👤 Nhân viên: {self.current_employee}\n📅 Tháng: {month_year}")
+                        self.tablePhuCap.setItem(4, 2, xang_xe_item)
+                        self.update_totals()  # Cập nhật tổng cộng
+                elif field_type == "mua_sam":
+                    # Cập nhật giá trị mua sắm
+                    if hasattr(self, 'tableMuaSam'):
+                        mua_sam_item = QTableWidgetItem(f"{new_value:,}")
+                        mua_sam_item.setToolTip(f"🔍 MUA SẮM\n💰 Số tiền: {new_value:,} VNĐ\n\n👤 Nhân viên: {self.current_employee}\n📅 Tháng: {month_year}")
+                        self.tableMuaSam.setItem(0, 1, mua_sam_item)
+                        self.update_totals()  # Cập nhật tổng cộng
                 
         except Exception as e:
             print(f"Lỗi hiển thị dialog nhập liệu: {e}")
@@ -2758,7 +3672,7 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
                 with open(file_path, 'r', encoding='utf-8') as f:
                     data = json.load(f)
                     self.tam_ung_vi_pham_data = data.get("data", {})
-                print(f"Debug: Đã tải dữ liệu tạm ứng/vi phạm từ {file_path}")
+                # print(f"Debug: Đã tải dữ liệu tạm ứng/vi phạm từ {file_path}")
             else:
                 print("Debug: Chưa có file dữ liệu tạm ứng/vi phạm")
         except Exception as e:
@@ -3035,8 +3949,9 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
             if not self.data_chamcong:
                 return
             
-            # Lấy tháng/năm hiện tại (mặc định tháng 8/2025)
-            current_month = "08/2025"
+            # Sử dụng period từ file JSON được import, fallback về tháng hiện tại
+            current_month = getattr(self, 'current_period', "08/2025")
+            print(f"💰 Tính lương cho period: {current_month}")
             
             # Tính toán cho từng nhân viên
             for employee_name in self.data_chamcong.keys():
@@ -3082,12 +3997,50 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
             
             # Lấy dữ liệu chi tiết ngày làm việc
             days_detail = chamcong_data.get('days_detail', {})
-            # print(f"Debug: days_detail = {days_detail}")
+            summary_data = chamcong_data.get('summary', {})
             
-            # Tính lương cơ bản theo số ngày thực tế
-            ngay_lam_viec_thuc_te = len(days_detail) if days_detail else 0
-            ngay_lam_viec_chuan = 26  # Số ngày làm việc chuẩn trong tháng
-            luong_co_ban = (luong_co_ban_thang / ngay_lam_viec_chuan) * ngay_lam_viec_thuc_te
+            # Tính ngày làm việc bình thường (loại trừ chủ nhật) - CÙNG LOGIC VỚI fill_chamcong_data
+            total_work_days = summary_data.get('total_work_days', 0)
+            total_office_days = summary_data.get('total_office_days', 0)
+            total_training_days = summary_data.get('total_training_days', 0)
+            sunday_200_hours = summary_data.get('sunday_200_hours', 0)
+            
+            # Loại trừ chủ nhật khỏi ngày làm việc bình thường
+            ngay_chu_nhat = sunday_200_hours / 8 if sunday_200_hours > 0 else 0
+            ngay_lam_viec_thuc_te = total_work_days + total_office_days + total_training_days - ngay_chu_nhat
+            
+            # Fallback nếu không có summary data
+            if ngay_lam_viec_thuc_te <= 0 and days_detail:
+                # Đếm ngày làm việc từ days_detail, loại trừ chủ nhật
+                ngay_lam_viec_thuc_te = 0
+                ngay_chu_nhat_count = 0
+                for day_key, day_data in days_detail.items():
+                    if isinstance(day_data, dict):
+                        day_type = day_data.get('type', '')
+                        if day_type in ['W', 'O', 'T']:
+                            # Kiểm tra có phải chủ nhật không (cần period để tính)
+                            try:
+                                day_num = int(day_key)
+                                # Tạm thời giả sử có 1 ngày chủ nhật cho mỗi 8 giờ sunday_200_hours
+                                ngay_lam_viec_thuc_te += 1
+                            except:
+                                ngay_lam_viec_thuc_te += 1
+                # Trừ chủ nhật
+                ngay_lam_viec_thuc_te -= ngay_chu_nhat
+                print(f"⚠️ Sử dụng fallback logic - Ngày làm việc: {ngay_lam_viec_thuc_te}")
+            
+            # Tính số ngày làm việc chuẩn trong tháng (trừ chủ nhật) dựa trên tháng/năm thực tế
+            month_year = self.get_selected_month_year()
+            if month_year:
+                year, month = month_year
+                ngay_lam_viec_chuan = self.calculate_working_days(year, month)
+            else:
+                ngay_lam_viec_chuan = 26  # Giá trị mặc định nếu không lấy được tháng/năm
+            
+            print(f"🔍 calculate_and_save_salary_data - Ngày làm việc:")
+            print(f"   Tổng: {total_work_days + total_office_days + total_training_days}")
+            print(f"   Chủ nhật: {ngay_chu_nhat}")
+            print(f"   Bình thường: {ngay_lam_viec_thuc_te}")
             
             # Phụ cấp (tính từ dữ liệu chấm công)
             tong_phu_cap = 0
@@ -3103,9 +4056,10 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
                 if isinstance(day_data, dict):
                     overtime_hours = day_data.get('overtime_hours', 0)
                     if overtime_hours > 0:
-                        luong_1_ngay = luong_co_ban_thang / ngay_lam_viec_chuan
-                        luong_1_gio = luong_1_ngay / 8
-                        tong_them_gio += overtime_hours * luong_1_gio * 1.5
+                        # Tính lương 1 giờ cho 150%: Lương cơ bản ÷ 26 ngày ÷ 8 giờ
+                        luong_1_gio_150 = luong_co_ban_thang / 26 / 8 if 26 > 0 else 0
+                        print(f"🔍 Debug lương 1 giờ 150%: {luong_co_ban_thang:,} ÷ 26 ÷ 8 = {luong_1_gio_150:,.0f}")
+                        tong_them_gio += overtime_hours * luong_1_gio_150 * 1.5
             
             # KPI (tính từ dữ liệu chấm công)
             tong_kpi = 0
@@ -3180,8 +4134,35 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
         thue += (thu_nhap-bac[-1]) * ty_le[-1]
         return max(0, thue)
 
+    def update_chamcong_data_with_period(self, data_chamcong, period):
+        """Cập nhật dữ liệu chấm công từ tab bảng công với thông tin period"""
+        self.data_chamcong = data_chamcong
+        self.current_period = period  # Lưu period từ file JSON
+        print(f"🔄 Cập nhật dữ liệu chấm công với period: {period}")
+        
+        # TỰ ĐỘNG TÍNH TOÁN SẴN LƯƠNG CHO TẤT CẢ NHÂN VIÊN với period đúng
+        self.calculate_all_employees_salary()
+        
+        # Refresh month/year combo với dữ liệu mới
+        self.populate_month_combo()
+        self.populate_year_combo()
+        
+        # Set combo box theo period từ JSON (sau khi populate)
+        if period and '/' in period:
+            month_str, year_str = period.split('/')
+            try:
+                self.comboThang.setCurrentText(f"Tháng {int(month_str)}")
+                self.comboNam.setCurrentText(year_str)
+                print(f"📅 Đã set combo box: {month_str}/{year_str}")
+            except Exception as e:
+                print(f"Lỗi set combo box: {e}")
+        
+        # Tự động điền dữ liệu nếu đang chọn nhân viên
+        if self.current_employee:
+            self.auto_fill_salary_data()
+
     def update_chamcong_data(self, data_chamcong):
-        """Cập nhật dữ liệu chấm công từ tab bảng công"""
+        """Cập nhật dữ liệu chấm công từ tab bảng công (phương thức cũ để tương thích)"""
         self.data_chamcong = data_chamcong
         
         # TỰ ĐỘNG TÍNH TOÁN SẴN LƯƠNG CHO TẤT CẢ NHÂN VIÊN
@@ -3244,9 +4225,29 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
             month_year = f"{month:02d}/{year}"
             chamcong_data = self.get_chamcong_data(month_year)
             
-            if not chamcong_data or 'days_detail' not in chamcong_data:
-                print("Debug: Không có dữ liệu chi tiết chấm công")
+            if not chamcong_data:
+                print("Debug: Không có dữ liệu chấm công")
                 return
+            
+            # ƯU TIÊN 1: Sử dụng dữ liệu từ summary (đã tính sẵn từ tab chấm công)
+            summary_data = chamcong_data.get('summary', {})
+            if summary_data:
+                ot_150_hours = summary_data.get('total_overtime_hours', 0)
+                ot_200_hours = summary_data.get('sunday_200_hours', 0)  # Đã là số giờ
+                ot_300_hours = summary_data.get('holiday_300_hours', 0)  # Đã là số giờ
+                
+                print(f"✅ SỬ DỤNG DỮ LIỆU TỪ SUMMARY:")
+                print(f"   Raw sunday_200_hours: {summary_data.get('sunday_200_hours', 0)}")
+                print(f"   Raw holiday_300_hours: {summary_data.get('holiday_300_hours', 0)}")
+                print(f"   OT 150%: {ot_150_hours} giờ")
+                print(f"   OT 200%: {ot_200_hours} giờ") 
+                print(f"   OT 300%: {ot_300_hours} giờ")
+            else:
+                print("⚠️ Không có summary data, tính toán thủ công")
+                # FALLBACK: Tính toán thủ công nếu không có summary
+                if 'days_detail' not in chamcong_data:
+                    print("Debug: Không có dữ liệu chi tiết chấm công")
+                    return
             
             # Lấy dữ liệu lương cơ bản
             luong_data = self.get_luong_data()
@@ -3270,49 +4271,58 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
             working_days = self.calculate_working_days(year, month)
             print(f"Debug: Số ngày làm việc = {working_days}")
             
-            # Tính lương cơ bản 1 ngày
-            luong_1_ngay = luong_co_ban / working_days if working_days > 0 else 0
-            print(f"Debug: Lương 1 ngày = {luong_1_ngay:,}")
+            # Debug: Hiển thị thông tin lương cơ bản và số ngày làm việc
+            print(f"Debug: Lương cơ bản = {luong_co_ban:,}")
+            print(f"Debug: Số ngày làm việc = {working_days}")
+            print(f"Debug: Sẽ tính lương 1 giờ riêng cho từng loại thêm giờ")
             
-            # Tính lương cơ bản 1 giờ (chia cho 8 tiếng)
-            luong_1_gio = luong_1_ngay / 8
-            print(f"Debug: Lương 1 giờ = {luong_1_gio:,}")
-            
-            # Tính toán thêm giờ theo loại
-            ot_150_hours = 0
-            ot_200_hours = 0
-            ot_300_hours = 0
-            
-            days_detail = chamcong_data.get('days_detail', {})
-            for day_key, day_data in days_detail.items():
-                # Lấy ngày từ day_key (day_01, day_02, ...)
-                day_num = int(day_key.split('_')[1])
-                current_date = date(year, month, day_num)
+            # Nếu không có summary data thì tính toán thủ công
+            if not summary_data:
+                # FALLBACK: Tính toán thêm giờ theo loại (chỉ khi không có summary)
+                ot_150_hours = 0
+                ot_200_hours = 0
+                ot_300_hours = 0
                 
-                # Lấy loại ngày và số giờ thêm giờ thực tế
-                day_type = day_data.get('type', '')
-                overtime_hours = day_data.get('overtime_hours', 0)
+                days_detail = chamcong_data.get('days_detail', {})
+                for day_key, day_data in days_detail.items():
+                    # Lấy ngày từ day_key (day_01, day_02, ...)
+                    day_num = int(day_key.split('_')[1])
+                    current_date = date(year, month, day_num)
+                    
+                    # Lấy loại ngày và số giờ thêm giờ thực tế
+                    day_type = day_data.get('type', '')
+                    overtime_hours = day_data.get('overtime_hours', 0)
+                    
+                    # Kiểm tra có phải chủ nhật hoặc ngày lễ không
+                    is_sunday = self.is_sunday(current_date)
+                    is_holiday = hasattr(self, 'holiday_dates') and current_date in self.holiday_dates
+                    
+                    if is_holiday:
+                        # Ngày lễ tết: 8 tiếng × 300% (cố định)
+                        ot_300_hours += 8
+                    elif is_sunday and day_type in ['W', 'O', 'T']:  # Chỉ tính nếu có làm việc
+                        # Chủ nhật: 8 tiếng × 200% (cố định)
+                        ot_200_hours += 8
+                    elif day_type == 'W' and overtime_hours > 0:
+                        # Ngày thường có tăng ca: Số giờ thực tế × 150%
+                        ot_150_hours += overtime_hours
                 
-                # Kiểm tra có phải chủ nhật hoặc ngày lễ không
-                is_sunday = self.is_sunday(current_date)
-                is_holiday = hasattr(self, 'holiday_dates') and current_date in self.holiday_dates
-                
-                if is_holiday:
-                    # Ngày lễ tết: 8 tiếng × 300% (cố định)
-                    ot_300_hours += 8
-                elif is_sunday:
-                    # Chủ nhật: 8 tiếng × 200% (cố định)
-                    ot_200_hours += 8
-                elif day_type == 'W' and overtime_hours > 0:
-                    # Ngày thường có tăng ca: Số giờ thực tế × 150%
-                    ot_150_hours += overtime_hours
+                print(f"⚠️ TÍNH TOÁN THỦ CÔNG - OT150: {ot_150_hours}, OT200: {ot_200_hours}, OT300: {ot_300_hours}")
             
-            print(f"Debug: Tính toán thêm giờ - OT150: {ot_150_hours}, OT200: {ot_200_hours}, OT300: {ot_300_hours}")
+            # Tính thành tiền theo từng hệ số với số ngày làm việc khác nhau
+            # 150% (ngày thường): chia 26 ngày
+            luong_1_gio_150 = luong_co_ban / 26 / 8 if 26 > 0 else 0
+            thanh_tien_150 = luong_1_gio_150 * 1.5 * ot_150_hours
+            print(f"🔍 Debug 150%: Lương 1 giờ = {luong_co_ban:,} ÷ 26 ÷ 8 = {luong_1_gio_150:,.0f}")
+            print(f"🔍 Debug 150%: Thành tiền = {ot_150_hours} giờ × {luong_1_gio_150:,.0f} × 1.5 = {thanh_tien_150:,.0f}")
             
-            # Tính thành tiền theo từng hệ số
-            thanh_tien_150 = luong_1_gio * 1.5 * ot_150_hours
-            thanh_tien_200 = luong_1_gio * 2.0 * ot_200_hours
-            thanh_tien_300 = luong_1_gio * 3.0 * ot_300_hours
+            # 200% (chủ nhật) và 300% (ngày lễ): chia 27 ngày
+            luong_1_gio_200_300 = luong_co_ban / 27 / 8 if 27 > 0 else 0
+            thanh_tien_200 = luong_1_gio_200_300 * 2.0 * ot_200_hours
+            thanh_tien_300 = luong_1_gio_200_300 * 3.0 * ot_300_hours
+            print(f"🔍 Debug 200%/300%: Lương 1 giờ = {luong_co_ban:,} ÷ 27 ÷ 8 = {luong_1_gio_200_300:,.0f}")
+            print(f"🔍 Debug 200%: Thành tiền = {ot_200_hours} giờ × {luong_1_gio_200_300:,.0f} × 2.0 = {thanh_tien_200:,.0f}")
+            print(f"🔍 Debug 300%: Thành tiền = {ot_300_hours} giờ × {luong_1_gio_200_300:,.0f} × 3.0 = {thanh_tien_300:,.0f}")
             
             print(f"Debug: Thành tiền - 150%: {thanh_tien_150:,}, 200%: {thanh_tien_200:,}, 300%: {thanh_tien_300:,}")
             
@@ -3325,24 +4335,25 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
                 
                 # Cập nhật thành tiền với tooltip
                 thanh_tien_150_item = QTableWidgetItem(f"{thanh_tien_150:,.0f}")
-                thanh_tien_150_item.setToolTip("🔍 CÔNG THỨC\nThêm giờ 150% = Số giờ × Lương 1 giờ × 1.5")
+                thanh_tien_150_item.setToolTip(f"🔍 CÔNG THỨC\nThêm giờ 150% = {ot_150_hours} giờ × {luong_1_gio_150:,.0f} × 1.5 = {thanh_tien_150:,.0f}\n\nLương 1 giờ 150% = {luong_co_ban:,} ÷ 26 ngày ÷ 8 giờ")
                 self.tableThemGio.setItem(0, 2, thanh_tien_150_item)
                 
                 thanh_tien_200_item = QTableWidgetItem(f"{thanh_tien_200:,.0f}")
-                thanh_tien_200_item.setToolTip("🔍 CÔNG THỨC\nThêm giờ 200% = Số giờ × Lương 1 giờ × 2.0")
+                thanh_tien_200_item.setToolTip(f"🔍 CÔNG THỨC\nThêm giờ 200% = {ot_200_hours} giờ × {luong_1_gio_200_300:,.0f} × 2.0 = {thanh_tien_200:,.0f}\n\nLương 1 giờ 200% = {luong_co_ban:,} ÷ 27 ngày ÷ 8 giờ")
                 self.tableThemGio.setItem(1, 2, thanh_tien_200_item)
                 
                 thanh_tien_300_item = QTableWidgetItem(f"{thanh_tien_300:,.0f}")
-                thanh_tien_300_item.setToolTip("🔍 CÔNG THỨC\nThêm giờ 300% = Số giờ × Lương 1 giờ × 3.0")
+                thanh_tien_300_item.setToolTip(f"🔍 CÔNG THỨC\nThêm giờ 300% = {ot_300_hours} giờ × {luong_1_gio_200_300:,.0f} × 3.0 = {thanh_tien_300:,.0f}\n\nLương 1 giờ 300% = {luong_co_ban:,} ÷ 27 ngày ÷ 8 giờ")
                 self.tableThemGio.setItem(2, 2, thanh_tien_300_item)
                 
                 # Tính tổng thu nhập thêm giờ
                 total_overtime = ot_150_hours + ot_200_hours + ot_300_hours
                 total_overtime_amount = thanh_tien_150 + thanh_tien_200 + thanh_tien_300
                 self.tableThemGio.setItem(3, 1, QTableWidgetItem(f"{total_overtime:.2f}"))
-            total_overtime_item = QTableWidgetItem(f"{total_overtime_amount:,.0f}")
-            total_overtime_item.setToolTip("🔍 CÔNG THỨC\nTổng thêm giờ = Thành tiền 150% + Thành tiền 200% + Thành tiền 300%")
-            self.tableThemGio.setItem(3, 2, total_overtime_item)
+                
+                total_overtime_item = QTableWidgetItem(f"{total_overtime_amount:,.0f}")
+                total_overtime_item.setToolTip(f"🔍 CÔNG THỨC\nTổng thêm giờ = {thanh_tien_150:,.0f} + {thanh_tien_200:,.0f} + {thanh_tien_300:,.0f} = {total_overtime_amount:,.0f}\n\nLương 1 giờ 150% = {luong_co_ban:,} ÷ 26 ngày ÷ 8 giờ\nLương 1 giờ 200%/300% = {luong_co_ban:,} ÷ 27 ngày ÷ 8 giờ")
+                self.tableThemGio.setItem(3, 2, total_overtime_item)
                 
         except Exception as e:
             print(f"Lỗi cập nhật dữ liệu thêm giờ: {e}")
@@ -3378,7 +4389,7 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
             
             # Tính lương cơ bản
             if hasattr(self, 'tableLuongCoBan'):
-                amount_item = self.tableLuongCoBan.item(0, 2)
+                amount_item = self.tableLuongCoBan.item(0, 1)
                 total_basic = parse_amount_cell(amount_item)
             
             # Tính thêm giờ
@@ -3629,20 +4640,9 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
             self.ds_luong = self.data_manager.load_quydinh_luong()
             
             print("3. Đang tải lại dữ liệu chấm công...")
-            # Reload dữ liệu chấm công từ data manager
-            # Tìm file JSON mới nhất trong thư mục data
-            json_files = glob.glob(os.path.join(self.data_manager.data_dir, "*.json"))
-            chamcong_files = [f for f in json_files if "chamcong" in os.path.basename(f).lower()]
-            if chamcong_files:
-                # Sắp xếp theo thời gian sửa đổi, lấy file mới nhất
-                latest_file = max(chamcong_files, key=os.path.getmtime)
-                print(f"File chấm công mới nhất: {latest_file}")
-                
-                # Cập nhật đường dẫn file chấm công trong data manager
-                self.data_manager.chamcong_file = latest_file
-            
-            self.data_chamcong = self.data_manager.load_chamcong()
-            print(f"Debug: Đã load {len(self.data_chamcong)} nhân viên từ chấm công")
+            # Reload dữ liệu chấm công bằng cách gọi lại hàm load
+            self.load_chamcong_data_from_files()
+            print(f"✅ Sau khi reload: {len(self.data_chamcong)} keys trong data_chamcong")
             
             # 2. Refresh tất cả dropdown
             print("4. Đang cập nhật dropdown nhân viên...")
@@ -3692,12 +4692,6 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
             traceback.print_exc()
             QMessageBox.warning(self, "Lỗi", f"Có lỗi khi cập nhật dữ liệu:\n{str(e)}")
 
-    # Hàm test_simple_tooltip đã được loại bỏ vì không cần thiết
-
-    # Hàm setup_formula_tooltips đã được loại bỏ vì tooltip được thiết lập trực tiếp khi tạo/cập nhật item
-    
-    # Các hàm add_tooltip_to_table_cell và add_tooltip_to_label đã được loại bỏ vì không cần thiết
-
     def create_formula_tooltip(self, title, formula):
         """Tạo tooltip với format đẹp và chữ màu đen"""
         return f"""
@@ -3707,10 +4701,6 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
             </div>
         """
 
-
-
-    # Hàm setup_tooltips_after_data_loaded đã được loại bỏ vì tooltip được thiết lập trực tiếp
-
     def send_salary_data_to_tong_luong(self):
         """Gửi dữ liệu lương thực tế sang tab tổng lương"""
         try:
@@ -3718,10 +4708,15 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
                 print("Không có nhân viên được chọn để gửi dữ liệu lương")
                 return
             
-            # Lấy tháng/năm hiện tại
-            month = self.comboThang.currentText()
-            year = self.comboNam.currentText()
-            month_year = f"{month}/{year}"
+            # Ưu tiên period từ JSON, fallback về combo box
+            if hasattr(self, 'current_period') and self.current_period:
+                month_year = self.current_period
+                print(f"📅 Dùng period từ JSON: {month_year}")
+            else:
+                month = self.comboThang.currentText()
+                year = self.comboNam.currentText()
+                month_year = f"{month}/{year}"
+                print(f"📅 Dùng period từ combo box: {month_year}")
             
             # Lấy dữ liệu lương từ các bảng
             salary_data = self.get_current_salary_data()
@@ -3744,10 +4739,13 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
     def get_current_salary_data(self):
         """Lấy dữ liệu lương hiện tại từ các bảng"""
         try:
-            # Lấy tháng/năm hiện tại
-            month = self.comboThang.currentText()
-            year = self.comboNam.currentText()
-            month_year = f"{month}/{year}"
+            # Ưu tiên period từ JSON, fallback về combo box
+            if hasattr(self, 'current_period') and self.current_period:
+                month_year = self.current_period
+            else:
+                month = self.comboThang.currentText()
+                year = self.comboNam.currentText()
+                month_year = f"{month}/{year}"
             
             # Lấy MSNV từ dữ liệu nhân viên
             msnv = ""
@@ -3760,8 +4758,8 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
             
             # Lấy dữ liệu từ bảng lương cơ bản
             luong_co_ban = 0
-            if hasattr(self, 'tableLuongCoBan') and self.tableLuongCoBan.item(0, 2):
-                luong_co_ban_text = self.tableLuongCoBan.item(0, 2).text()
+            if hasattr(self, 'tableLuongCoBan') and self.tableLuongCoBan.item(0, 1):
+                luong_co_ban_text = self.tableLuongCoBan.item(0, 1).text()
                 luong_co_ban = float(luong_co_ban_text.replace(',', '')) if luong_co_ban_text else 0
             
             # Lấy dữ liệu từ bảng thêm giờ

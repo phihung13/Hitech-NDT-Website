@@ -1,0 +1,48 @@
+{
+  "msnv": "HTNV-008",
+  "period": "07/2025",
+  "employee_info": {
+    "name": "Nguyễn Phi Hùng",
+    "position": "Trainee",
+    "department": "R&D",
+    "email": ""
+  },
+  "basic_salary": {
+    "amount": 8000000.0,
+    "work_days": 11.0,
+    "office_days": 17.0,
+    "training_days": 0.0,
+    "total_amount": 8615384.0
+  },
+  "allowances": {
+    "work_allowance": 1650000.0,
+    "training_allowance": 0.0,
+    "office_allowance": 0.0,
+    "gas_allowance": 396000.0,
+    "total_allowance": 2046000.0
+  },
+  "overtime": {
+    "overtime_150": 173076.0,
+    "sunday_200": 615384.0,
+    "holiday_300": 0.0,
+    "total_overtime": 788461.0
+  },
+  "kpi": {
+    "paut_amount": 0.0,
+    "tofd_amount": 0.0,
+    "other_kpi": 0.0,
+    "total_kpi": 0.0
+  },
+  "deductions": {
+    "insurance": 0.0,
+    "tax": 0.0,
+    "advance": 0.0,
+    "other": 0.0,
+    "total_deduction": 0.0
+  },
+  "totals": {
+    "gross_salary": 11449845.0,
+    "net_salary": 11449845.0
+  },
+  "created_date": "2025-09-06T16:35:59.792212"
+}

@@ -14,6 +14,7 @@ from data_manager import DataManager
 from company_matcher import CompanyMatcher
 from new_company_dialog import NewCompanyDialog
 from employee_mapper import EmployeeMapper
+import os
 
 class EmployeeSelectionDialog(QDialog):
     """Dialog để chọn nhân viên hiển thị trong bảng công"""
@@ -384,16 +385,30 @@ class BangCongDialog(QDialog):
                 font-size: 10pt;
                 background-color: white;
                 alternate-background-color: #fafbfc;
+                border: 1px solid #e9ecef;
             }
-                         QHeaderView::section {
-                 background-color: #f8f9fa;
-                 padding: 8px 4px;
-                 border: 1px solid #e9ecef;
-                 font-weight: bold;
-                 font-family: "Times New Roman";
-                 color: #495057;
-                 min-height: 40px;
-             }
+            QHeaderView::section {
+                background-color: #f8f9fa;
+                padding: 8px 4px;
+                border: none;
+                border-right: 1px solid #e9ecef;
+                border-bottom: 1px solid #e9ecef;
+                font-weight: normal;
+                font-family: "Times New Roman";
+                font-size: 9pt;
+                color: #495057;
+                min-height: 40px;
+            }
+            QTableWidget::item {
+                padding: 6px 4px;
+                border: none;
+                border-right: 1px solid #f1f3f4;
+                border-bottom: 1px solid #f1f3f4;
+                font-family: "Times New Roman";
+            }
+            QTableWidget::item:selected {
+                border: 1px solid #ced4da;
+            }
         """)
         
         table.resizeColumnsToContents()
@@ -422,20 +437,255 @@ class BangCongDialog(QDialog):
 class TabBangCong(QWidget):
     def __init__(self, on_data_changed=None, on_quydinh_changed=None):
         super().__init__()
-        self.data_manager = DataManager()  # Thêm data_manager
-        self.employee_mapper = EmployeeMapper()  # Thêm employee mapper
-        self.data_chamcong = {}  # Dictionary lưu dữ liệu chấm công (sử dụng MSNV làm key)
+        self.data_manager = DataManager()
+        self.employee_mapper = EmployeeMapper()
+        
+        # Lưu trữ dữ liệu theo tháng: { "MM/YYYY": { data_chamcong: {}, file_path: "" } }
+        self.monthly_data = {}
+        # Khởi tạo data_chamcong để tương thích với code cũ
+        self.data_chamcong = {}
+        # Danh sách các tháng có dữ liệu
+        self.available_months = []
         self.current_month = datetime.now().month
         self.current_year = datetime.now().year
-        self.is_data_imported = False  # Trạng thái đã import dữ liệu
-        self.available_months = []  # Danh sách tháng có trong CSV
+        self.current_period = f"{self.current_month:02d}/{self.current_year}"
+        
         self.on_data_changed = on_data_changed
-        self.on_quydinh_changed = on_quydinh_changed  # Callback để refresh quy định lương
-        self.selected_employees = set()  # Set nhân viên được chọn để hiển thị
-        self.sunday_columns = []  # Danh sách các cột chủ nhật để tô màu
-        self.load_selected_employees()  # Tải danh sách nhân viên đã chọn
-        self.load_employee_mapping()  # Load mapping nhân viên
+        self.on_quydinh_changed = on_quydinh_changed
+        self.selected_employees = set()
+        self.sunday_columns = []
+        
+        self.load_selected_employees()
+        self.load_employee_mapping()
+        self.scan_available_files()  # Quét các file có sẵn
+        self.auto_load_imported_file()  # Tự động load file đã import
         self.init_ui()
+        self.auto_load_current_month()  # Tự động load tháng hiện tại
+    
+    def scan_available_files(self):
+        """Quét các file chấm công có sẵn trong thư mục data"""
+        try:
+            import glob
+            import os
+            
+            # Tìm tất cả file chấm công
+            json_files = glob.glob(os.path.join(self.data_manager.data_dir, "*.json"))
+            chamcong_files = [f for f in json_files if "chamcong" in os.path.basename(f).lower()]
+            
+            print(f"🔍 Quét thấy {len(chamcong_files)} file chấm công:")
+            
+            for file_path in chamcong_files:
+                try:
+                    # Đọc file để lấy thông tin period
+                    with open(file_path, 'r', encoding='utf-8') as f:
+                        data = json.load(f)
+                    
+                    # Lấy period từ export_info
+                    if isinstance(data, dict) and "export_info" in data:
+                        period = data.get("export_info", {}).get("period", "")
+                        if period and "/" in period:
+                            print(f"    {period}: {os.path.basename(file_path)}")
+                            # Lưu thông tin file
+                            if period not in self.monthly_data:
+                                self.monthly_data[period] = {
+                                    'file_path': file_path,
+                                    'data_chamcong': {},
+                                    'is_loaded': False
+                                }
+                    
+                except Exception as e:
+                    print(f"   ❌ Lỗi đọc file {file_path}: {e}")
+                    
+        except Exception as e:
+            print(f"❌ Lỗi quét file: {e}")
+    
+    def auto_load_current_month(self):
+        """Tự động load dữ liệu tháng hiện tại"""
+        try:
+            print(f" Tự động load dữ liệu tháng {self.current_period}...")
+            
+            # Kiểm tra xem tháng hiện tại đã có dữ liệu chưa
+            if self.current_period in self.monthly_data:
+                if not self.monthly_data[self.current_period]['is_loaded']:
+                    self.load_month_data(self.current_period)
+            else:
+                # Tìm file phù hợp cho tháng hiện tại
+                self.find_and_load_month_file(self.current_period)
+                
+        except Exception as e:
+            print(f"❌ Lỗi auto load tháng hiện tại: {e}")
+    
+    def find_and_load_month_file(self, period):
+        """Tìm và load file cho tháng cụ thể"""
+        try:
+            import glob
+            import os
+            
+            month_str = period.split('/')[0]
+            year_str = period.split('/')[1]
+            
+            # Tìm file phù hợp
+            patterns = [
+                f"chamcong_{month_str}_{year_str}.json",
+                f"chamcong_{int(month_str):02d}_{year_str}.json",
+                f"chamcong_3_nhanvien_{month_str}_{year_str}.json",
+                f"chamcong_3_nhanvien.json"
+            ]
+            
+            for pattern in patterns:
+                file_path = os.path.join(self.data_manager.data_dir, pattern)
+                if os.path.exists(file_path):
+                    print(f"📂 Tìm thấy file: {file_path}")
+                    self.monthly_data[period] = {
+                        'file_path': file_path,
+                        'data_chamcong': {},
+                        'is_loaded': False
+                    }
+                    self.load_month_data(period)
+                    return True
+            
+            print(f"⚠️ Không tìm thấy file cho tháng {period}")
+            return False
+            
+        except Exception as e:
+            print(f"❌ Lỗi tìm file tháng {period}: {e}")
+            return False
+    
+    def load_month_data(self, period):
+        """Load dữ liệu cho tháng cụ thể"""
+        try:
+            if period not in self.monthly_data:
+                print(f"❌ Không có thông tin file cho tháng {period}")
+                return False
+            
+            file_path = self.monthly_data[period]['file_path']
+            print(f" Load dữ liệu từ: {file_path}")
+            
+            # Cập nhật đường dẫn file trong data manager
+            self.data_manager.chamcong_file = file_path
+            
+            # Load dữ liệu
+            data_chamcong = self.data_manager.load_chamcong()
+            
+            # Lưu vào monthly_data
+            self.monthly_data[period]['data_chamcong'] = data_chamcong
+            self.monthly_data[period]['is_loaded'] = True
+            
+            print(f"✅ Đã load {len(data_chamcong)} nhân viên cho tháng {period}")
+            
+            # Nếu là tháng hiện tại, cập nhật UI
+            if period == self.current_period:
+                self.update_ui_with_data()
+                if self.on_data_changed:
+                    # Truyền đúng format cho callback
+                    data_with_period = {
+                        'data_chamcong': data_chamcong,
+                        'period': period
+                    }
+                    self.on_data_changed(data_with_period)
+            
+            return True
+            
+        except Exception as e:
+            print(f"❌ Lỗi load dữ liệu tháng {period}: {e}")
+            return False
+    
+    def unload_month_data(self, period):
+        """Gỡ dữ liệu tháng cụ thể"""
+        try:
+            if period in self.monthly_data:
+                # Lưu lại data trước khi xóa để truyền cho callback
+                old_data = self.monthly_data[period].get('data_chamcong', {})
+                
+                # Xóa dữ liệu
+                self.monthly_data[period]['data_chamcong'] = {}
+                self.monthly_data[period]['is_loaded'] = False
+                print(f"🗑️ Đã gỡ dữ liệu tháng {period}")
+                
+                # Nếu là tháng hiện tại, cập nhật UI
+                if period == self.current_period:
+                    self.update_ui_with_data()
+                    if self.on_data_changed:
+                        # Truyền đúng format cho callback
+                        data_with_period = {
+                            'data_chamcong': {},  # Dữ liệu rỗng vì đã gỡ
+                            'period': period
+                        }
+                        self.on_data_changed(data_with_period)
+                
+                return True
+            return False
+            
+        except Exception as e:
+            print(f"❌ Lỗi gỡ dữ liệu tháng {period}: {e}")
+            return False
+    
+    def get_current_data(self):
+        """Lấy dữ liệu tháng hiện tại"""
+        if self.current_period in self.monthly_data:
+            return self.monthly_data[self.current_period]['data_chamcong']
+        return {}
+    
+    def get_chamcong_data(self):
+        """Trả về dữ liệu chấm công cho các tab khác sử dụng (alias cho get_current_data)"""
+        return self.get_current_data()
+    
+    def get_employees_list(self):
+        """Trả về danh sách nhân viên có dữ liệu chấm công tháng hiện tại"""
+        employees = []
+        try:
+            data_chamcong = self.get_current_data()
+            
+            for key, employee_data in data_chamcong.items():
+                if isinstance(employee_data, dict):
+                    # Tìm period keys (MM/YYYY format)
+                    period_keys = [k for k in employee_data.keys() if '/' in str(k)]
+                    if period_keys:
+                        # Kiểm tra xem key có phải là MSNV không
+                        if key.startswith('HTNV-'):
+                            # Đây là MSNV, cần tìm tên tương ứng
+                            msnv = key
+                            name = self.get_name_by_msnv(msnv)
+                            if name:
+                                employees.append({
+                                    'msnv': msnv,
+                                    'name': name
+                                })
+                        else:
+                            # Đây có thể là tên nhân viên
+                            name = key
+                            msnv = self.get_msnv_by_name(name)
+                            if msnv:
+                                employees.append({
+                                    'msnv': msnv,
+                                    'name': name
+                                })
+        except Exception as e:
+            print(f"❌ Lỗi get_employees_list: {e}")
+        
+        return employees
+    
+    def get_name_by_msnv(self, msnv):
+        """Lấy tên nhân viên theo MSNV từ file nhanvien.json"""
+        try:
+            employees = self.data_manager.load_nhanvien()
+            for emp in employees:
+                if len(emp) >= 3 and str(emp[2]).strip() == msnv:
+                    return str(emp[0]).strip()
+        except Exception as e:
+            print(f"❌ Lỗi get_name_by_msnv: {e}")
+        return None
+    
+    def get_msnv_by_name(self, name):
+        """Lấy MSNV theo tên nhân viên từ file nhanvien.json"""
+        try:
+            employees = self.data_manager.load_nhanvien()
+            for emp in employees:
+                if len(emp) >= 3 and str(emp[0]).strip().lower() == name.lower():
+                    return str(emp[2]).strip()
+        except Exception as e:
+            print(f"❌ Lỗi get_msnv_by_name: {e}")
+        return None
     
     def load_selected_employees(self):
         """Tải danh sách nhân viên đã chọn từ file"""
@@ -481,7 +731,7 @@ class TabBangCong(QWidget):
             # Lưu mapping mới
             self.employee_mapper.save_mapping()
             
-            print(f"Đã load mapping cho {len(self.employee_mapper.get_all_msnv())} nhân viên")
+            # print(f"Đã load mapping cho {len(self.employee_mapper.get_all_msnv())} nhân viên")
         except Exception as e:
             print(f"Lỗi load employee mapping: {e}")
     
@@ -516,7 +766,11 @@ class TabBangCong(QWidget):
         
         # Bảng tổng hợp
         self.table_widget = self.create_summary_table()
-        main_layout.addWidget(self.table_widget)
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setFrameShape(QFrame.NoFrame)
+        scroll_area.setWidget(self.table_widget)
+        main_layout.addWidget(scroll_area)
     
     def create_import_icon(self):
         """Tạo icon import đơn giản"""
@@ -598,273 +852,332 @@ class TabBangCong(QWidget):
     
     def update_working_days_display(self):
         """Cập nhật hiển thị số ngày làm việc dựa trên dữ liệu CSV"""
-        month = int(self.combo_month.currentText()) if hasattr(self, 'combo_month') else self.current_month
-        year = int(self.combo_year.currentText()) if hasattr(self, 'combo_year') else self.current_year
-        month_year = f"{month:02d}/{year}"
-        
-        # Lấy số ngày từ dữ liệu CSV
-        total_days_in_data = self.get_max_days_from_data(month_year)
-        
-        # Tính số ngày làm việc thực tế (không tính chủ nhật)
-        working_days = self.calculate_working_days(year, month)
-        
-        info_text = f"Tháng {month:02d}/{year}: {working_days}/{total_days_in_data} ngày làm việc"
-        
-        # Thêm thông tin export nếu có
-        if hasattr(self, 'export_info') and self.export_info:
-            company = self.export_info.get('company', '')
-            export_date = self.export_info.get('export_date', '')
-            if export_date:
-                try:
-                    # Format ngày xuất
-                    dt = datetime.fromisoformat(export_date.replace('Z', '+00:00'))
-                    export_date_formatted = dt.strftime('%d/%m/%Y %H:%M')
-                except:
-                    export_date_formatted = export_date[:10]
+        try:
+            # Lấy tháng từ combo box, đã được clean emoji
+            if hasattr(self, 'combo_month'):
+                month_text = self.combo_month.currentText()
+                # Loại bỏ emoji và ký tự không phải số
+                month_text_clean = ''.join(c for c in month_text if c.isdigit() or c == '/')
+                if '/' in month_text_clean:
+                    month = int(month_text_clean.split('/')[0])
+                    year = int(month_text_clean.split('/')[1])
+                else:
+                    month = self.current_month
+                    year = self.current_year
             else:
-                export_date_formatted = ""
+                month = self.current_month
+                year = self.current_year
             
-            if company:
-                info_text += f" | {company}"
-            if export_date_formatted:
-                info_text += f" | Xuất: {export_date_formatted}"
-        
-        self.working_days_info.setText(info_text)
+            month_year = f"{month:02d}/{year}"
+            
+            # Lấy số ngày từ dữ liệu
+            total_days_in_data = self.get_max_days_from_data(month_year)
+            
+            # Tính số ngày làm việc thực tế (không tính chủ nhật)
+            working_days = self.calculate_working_days(year, month)
+            
+            # Chỉ hiển thị thông tin của tháng đang được import
+            if month_year in self.monthly_data and self.monthly_data[month_year]['is_loaded']:
+                info_text = f"Tháng {month:02d}/{year}: {working_days}/{total_days_in_data} ngày làm việc"
+                
+                # Thêm thông tin export nếu có
+                if hasattr(self, 'export_info') and self.export_info:
+                    company = self.export_info.get('company', '')
+                    export_date = self.export_info.get('export_date', '')
+                    if export_date:
+                        try:
+                            dt = datetime.fromisoformat(export_date.replace('Z', '+00:00'))
+                            export_date_formatted = dt.strftime('%d/%m/%Y %H:%M')
+                        except:
+                            export_date_formatted = export_date[:10]
+                    else:
+                        export_date_formatted = ""
+                    
+                    if company:
+                        info_text += f" | {company}"
+                    if export_date_formatted:
+                        info_text += f" | Xuất: {export_date_formatted}"
+            else:
+                info_text = f"Tháng {month:02d}/{year}: Chưa có dữ liệu"
+            
+            # Kiểm tra xem working_days_info đã được tạo chưa
+            if hasattr(self, 'working_days_info') and self.working_days_info:
+                self.working_days_info.setText(info_text)
+            
+        except Exception as e:
+            print(f"Lỗi update_working_days_display: {e}")
+            if hasattr(self, 'working_days_info') and self.working_days_info:
+                self.working_days_info.setText("Lỗi hiển thị thông tin ngày làm việc")
     
     def create_control_panel(self):
-        group = QGroupBox()
-        group.setStyleSheet("""
-            QGroupBox {
-                border: none;
-                background-color: white;
-                padding: 0px;
-                font-family: "Times New Roman";
+        """Tạo panel điều khiển với dropdown tháng và các nút"""
+        panel = QFrame()
+        panel.setStyleSheet("""
+            QFrame {
+                background-color: #f8f9fa;
+                border: 1px solid #dee2e6;
+                border-radius: 8px;
+                padding: 10px;
             }
         """)
         
-        layout = QHBoxLayout(group)
-        layout.setContentsMargins(0, 10, 0, 10)
-        layout.setSpacing(20)
+        layout = QHBoxLayout(panel)
+        layout.setSpacing(15)
         
-        # Import/Clear dữ liệu
-        self.import_btn = QPushButton("Import dữ liệu")
-        self.import_btn.setFont(QFont("Times New Roman", 10))
-        self.import_btn.setStyleSheet("""
+        # Dropdown chọn tháng
+        month_label = QLabel("Tháng:")
+        month_label.setFont(QFont("Arial", 10, QFont.Bold))
+        layout.addWidget(month_label)
+        
+        self.combo_month = QComboBox()
+        self.combo_month.setMinimumWidth(120)
+        self.combo_month.setFont(QFont("Arial", 10))
+        self.combo_month.currentTextChanged.connect(self.on_month_changed)
+        layout.addWidget(self.combo_month)
+        
+        # Nút Load tháng
+        self.btn_load_month = QPushButton("📂 Load tháng")
+        self.btn_load_month.setStyleSheet("""
             QPushButton {
-                background-color: #495057;
+                background-color: #007bff;
                 color: white;
                 border: none;
-                border-radius: 2px;
                 padding: 8px 16px;
-                font-family: "Times New Roman";
+                border-radius: 4px;
+                font-weight: bold;
             }
             QPushButton:hover {
-                background-color: #343a40;
+                background-color: #0056b3;
+            }
+            QPushButton:pressed {
+                background-color: #004085;
             }
         """)
-        self.import_btn.clicked.connect(self.import_data)
-        layout.addWidget(self.import_btn)
+        self.btn_load_month.clicked.connect(self.load_selected_month)
+        layout.addWidget(self.btn_load_month)
         
-        # Nút Clear (ẩn ban đầu)
-        self.clear_btn = QPushButton("Gỡ import")
-        self.clear_btn.setFont(QFont("Times New Roman", 10))
-        self.clear_btn.setStyleSheet("""
+        # Nút Gỡ import
+        self.btn_unload_month = QPushButton("🗑️ Gỡ import")
+        self.btn_unload_month.setStyleSheet("""
             QPushButton {
                 background-color: #dc3545;
                 color: white;
                 border: none;
-                border-radius: 2px;
                 padding: 8px 16px;
-                font-family: "Times New Roman";
+                border-radius: 4px;
+                font-weight: bold;
             }
             QPushButton:hover {
                 background-color: #c82333;
             }
+            QPushButton:pressed {
+                background-color: #bd2130;
+            }
         """)
-        self.clear_btn.clicked.connect(self.clear_data)
-        self.clear_btn.setVisible(False)  # Ẩn ban đầu
-        layout.addWidget(self.clear_btn)
+        self.btn_unload_month.clicked.connect(self.unload_current_month)
+        layout.addWidget(self.btn_unload_month)
         
-        # Nút Select nhân viên
-        self.select_employees_btn = QPushButton("Select nhân viên")
-        self.select_employees_btn.setFont(QFont("Times New Roman", 10))
-        self.select_employees_btn.setStyleSheet("""
+        # Nút Import file
+        self.btn_import = QPushButton("📁 Import file")
+        self.btn_import.setStyleSheet("""
             QPushButton {
                 background-color: #28a745;
                 color: white;
                 border: none;
-                border-radius: 2px;
                 padding: 8px 16px;
-                font-family: "Times New Roman";
+                border-radius: 4px;
+                font-weight: bold;
             }
             QPushButton:hover {
                 background-color: #218838;
             }
-        """)
-        self.select_employees_btn.clicked.connect(self.show_employee_selection)
-        layout.addWidget(self.select_employees_btn)
-        
-
-        
-        layout.addStretch()
-        
-        # Chọn tháng/năm đơn giản
-        month_label = QLabel("Tháng:")
-        month_label.setFont(QFont("Times New Roman", 10))
-        month_label.setStyleSheet("color: #495057;")
-        layout.addWidget(month_label)
-        
-        self.combo_month = QComboBox()
-        self.combo_month.setFont(QFont("Times New Roman", 10))
-        self.combo_month.setStyleSheet("""
-            QComboBox {
-                border: 1px solid #ced4da;
-                border-radius: 2px;
-                padding: 6px 8px;
-                background-color: white;
-                font-family: "Times New Roman";
-                min-width: 50px;
-            }
-            QComboBox:focus {
-                border-color: #495057;
+            QPushButton:pressed {
+                background-color: #1e7e34;
             }
         """)
-        self.populate_month_combo()
-        self.combo_month.currentTextChanged.connect(self.on_month_year_changed)
-        layout.addWidget(self.combo_month)
+        self.btn_import.clicked.connect(self.import_data)
+        layout.addWidget(self.btn_import)
         
-        year_label = QLabel("Năm:")
-        year_label.setFont(QFont("Times New Roman", 10))
-        year_label.setStyleSheet("color: #495057;")
-        layout.addWidget(year_label)
-        
-        self.combo_year = QComboBox()
-        self.combo_year.setFont(QFont("Times New Roman", 10))
-        self.combo_year.setStyleSheet("""
-            QComboBox {
-                border: 1px solid #ced4da;
-                border-radius: 2px;
-                padding: 6px 8px;
-                background-color: white;
-                font-family: "Times New Roman";
-                min-width: 70px;
-            }
-            QComboBox:focus {
-                border-color: #495057;
-            }
-        """)
-        self.populate_year_combo()
-        self.combo_year.currentTextChanged.connect(self.on_month_year_changed)
-        layout.addWidget(self.combo_year)
-        
-        layout.addStretch()
-        
-        # Xuất báo cáo đơn giản
-        export_btn = QPushButton("Xuất báo cáo")
-        export_btn.setFont(QFont("Times New Roman", 10))
-        export_btn.setStyleSheet("""
+        # Nút Xóa file đã import
+        self.btn_clear_imported = QPushButton("🗑️ Xóa file đã import")
+        self.btn_clear_imported.setStyleSheet("""
             QPushButton {
-                background-color: white;
-                color: #495057;
-                border: 1px solid #ced4da;
-                border-radius: 2px;
+                background-color: #ffc107;
+                color: #212529;
+                border: none;
                 padding: 8px 16px;
-                font-family: "Times New Roman";
+                border-radius: 4px;
+                font-weight: bold;
             }
             QPushButton:hover {
-                background-color: #f8f9fa;
-                border-color: #495057;
+                background-color: #e0a800;
+            }
+            QPushButton:pressed {
+                background-color: #d39e00;
             }
         """)
-        export_btn.clicked.connect(self.export_report)
-        layout.addWidget(export_btn)
+        self.btn_clear_imported.clicked.connect(self.clear_imported_file)
+        layout.addWidget(self.btn_clear_imported)
         
-        return group
+        # Spacer
+        layout.addStretch()
+        
+        # Thông tin trạng thái
+        self.status_label = QLabel("Chưa có dữ liệu")
+        self.status_label.setStyleSheet("color: #6c757d; font-style: italic;")
+        layout.addWidget(self.status_label)
+        
+        # Cập nhật dropdown tháng
+        self.update_month_dropdown()
+        
+        return panel
     
-    def populate_month_combo(self):
-        """Populate month combo dựa trên trạng thái import"""
-        self.combo_month.blockSignals(True)
-        self.combo_month.clear()
-        
-        if self.is_data_imported:
-            # Chỉ hiển thị các tháng có trong dữ liệu CSV
-            for month_year in sorted(self.available_months):
-                month = month_year.split('/')[0]
-                if month not in [self.combo_month.itemText(i) for i in range(self.combo_month.count())]:
-                    self.combo_month.addItem(month)
-            if self.combo_month.count() > 0:
-                self.combo_month.setCurrentIndex(0)
-        else:
-            # Hiển thị tất cả tháng
-            for i in range(1, 13):
-                self.combo_month.addItem(f"{i:02d}")
-            self.combo_month.setCurrentText(f"{self.current_month:02d}")
-        
-        self.combo_month.blockSignals(False)
+    def update_month_dropdown(self):
+        """Cập nhật dropdown danh sách tháng"""
+        try:
+            self.combo_month.clear()
+            
+            # Thêm các tháng có dữ liệu
+            available_periods = list(self.monthly_data.keys())
+            available_periods.sort(reverse=True)  # Sắp xếp từ mới đến cũ
+            
+            for period in available_periods:
+                status = "✅" if self.monthly_data[period]['is_loaded'] else "📁"
+                display_text = f"{status} {period}"
+                self.combo_month.addItem(display_text, period)
+            
+            # Thêm tháng hiện tại nếu chưa có
+            if self.current_period not in available_periods:
+                self.combo_month.addItem(f"📅 {self.current_period}", self.current_period)
+            
+            # Chọn tháng hiện tại
+            index = self.combo_month.findData(self.current_period)
+            if index >= 0:
+                self.combo_month.setCurrentIndex(index)
+                
+        except Exception as e:
+            print(f"❌ Lỗi update dropdown tháng: {e}")
     
-    def populate_year_combo(self):
-        """Populate year combo dựa trên trạng thái import"""
-        self.combo_year.blockSignals(True)
-        self.combo_year.clear()
-        
-        if self.is_data_imported:
-            # Chỉ hiển thị các năm có trong dữ liệu CSV
-            years = set()
-            for month_year in self.available_months:
-                year = month_year.split('/')[1]
-                years.add(year)
-            for year in sorted(years):
-                self.combo_year.addItem(year)
-            if self.combo_year.count() > 0:
-                self.combo_year.setCurrentIndex(0)
-        else:
-            # Hiển thị tất cả năm
-            for year in range(2020, 2030):
-                self.combo_year.addItem(str(year))
-            self.combo_year.setCurrentText(str(self.current_year))
-        
-        self.combo_year.blockSignals(False)
+    def on_month_changed(self, text):
+        """Khi thay đổi tháng trong dropdown"""
+        try:
+            period = self.combo_month.currentData()
+            if period and period != self.current_period:
+                print(f"🔄 Chuyển sang tháng {period}")
+                
+                # Kiểm tra xem có phải đang import không
+                if hasattr(self, '_is_importing') and self._is_importing:
+                    print("⚠️ Đang trong quá trình import, bỏ qua chuyển tháng")
+                    return
+                    
+                self.current_period = period
+                try:
+                    month_str, year_str = period.split('/')
+                    self.current_month = int(month_str)
+                    self.current_year = int(year_str)
+                except Exception as e:
+                    print(f"⚠️ Lỗi parse period {period}: {e}")
+                
+                # Chỉ cập nhật UI, không tự động load dữ liệu
+                self.update_ui_with_data()
+                self.update_status()
+                
+        except Exception as e:
+            print(f"❌ Lỗi thay đổi tháng: {e}")
     
-    def on_month_year_changed(self):
-        """Xử lý khi thay đổi tháng/năm"""
-        self.update_working_days_display()
-        self.update_table()
+    def load_selected_month(self):
+        """Load dữ liệu tháng được chọn"""
+        try:
+            period = self.combo_month.currentData()
+            if period:
+                print(f"📂 Load dữ liệu tháng {period}")
+                
+                # Kiểm tra xem đã load chưa
+                if period in self.monthly_data and self.monthly_data[period]['is_loaded']:
+                    reply = QMessageBox.question(
+                        self,
+                        "Xác nhận load lại",
+                        f"Tháng {period} đã được load. Bạn có muốn load lại không?",
+                        QMessageBox.Yes | QMessageBox.No,
+                        QMessageBox.No
+                    )
+                    if reply == QMessageBox.No:
+                        return
+                
+                # Load dữ liệu
+                if period in self.monthly_data:
+                    self.load_month_data(period)
+                else:
+                    self.find_and_load_month_file(period)
+                
+                # Cập nhật UI
+                self.update_month_dropdown()
+                self.update_status()
+                
+                if self.on_data_changed:
+                    data_with_period = {
+                        'data_chamcong': self.monthly_data[period].get('data_chamcong', {}),
+                        'period': period
+                    }
+                    self.on_data_changed(data_with_period)
+                
+        except Exception as e:
+            print(f"❌ Lỗi load tháng được chọn: {e}")
+            QMessageBox.warning(self, "Lỗi", f"Không thể load dữ liệu tháng {period}: {str(e)}")
     
-    def clear_data(self):
-        """Gỗ bỏ dữ liệu import và reset về trạng thái ban đầu"""
-        reply = QMessageBox.question(
-            self, 
-            "Xác nhận", 
-            "Bạn có chắc muốn gỡ bỏ dữ liệu đã import?",
-            QMessageBox.Yes | QMessageBox.No
-        )
-        
-        if reply == QMessageBox.Yes:
-            # Reset dữ liệu
-            self.data_chamcong = {}
-            self.available_months = []
-            self.is_data_imported = False
+    def unload_current_month(self):
+        """Gỡ dữ liệu tháng hiện tại"""
+        try:
+            period = self.current_period
+            if period in self.monthly_data:
+                reply = QMessageBox.question(
+                    self, 
+                    "Xác nhận gỡ dữ liệu", 
+                    f"Bạn có chắc muốn gỡ dữ liệu tháng {period}?",
+                    QMessageBox.Yes | QMessageBox.No,
+                    QMessageBox.No
+                )
+                
+                if reply == QMessageBox.Yes:
+                    self.unload_month_data(period)
+                    self.update_month_dropdown()
+                    self.update_status()
+                    
+        except Exception as e:
+            print(f"❌ Lỗi gỡ dữ liệu tháng: {e}")
+    
+    def update_status(self):
+        """Cập nhật thông tin trạng thái"""
+        try:
+            # Kiểm tra xem status_label đã được tạo chưa
+            if not hasattr(self, 'status_label') or self.status_label is None:
+                print("⚠️ status_label chưa được tạo, bỏ qua update_status")
+                return
+                
+            period = self.current_period
+            if period in self.monthly_data and self.monthly_data[period]['is_loaded']:
+                data_count = len(self.monthly_data[period].get('data_chamcong', {}))
+                # Chỉ hiển thị số nhân viên và tháng hiện tại
+                self.status_label.setText(f"✅ Đã load {data_count} nhân viên - {period}")
+                self.status_label.setStyleSheet("color: #28a745; font-weight: bold;")
+            else:
+                self.status_label.setText(f"📁 Chưa load dữ liệu - {period}")
+                self.status_label.setStyleSheet("color: #6c757d; font-style: italic;")
+                
+        except Exception as e:
+            print(f"❌ Lỗi update status: {e}")
+            if hasattr(self, 'status_label') and self.status_label:
+                self.status_label.setText("Lỗi cập nhật trạng thái")
+    
+    def update_ui_with_data(self):
+        """Cập nhật UI với dữ liệu hiện tại"""
+        try:
+            # Cập nhật bảng tổng hợp (sử dụng method có sẵn)
+            self.update_table()
+            self.update_status()
             
-            # Cập nhật UI
-            self.import_btn.setVisible(True)
-            self.clear_btn.setVisible(False)
-            
-            # Reset combo boxes
-            self.populate_month_combo()
-            self.populate_year_combo()
-            
-            # Clear table
-            self.table_widget.setRowCount(0)
-            
-            # Reset working days display
-            self.update_working_days_display()
-            
-            # Update info panel
-            self.update_info_panel()
-            
-            QMessageBox.information(self, "Thành công", "Đã gỡ bỏ dữ liệu import!")
-            if self.on_data_changed:
-                self.on_data_changed(self.data_chamcong)
+        except Exception as e:
+            print(f"❌ Lỗi update UI: {e}")
     
     def create_legend_panel(self):
         group = QGroupBox("Ký hiệu loại công")
@@ -960,7 +1273,6 @@ class TabBangCong(QWidget):
                 font-size: 10pt;
                 background-color: white;
                 alternate-background-color: #fafbfc;
-                selection-background-color: #f8f9fa;
                 border: 1px solid #e9ecef;
             }
             QHeaderView::section {
@@ -983,8 +1295,7 @@ class TabBangCong(QWidget):
                 font-family: "Times New Roman";
             }
             QTableWidget::item:selected {
-                background-color: #f8f9fa;
-                color: #495057;
+                border: 1px solid #ced4da;
             }
         """)
         
@@ -1121,6 +1432,9 @@ class TabBangCong(QWidget):
             elif file_path.endswith('.txt'):
                 self.import_txt(file_path)
             
+            # Lưu file đã import
+            self.data_manager.save_imported_file("chamcong", file_path)
+            
             self.update_table()
             self.update_info_panel()
             QMessageBox.information(self, "Thành công", "Đã import dữ liệu chấm công thành công!")
@@ -1235,281 +1549,410 @@ class TabBangCong(QWidget):
         self.populate_month_combo()
         self.populate_year_combo()
         if self.on_data_changed:
-            self.on_data_changed(self.data_chamcong)
+            # Truyền cả dữ liệu chấm công và period (nếu có)  
+            data_with_period = {
+                'data_chamcong': self.data_chamcong,
+                'period': getattr(self, 'current_period', None)
+            }
+            self.on_data_changed(data_with_period)
     
     def import_json(self, file_path):
-        """Import từ file JSON với cấu trúc mới từ website"""
+        """Import dữ liệu từ file JSON"""
         try:
-            with open(file_path, 'r', encoding='utf-8') as file:
-                data = json.load(file)
-                
-                # Kiểm tra format mới từ website
-                if 'export_info' in data and 'employees' in data:
-                    # Format đúng từ website
-                    employees_data = data['employees']
-                    export_info = data['export_info']
-                    
-                    # Lấy thông tin tháng/năm từ export_info
-                    period = export_info.get('period', '')
-                    if period and '/' in period:
-                        try:
-                            month, year = period.split('/')
-                            if month.strip() and year.strip():
-                                self.current_month = int(month.strip())
-                                self.current_year = int(year.strip())
-                                # Cập nhật combo boxes
-                                self.combo_month.setCurrentText(f"{self.current_month:02d}")
-                                self.combo_year.setCurrentText(str(self.current_year))
-                            else:
-                                # Fallback nếu month hoặc year rỗng
-                                self.current_month = datetime.now().month
-                                self.current_year = datetime.now().year
-                        except (ValueError, IndexError):
-                            # Fallback nếu format period không đúng
-                            self.current_month = datetime.now().month
-                            self.current_year = datetime.now().year
-                    else:
-                        # Fallback nếu không có period
-                        self.current_month = datetime.now().month
-                        self.current_year = datetime.now().year
-                    
-                    # Lưu thông tin export
-                    self.export_info = export_info
-                    
-                    # Danh sách nhân viên trong file JSON
-                    json_employees = []
-                    # Danh sách nhân viên được hiển thị
-                    displayed_employees = []
-                    # Danh sách nhân viên không được hiển thị
-                    hidden_employees = []
-                    # Danh sách nhân viên trong JSON nhưng không có trong danh sách
-                    unknown_employees = []
-                    
-                    # Lấy danh sách tất cả nhân viên có thể có
-                    all_possible_employees = set()
-                    if self.selected_employees:
-                        all_possible_employees.update(self.selected_employees)
-                    # Thêm nhân viên từ data_chamcong (nếu có) - chuyển từ MSNV sang tên
-                    for msnv in self.data_chamcong.keys():
-                        employee_name = self.employee_mapper.get_name_by_msnv(msnv)
-                        if employee_name:
-                            all_possible_employees.add(employee_name)
-                    
-                    for msnv, employee_data in employees_data.items():
-                        if 'info' in employee_data and 'attendance' in employee_data:
-                            employee_info = employee_data['info']
-                            attendance_data = employee_data['attendance']
-                            
-                            employee_name = employee_info.get('name', msnv)
-                            if not employee_name or not employee_name.strip():
-                                continue  # Bỏ qua nếu tên rỗng
-                                
-                            # Sử dụng MSNV làm khóa chính thay vì tên nhân viên
-                            json_employees.append(employee_name)
-                            
-                            # Import tất cả nhân viên có trong file JSON, không kiểm tra danh sách
-                            displayed_employees.append(employee_name)
-                            
-                            # Sử dụng MSNV làm khóa chính trong data_chamcong
-                            if msnv not in self.data_chamcong:
-                                self.data_chamcong[msnv] = {}
-                            
-                            # Lưu thông tin nhân viên để mapping
-                            self.data_chamcong[msnv]['employee_info'] = {
-                                'name': employee_name,
-                                'msnv': msnv,
-                                'email': employee_info.get('email', ''),
-                                'position': employee_info.get('position', ''),
-                                'department': employee_info.get('department', ''),
-                                'phone': employee_info.get('phone', '')
-                            }
-                            
-                            # Xử lý dữ liệu ngày
-                            days_converted = {}
-                            days_detail = {}
-                            
-                            for day_key, day_info in attendance_data.get('days', {}).items():
-                                if isinstance(day_info, dict):
-                                    work_type = day_info.get('type', '')
-                                    days_converted[day_key] = work_type
-                                    days_detail[day_key] = day_info
-                            
-                            # Lấy summary từ attendance
-                            summary = attendance_data.get('summary', {})
-                            
-                            # Tính toán thêm từ dữ liệu chi tiết
-                            total_work_days = summary.get('total_work_days', 0)
-                            total_office_days = summary.get('total_office_days', 0)
-                            total_training_days = summary.get('total_training_days', 0)
-                            total_leave_days = summary.get('total_leave_days', 0)
-                            total_absent_days = summary.get('total_absent_days', 0)
-                            
-                            # Tính năng suất PAUT/TOFD
-                            def _to_float(value):
-                                try:
-                                    return float(value)
-                                except Exception:
-                                    return 0.0
-
-                            paut_total = _to_float(summary.get('paut_total_meters', 0))
-                            tofd_total = _to_float(summary.get('tofd_total_meters', 0))
-
-                            # Nếu summary chưa có hoặc bằng 0, cộng dồn từ từng ngày
-                            if (paut_total == 0.0 and tofd_total == 0.0):
-                                for _day_key, _day_info in attendance_data.get('days', {}).items():
-                                    if isinstance(_day_info, dict):
-                                        paut_total += _to_float(_day_info.get('paut_meters', 0))
-                                        tofd_total += _to_float(_day_info.get('tofd_meters', 0))
-                            
-                            # Lưu dữ liệu với format mới
-                            self.data_chamcong[msnv][f"{self.current_month:02d}/{self.current_year}"] = {
-                                'days': days_converted,
-                                'days_detail': days_detail,
-                                'ot_150': summary.get('total_overtime_hours', 0),
-                                'sunday_200': 0,  # Sẽ tính toán sau
-                                'holiday_300': 0,  # Sẽ tính toán sau
-                                'nang_suat_ut': 0,  # Sẽ tính toán sau
-                                'nang_suat_paut': paut_total,
-                                'nang_suat_tofd': tofd_total,
-                                'ngay_tinh_luong': total_work_days + total_office_days + total_training_days,
-                                'tam_ung': 0,  # Sẽ nhập sau
-                                'chi_phi_mua_sam': summary.get('shopping_expenses', 0),
-                                'chi_phi_khach_san': summary.get('hotel_expenses', 0),
-                                'phu_cap_di_lai': summary.get('total_expenses', 0)
-                            }
-                    
-                    # Tạo thông báo chi tiết
-                    message_parts = []
-                    message_parts.append(f"Đã import thành công {len(displayed_employees)} nhân viên.")
-                    
-                    if hidden_employees:
-                        hidden_list = ", ".join(hidden_employees)
-                        message_parts.append(f"\nNhân viên không được hiển thị ({len(hidden_employees)} người):\n{hidden_list}")
-                    
-                    if unknown_employees:
-                        unknown_list = ", ".join(unknown_employees)
-                        message_parts.append(f"\nNhân viên trong file JSON không có trong danh sách ({len(unknown_employees)} người):\n{unknown_list}")
-                    
-                    # Kiểm tra nhân viên được chọn nhưng không có trong JSON
-                    if self.selected_employees:
-                        missing_employees = [emp for emp in self.selected_employees if emp not in json_employees]
-                        if missing_employees:
-                            missing_list = ", ".join(missing_employees)
-                            message_parts.append(f"\nNhân viên được chọn nhưng không có trong file JSON ({len(missing_employees)} người):\n{missing_list}")
-                    
-                    # Hiển thị thông báo
-                    full_message = "\n".join(message_parts)
-                    if len(message_parts) > 1:
-                        full_message += "\n\nĐể hiển thị tất cả, hãy chọn 'Tất cả' trong Select nhân viên."
-                    
-                    QMessageBox.information(self, "Thông báo Import", full_message)
+            with open(file_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+        
+            # Kiểm tra format mới từ website
+            if isinstance(data, dict) and 'employees' in data:
+                print("Phát hiện format JSON mới từ website")
+                self.import_website_format(data)
+            else:
+                # Format mới dạng period + data (mảng)
+                if isinstance(data, dict) and 'period' in data and 'data' in data and isinstance(data.get('data'), list):
+                    print("Phát hiện format JSON period+data (array)")
+                    self.import_period_array_format(data)
                 else:
-                    # Format cũ (fallback)
-                    # Danh sách nhân viên trong file JSON
-                    json_employees = []
-                    # Danh sách nhân viên được hiển thị
-                    displayed_employees = []
-                    # Danh sách nhân viên không được hiển thị
-                    hidden_employees = []
-                    # Danh sách nhân viên trong JSON nhưng không có trong danh sách
-                    unknown_employees = []
-                    
-                    # Lấy danh sách tất cả nhân viên có thể có
-                    all_possible_employees = set()
-                    if self.selected_employees:
-                        all_possible_employees.update(self.selected_employees)
-                    # Thêm nhân viên từ data_chamcong (nếu có)
-                    all_possible_employees.update(self.data_chamcong.keys())
-                    
-                    for employee_name, employee_data in data.items():
-                        if not employee_name or not employee_name.strip():
-                            continue  # Bỏ qua nếu tên rỗng
-                            
-                        json_employees.append(employee_name)
-                        
-                        # Import tất cả nhân viên có trong file JSON, không kiểm tra danh sách
-                        displayed_employees.append(employee_name)
-                        
-                        if employee_name not in self.data_chamcong:
-                            self.data_chamcong[employee_name] = {}
-                            
-                            for month_year, month_data in employee_data.items():
-                                # Chuyển đổi days data
-                                days_converted = {}
-                                for day_key, day_info in month_data.get('days', {}).items():
-                                    if isinstance(day_info, dict):
-                                        days_converted[day_key] = day_info.get('type', '')
-                                    else:
-                                        days_converted[day_key] = day_info
-                                
-                                # Lưu cả thông tin chi tiết và summary
-                                self.data_chamcong[employee_name][month_year] = {
-                                    'days': days_converted,
-                                    'days_detail': month_data.get('days', {}),  # Lưu chi tiết
-                                    'ot_150': month_data.get('summary', {}).get('ot_150', 0),
-                                    'sunday_200': month_data.get('summary', {}).get('sunday_200', 0),
-                                    'holiday_300': month_data.get('summary', {}).get('holiday_300', 0),
-                                    'nang_suat_ut': month_data.get('summary', {}).get('nang_suat_ut', 0),
-                                    'nang_suat_paut': month_data.get('summary', {}).get('nang_suat_paut', 0),
-                                    'nang_suat_tofd': month_data.get('summary', {}).get('nang_suat_tofd', 0),
-                                    'ngay_tinh_luong': month_data.get('summary', {}).get('ngay_tinh_luong', 0),
-                                    'tam_ung': month_data.get('summary', {}).get('tam_ung', 0),
-                                    'chi_phi_mua_sam': month_data.get('summary', {}).get('chi_phi_mua_sam', 0),
-                                    'chi_phi_khach_san': month_data.get('summary', {}).get('chi_phi_khach_san', 0),
-                                    'phu_cap_di_lai': month_data.get('summary', {}).get('phu_cap_di_lai', 0)
-                                }
-                    
-                    # Tạo thông báo chi tiết
-                    message_parts = []
-                    message_parts.append(f"Đã import thành công {len(displayed_employees)} nhân viên.")
-                    
-                    if hidden_employees:
-                        hidden_list = ", ".join(hidden_employees)
-                        message_parts.append(f"\nNhân viên không được hiển thị ({len(hidden_employees)} người):\n{hidden_list}")
-                    
-                    if unknown_employees:
-                        unknown_list = ", ".join(unknown_employees)
-                        message_parts.append(f"\nNhân viên trong file JSON không có trong danh sách ({len(unknown_employees)} người):\n{unknown_list}")
-                    
-                    # Kiểm tra nhân viên được chọn nhưng không có trong JSON
-                    if self.selected_employees:
-                        missing_employees = [emp for emp in self.selected_employees if emp not in json_employees]
-                        if missing_employees:
-                            missing_list = ", ".join(missing_employees)
-                            message_parts.append(f"\nNhân viên được chọn nhưng không có trong file JSON ({len(missing_employees)} người):\n{missing_list}")
-                    
-                    # Hiển thị thông báo
-                    full_message = "\n".join(message_parts)
-                    if len(message_parts) > 1:
-                        full_message += "\n\nĐể hiển thị tất cả, hãy chọn 'Tất cả' trong Select nhân viên."
-                    
-                    QMessageBox.information(self, "Thông báo Import", full_message)
-            
-            # Cập nhật trạng thái và available months
-            self.is_data_imported = True
-            self.available_months = []
-            for employee_data in self.data_chamcong.values():
-                for month_year in employee_data.keys():
-                    if month_year not in self.available_months:
-                        self.available_months.append(month_year)
-            
-            # Cập nhật UI
-            self.import_btn.setVisible(False)
-            self.clear_btn.setVisible(True)
-            
-            # Cập nhật combo boxes với dữ liệu từ JSON
-            self.populate_month_combo()
-            self.populate_year_combo()
-            
-            # KIỂM TRA VÀ HIỆN POPUP THÊM CÔNG TY MỚI
-            self.check_and_add_new_companies()
-            
-            if self.on_data_changed:
-                self.on_data_changed(self.data_chamcong)
+                    print("Phát hiện format JSON cũ từ app")
+                    self.import_app_format(data)
                 
         except Exception as e:
-            QMessageBox.critical(self, "Lỗi Import", f"Không thể import file JSON: {str(e)}")
             print(f"Lỗi import JSON: {e}")
+            QMessageBox.critical(self, "Lỗi", f"Không thể import file JSON: {e}")
+    
+    def import_period_array_format(self, data):
+        """Import JSON dạng { period: 'MM/YYYY', data: [[...], ...] }"""
+        try:
+            period = data.get('period', '')  # '07/2025'
+            if not period or '/' not in period:
+                raise ValueError("Thiếu hoặc sai định dạng period (MM/YYYY)")
+            month_str, year_str = period.split('/')
+            month_year = f"{int(month_str):02d}/{int(year_str)}"
+            
+            # Lưu period để truyền cho tab phiếu lương
+            self.current_period = month_year
+            
+            rows = data.get('data', [])
+            self.data_chamcong.clear()
+
+            for row in rows:
+                # Mapping chỉ mục:
+                # 0: msnv, 1: name, 2: date dd/MM/YYYY, 3: type, 4: location, 5: method,
+                # 6: day_shift '1'/'0', 7: night_shift '1'/'0',
+                # 8: day_overtime_end HH:MM, 9: night_overtime_end HH:MM,
+                # 10: overtime_hours (number),
+                # 11: hotel_expense (number), 12: shopping_expense (number), 13: phone_expense (number), 14: other_expense (number),
+                # 15: total_expense (number), 16: other_expense_desc, 17: work_note
+                if not isinstance(row, list) or len(row) < 11:
+                    continue
+                msnv = str(row[0]).strip() if len(row) > 0 else ''
+                name = str(row[1]).strip() if len(row) > 1 else ''
+                date_str = str(row[2]).strip() if len(row) > 2 else ''
+                work_type = str(row[3]).strip() if len(row) > 3 else ''
+                location = str(row[4]).strip() if len(row) > 4 else ''
+                method = str(row[5]).strip() if len(row) > 5 else ''
+                day_shift = str(row[6]).strip() == '1' if len(row) > 6 else False
+                night_shift = str(row[7]).strip() == '1' if len(row) > 7 else False
+                day_ot_end = str(row[8]).strip() if len(row) > 8 else ''
+                night_ot_end = str(row[9]).strip() if len(row) > 9 else ''
+                try:
+                    overtime_hours = float(row[10]) if len(row) > 10 and row[10] not in [None, ''] else 0.0
+                except Exception:
+                    overtime_hours = 0.0
+                try:
+                    hotel_expense = float(row[11]) if len(row) > 11 and row[11] not in [None, ''] else 0.0
+                except Exception:
+                    hotel_expense = 0.0
+                try:
+                    shopping_expense = float(row[12]) if len(row) > 12 and row[12] not in [None, ''] else 0.0
+                except Exception:
+                    shopping_expense = 0.0
+                try:
+                    phone_expense = float(row[13]) if len(row) > 13 and row[13] not in [None, ''] else 0.0
+                except Exception:
+                    phone_expense = 0.0
+                try:
+                    other_expense = float(row[14]) if len(row) > 14 and row[14] not in [None, ''] else 0.0
+                except Exception:
+                    other_expense = 0.0
+                other_expense_desc = str(row[16]).strip() if len(row) > 16 else ''
+                work_note = str(row[17]).strip() if len(row) > 17 else ''
+
+                try:
+                    day_num = int(date_str.split('/')[0])
+                except Exception:
+                    continue
+
+                if not msnv:
+                    # Theo yêu cầu mới: nếu không có MSNV thì bỏ qua record
+                    continue
+
+                # Lấy tên chuẩn theo MSNV từ cơ sở dữ liệu (nếu có)
+                try:
+                    mapped_name = self.employee_mapper.get_name_by_msnv(msnv)
+                except Exception:
+                    mapped_name = None
+                effective_name = mapped_name or name or ''
+
+                # Log kiểm soát map nhân viên (chỉ log một lần cho mỗi nhân viên)
+                if msnv not in self.data_chamcong:
+                    if mapped_name:
+                        print(f"✅ ĐÃ TÌM THẤY NHÂN VIÊN TRONG DB: MSNV={msnv} | Tên='{mapped_name}'")
+                    else:
+                        print(f"⚠️ KHÔNG TÌM THẤY TRONG DB: MSNV={msnv} | Dùng tên từ file='{effective_name}'")
+
+                # Khởi tạo cấu trúc nhân viên nếu chưa có (theo tháng/năm)
+                if msnv not in self.data_chamcong:
+                    self.data_chamcong[msnv] = {}
+                
+                # Khởi tạo cấu trúc cho tháng/năm cụ thể
+                if month_year not in self.data_chamcong[msnv]:
+                    self.data_chamcong[msnv][month_year] = {
+                        'employee_info': {
+                            'name': effective_name,
+                            'msnv': msnv
+                        },
+                        'attendance_data': {},
+                        'summary': {
+                            'total_work_days': 0,
+                            'total_office_days': 0,
+                            'total_training_days': 0,
+                            'total_leave_days': 0,
+                            'total_absent_days': 0,
+                            'total_overtime_hours': 0.0,
+                            'total_expenses': 0.0,
+                            'total_hotel': 0.0,
+                            'total_shopping': 0.0,
+                            'total_phone': 0.0,
+                            'total_other': 0.0,
+                            'paut_total_meters': 0.0,
+                            'tofd_total_meters': 0.0,
+                            'sunday_200_hours': 0.0,  # Khởi tạo giá trị mặc định
+                            'construction_projects': [],
+                            'ndt_methods_used': []
+                        }
+                    }
+
+                # Lưu chi tiết theo ngày (key là '01','02',...)
+                self.data_chamcong[msnv][month_year]['attendance_data'][f"{day_num:02d}"] = {
+                    'type': work_type,
+                    'location': location,
+                    'method': method,
+                    'day_shift': day_shift,
+                    'night_shift': night_shift,
+                    'day_overtime_end': day_ot_end,
+                    'night_overtime_end': night_ot_end,
+                    'overtime_hours': overtime_hours,
+                    'hotel_expense': hotel_expense,
+                    'shopping_expense': shopping_expense,
+                    'phone_expense': phone_expense,
+                    'other_expense': other_expense,
+                    'paut_meters': 0.0,
+                    'tofd_meters': 0.0,
+                    'note': work_note,
+                    'other_expense_desc': other_expense_desc
+                }
+
+                # Cập nhật tổng hợp cơ bản theo loại
+                summary = self.data_chamcong[msnv][month_year]['summary']
+                if work_type == 'W':
+                    summary['total_work_days'] += 1
+                elif work_type == 'O':
+                    summary['total_office_days'] += 1
+                elif work_type == 'T':
+                    summary['total_training_days'] += 1
+                elif work_type == 'P':
+                    summary['total_leave_days'] += 1
+                elif work_type == 'N':
+                    summary['total_absent_days'] += 1
+
+                # Thu thập dự án và phương pháp
+                if location and location not in summary['construction_projects']:
+                    summary['construction_projects'].append(location)
+                if method and method not in summary['ndt_methods_used']:
+                    summary['ndt_methods_used'].append(method)
+
+                # Cộng dồn OT và chi phí
+                summary['total_overtime_hours'] += overtime_hours
+                summary['total_hotel'] += hotel_expense
+                summary['total_shopping'] += shopping_expense
+                summary['total_phone'] += phone_expense
+                summary['total_other'] += other_expense
+                summary['total_expenses'] += (hotel_expense + shopping_expense + phone_expense + other_expense)
+
+                # Chủ nhật 200%: nếu là CN và có chấm công làm việc (W/O/T) → +8 giờ
+                try:
+                    # Thử parse theo format YYYY-MM-DD trước
+                    if isinstance(date_str, str) and len(date_str.split('-')) == 3:
+                        date_obj = datetime.strptime(date_str, '%Y-%m-%d')
+                    else:
+                        # Nếu không được thì parse theo format dd/MM/YYYY
+                        date_obj = datetime.strptime(date_str, '%d/%m/%Y')
+                    
+                    is_sunday = date_obj.weekday() == 6
+                    if is_sunday:
+                        print(f"📅 Ngày {date_str} là chủ nhật")
+                except Exception as e:
+                    print(f"⚠️ Lỗi kiểm tra chủ nhật cho ngày {date_str}: {e}")
+                    is_sunday = False
+                
+                if is_sunday and work_type in ['W', 'O', 'T']:
+                    if 'sunday_200_hours' not in summary:
+                        summary['sunday_200_hours'] = 0.0
+                    summary['sunday_200_hours'] += 8.0
+                    print(f"✅ Cộng 8 giờ 200% cho ngày chủ nhật {date_str} - MSNV: {msnv}")
+
+            # Cập nhật combo tháng/năm theo period hiện tại
+            self.is_data_imported = True
+            self.available_months = [month_year]
+            self.import_btn.setVisible(False)
+            self.clear_btn.setVisible(True)
+            self.populate_month_combo()
+            self.populate_year_combo()
+            # Set tháng/năm đang chọn theo period
+            self.combo_month.setCurrentText(f"{int(month_str):02d}")
+            self.combo_year.setCurrentText(str(int(year_str)))
+            self.update_working_days_display()
+            # Refresh bảng để hiển thị dữ liệu tháng mới
+            self.update_table()
+            # Cập nhật info panel
+            self.update_info_panel()
+            if self.on_data_changed:
+                # Truyền cả dữ liệu chấm công và period
+                data_with_period = {
+                    'data_chamcong': self.data_chamcong,
+                    'period': getattr(self, 'current_period', month_year)
+                }
+                self.on_data_changed(data_with_period)
+        except Exception as e:
+            print(f"Lỗi import period+data format: {e}")
+            raise e
+    
+    def import_website_format(self, data):
+        """Import format JSON mới từ website"""
+        try:
+            # Đánh dấu đang trong quá trình import
+            self._is_importing = True
+            
+            employees = data.get('employees', {})
+            export_info = data.get('export_info', {})
+            period = export_info.get('period', None)  # dạng 'MM/YYYY'
+            
+            if not period:
+                raise ValueError("Thiếu thông tin period trong file")
+                
+            # Khởi tạo dữ liệu cho tháng mới
+            if period not in self.monthly_data:
+                self.monthly_data[period] = {
+                    'data_chamcong': {},
+                    'file_path': '',
+                    'is_loaded': False
+                }
+            
+            # Xử lý dữ liệu và tính toán chủ nhật 200%
+            month_str, year_str = period.split('/')
+            month = int(month_str)
+            year = int(year_str)
+            
+            for msnv, employee_data in employees.items():
+                attendance = employee_data.get('attendance', {})
+                days_data = attendance.get('days', {})
+                summary = attendance.get('summary', {})
+                
+                # Reset sunday_200_hours
+                sunday_200_hours = 0.0
+                
+                # Duyệt qua tất cả các ngày để tìm chủ nhật có làm việc
+                for day_key, day_data in days_data.items():
+                    if isinstance(day_data, dict):
+                        work_type = day_data.get('type', '')
+                        
+                        # Chỉ xử lý nếu có làm việc (W, O, T)
+                        if work_type in ['W', 'O', 'T']:
+                            # Xác định ngày từ key
+                            day_num = None
+                            try:
+                                if day_key.startswith('day_'):
+                                    day_num = int(day_key.replace('day_', ''))
+                                elif day_key.isdigit():
+                                    day_num = int(day_key)
+                                elif '-' in day_key:  # Format YYYY-MM-DD
+                                    day_num = int(day_key.split('-')[-1])
+                            except:
+                                continue
+                                
+                            if day_num and 1 <= day_num <= 31:
+                                try:
+                                    date_obj = datetime(year, month, day_num)
+                                    is_sunday = date_obj.weekday() == 6
+                                    
+                                    if is_sunday:
+                                        sunday_200_hours += 8.0
+                                        print(f"✅ Tự động cộng 8 giờ 200% cho chủ nhật {day_num}/{month}/{year} - MSNV: {msnv}")
+                                except ValueError:
+                                    # Ngày không hợp lệ (như 31/2)
+                                    continue
+                
+                # Cập nhật lại summary với giờ chủ nhật đã tính
+                if 'summary' not in attendance:
+                    attendance['summary'] = {}
+                attendance['summary']['sunday_200_hours'] = sunday_200_hours
+                
+                # Cập nhật lại dữ liệu
+                employee_data['attendance'] = attendance
+                employees[msnv] = employee_data
+            
+            # Import dữ liệu đã được xử lý
+            self.monthly_data[period]['data_chamcong'] = employees
+            self.monthly_data[period]['is_loaded'] = True
+            
+            # Lưu dữ liệu vào file
+            if not self.save_month_data(period):
+                raise Exception("Không thể lưu dữ liệu vào file")
+            
+            # Cập nhật current_period và tháng/năm
+            self.current_period = period
+            try:
+                month_str, year_str = period.split('/')
+                self.current_month = int(month_str)
+                self.current_year = int(year_str)
+            except Exception as e:
+                print(f"⚠️ Lỗi parse period {period}: {e}")
+            
+            # Cập nhật UI
+            self.update_month_dropdown()
+            
+            # Đảm bảo combo box chọn đúng tháng vừa import
+            if hasattr(self, 'combo_month'):
+                index = self.combo_month.findText(period)
+                if index >= 0:
+                    self.combo_month.setCurrentIndex(index)
+                    print(f"✅ Đã set combo box về tháng {period}")
+            
+            # Cập nhật bảng và thông tin
+            self.update_ui_with_data()
+            
+            if self.on_data_changed:
+                data_with_period = {
+                    'data_chamcong': employees,
+                    'period': period
+                }
+                self.on_data_changed(data_with_period)
+            
+            print(f"✅ Import thành công {len(employees)} nhân viên cho tháng {period}")
+            QMessageBox.information(self, "Thành công", 
+                f"Đã import thành công {len(employees)} nhân viên cho tháng {period}")
+            
+        except Exception as e:
+            print(f"❌ Lỗi import website format: {e}")
+            QMessageBox.critical(self, "Lỗi", f"Không thể import dữ liệu: {str(e)}")
+            raise e
+        finally:
+            # Đảm bảo xóa flag khi import xong
+            self._is_importing = False
+    
+    def import_app_format(self, data):
+        """Import format JSON cũ từ app"""
+        try:
+            # Code cũ giữ nguyên
+            if isinstance(data, list):
+                self.data_chamcong.clear()
+                
+                for item in data:
+                    if len(item) >= 3:
+                        name = str(item[0]).strip()
+                        msnv = str(item[2]).strip()
+                        
+                        if name and msnv:
+                            # Cập nhật employee mapper
+                            self.employee_mapper.update_employee(msnv, name, {
+                                'name': name,
+                                'msnv': msnv,
+                                'cccd': str(item[1]) if len(item) > 1 else '',
+                                'phone': str(item[3]) if len(item) > 3 else '',
+                                'position': str(item[4]) if len(item) > 4 else '',
+                                'department': str(item[5]) if len(item) > 5 else ''
+                            })
+                            
+                            # Lưu dữ liệu với MSNV làm key
+                            self.data_chamcong[msnv] = {
+                                'employee_info': {
+                                    'name': name,
+                                    'msnv': msnv,
+                                    'cccd': str(item[1]) if len(item) > 1 else '',
+                                    'phone': str(item[3]) if len(item) > 3 else '',
+                                    'position': str(item[4]) if len(item) > 4 else '',
+                                    'department': str(item[5]) if len(item) > 5 else ''
+                                },
+                                'attendance_data': {},
+                                'summary': {}
+                            }
+                
+                print(f"Import thành công {len(self.data_chamcong)} nhân viên từ app")
+                self.update_table()
+                
+        except Exception as e:
+            print(f"Lỗi import app format: {e}")
+            raise e
     
     def import_txt(self, file_path):
         """Import từ file TXT (format tùy chỉnh)"""
@@ -1518,7 +1961,12 @@ class TabBangCong(QWidget):
             # Implement parsing logic based on your TXT format
             pass
         if self.on_data_changed:
-            self.on_data_changed(self.data_chamcong)
+            # Truyền cả dữ liệu chấm công và period (nếu có)
+            data_with_period = {
+                'data_chamcong': self.data_chamcong,
+                'period': getattr(self, 'current_period', None)
+            }
+            self.on_data_changed(data_with_period)
     
     def highlight_sunday_columns(self, month, year, days_in_month):
         """Tô màu vàng cho các cột chủ nhật"""
@@ -1576,404 +2024,278 @@ class TabBangCong(QWidget):
         return max_days
 
     def update_table(self):
-        """Cập nhật bảng theo tháng/năm được chọn"""
+        """Cập nhật bảng hiển thị"""
         try:
-            month = int(self.combo_month.currentText())
-            year = int(self.combo_year.currentText())
-            month_year = f"{month:02d}/{year}"
-        except (ValueError, AttributeError):
-            # Fallback nếu combo box không có giá trị
-            month = datetime.now().month
-            year = datetime.now().year
-            month_year = f"{month:02d}/{year}"
-        
-        # Lấy số ngày từ dữ liệu CSV thay vì tính theo calendar
-        days_in_month = self.get_max_days_from_data(month_year)
-        
-        headers = ["Tên\nnhân viên", "Chi tiết"]
-        
-        # Tạo headers với thông tin ngày và thứ
-        for day in range(1, days_in_month + 1):
-            # Tính thứ trong tuần cho ngày này
-            try:
-                date_obj = datetime(year, month, day)
-                weekday = date_obj.weekday()  # 0=Monday, 6=Sunday
+            # Kiểm tra xem table_widget đã được tạo chưa
+            if not hasattr(self, 'table_widget') or self.table_widget is None:
+                print("⚠️ table_widget chưa được tạo, bỏ qua update_table")
+                return
                 
-                # Chuyển đổi sang tên thứ tiếng Việt
-                weekday_names = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"]
-                weekday_name = weekday_names[weekday]
-                
-                # Tạo header với số ngày và thứ
-                header_text = f"{day}\n{weekday_name}"
-                headers.append(header_text)
-            except ValueError:
-                # Nếu ngày không hợp lệ (như 31/2), chỉ hiển thị số
-                headers.append(f"{day}")
-        
-        summary_headers = [
-            "Tổng công\ntrường (W)", "Tổng văn\nphòng (O)", "Tổng đào\ntạo (T)", 
-            "Nghỉ có\nphép (P)", "Nghỉ không\nphép (N)",
-            "OT 150%\n(giờ)", "Chủ nhật\n200% (giờ)", "Lễ tết\n300% (giờ)",
-            "Năng suất\nUT", "Năng suất\nPAUT", "Năng suất\nTOFD",
-            "Ngày tính\nlương CB", "Tạm ứng\n(VNĐ)", "Chi phí\n(VNĐ)",
-            "Khách sạn\n(VNĐ)", "Mua sắm\n(VNĐ)", "Điện thoại\n(VNĐ)", "Khác\n(VNĐ)",
-            "Dự án", "Phương pháp\nNDT"
-        ]
-        headers.extend(summary_headers)
-        
-        self.table_widget.setColumnCount(len(headers))
-        self.table_widget.setHorizontalHeaderLabels(headers)
-        
-        # Reset và set màu vàng cho các cột chủ nhật
-        self.sunday_columns = []
-        self.highlight_sunday_columns(month, year, days_in_month)
-        
-        # Cập nhật column width cho các cột ngày và tổng hợp
-        header = self.table_widget.horizontalHeader()
-        
-        # Các cột ngày
-        for i in range(2, 2 + days_in_month):
-            header.setSectionResizeMode(i, QHeaderView.Fixed)
-            self.table_widget.setColumnWidth(i, 35)
-        
-        # Các cột tổng hợp
-        for i in range(2 + days_in_month, len(headers)):
-            header.setSectionResizeMode(i, QHeaderView.Fixed)
-            self.table_widget.setColumnWidth(i, 100)
-        
-        # Cập nhật dữ liệu - lọc theo nhân viên được chọn
-        all_msnv = list(self.data_chamcong.keys())
-        
-        # Chuyển đổi tên nhân viên thành MSNV để so sánh
-        selected_msnv = set()
-        for name in self.selected_employees:
-            msnv = self.employee_mapper.get_msnv_by_name(name)
-            if msnv:
-                selected_msnv.add(msnv)
-        
-        # Lọc nhân viên theo danh sách đã chọn
-        if selected_msnv:
-            # Hiển thị cả nhân viên đã chọn mà chưa có dữ liệu
-            employees_msnv = list(selected_msnv)
-            # Thêm nhân viên có dữ liệu nhưng chưa được chọn (nếu cần)
-            for msnv in all_msnv:
-                if msnv not in employees_msnv:
-                    employees_msnv.append(msnv)
-        else:
-            employees_msnv = all_msnv  # Hiển thị tất cả nếu chưa chọn ai
+            self.table_widget.setRowCount(0)
+            # Xây header động gồm: Tên nhân viên | Chi tiết | Ngày 1..N | các cột tổng hợp
             
-        self.table_widget.setRowCount(len(employees_msnv))
-        
-        # Cập nhật thông tin header
-        self.update_working_days_display()
-        
-        for row, msnv in enumerate(employees_msnv):
-            try:
-                # Tìm dữ liệu cho tháng hiện tại
-                employee_data = {}
-                if msnv in self.data_chamcong:
-                    employee_data = self.data_chamcong[msnv].get(month_year, {})
-                    
-                    if not employee_data:
-                        # Tìm tháng gần nhất có dữ liệu
-                        for existing_month in self.data_chamcong[msnv].keys():
-                            if existing_month != 'employee_info':  # Bỏ qua thông tin nhân viên
-                                employee_data = self.data_chamcong[msnv][existing_month]
-                                break
-                
-                # Tên nhân viên (có thể click để xem thông tin chi tiết)
-                employee_name = self.employee_mapper.get_name_by_msnv(msnv)
-                if not employee_name:
-                    employee_name = msnv  # Fallback nếu không tìm thấy tên
-                
-                # Lấy thông tin nhân viên từ mapping hoặc từ dữ liệu
-                employee_info = self.data_chamcong[msnv].get('employee_info', {}) if msnv in self.data_chamcong else {}
-                if not employee_info:
-                    employee_info = employee_data.get('info', {})
-                
-                if employee_info:
-                    # Tạo button cho tên nhân viên
-                    name_btn = QPushButton(employee_name)
-                    name_btn.setFont(QFont("Times New Roman", 9))
-                    name_btn.setStyleSheet("""
-                        QPushButton {
-                            background-color: transparent;
-                            color: #007bff;
-                            border: none;
-                            text-decoration: underline;
-                            font-family: "Times New Roman";
-                            text-align: left;
-                            padding: 4px 8px;
-                        }
-                        QPushButton:hover {
-                            color: #0056b3;
-                            background-color: #f8f9fa;
-                        }
-                    """)
-                    name_btn.clicked.connect(lambda checked, emp=employee_name, info=employee_info: self.show_employee_info(emp, info))
-                    self.table_widget.setCellWidget(row, 0, name_btn)
+            # Sửa lỗi parsing combo box text chứa emoji
+            if hasattr(self, 'combo_month'):
+                month_text = self.combo_month.currentText()
+                # Loại bỏ emoji và ký tự không phải số
+                month_text_clean = ''.join(c for c in month_text if c.isdigit() or c == '/')
+                if '/' in month_text_clean:
+                    month = int(month_text_clean.split('/')[0])
                 else:
-                    # Fallback nếu không có thông tin chi tiết
-                    self.table_widget.setItem(row, 0, QTableWidgetItem(employee_name))
+                    month = self.current_month
+            else:
+                month = self.current_month
                 
+            if hasattr(self, 'combo_year'):
+                year_text = self.combo_year.currentText()
+                # Loại bỏ emoji và ký tự không phải số
+                year_text_clean = ''.join(c for c in year_text if c.isdigit())
+                if year_text_clean:
+                    year = int(year_text_clean)
+                else:
+                    year = self.current_year
+            else:
+                year = self.current_year
+                
+            days_in_month = calendar.monthrange(year, month)[1]
+
+            # Tạo header ngày kèm thứ (T2..T7, CN)
+            def weekday_short_label(wd: int) -> str:
+                # 0=Mon..6=Sun
+                return ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'][wd]
+
+            day_headers = []
+            for d in range(1, days_in_month + 1):
+                wd = datetime(year, month, d).weekday()
+                day_headers.append(f"{d:02d}\n{weekday_short_label(wd)}")
+            summary_headers = [
+                "Tổng công\ntrường (W)", "Tổng văn\nphòng (O)", "Tổng đào\ntạo (T)",
+                "Nghỉ có\nphép (P)", "Nghỉ không\nphép (N)",
+                "OT 150%\n(giờ)", "Chủ nhật\n200% (giờ)", "Lễ tết\n300% (giờ)",
+                "Năng suất\nUT", "Năng suất\nPAUT", "Năng suất\nTOFD",
+                "Ngày tính\nlương CB", "Tạm ứng\n(VNĐ)", "Chi phí\n(VNĐ)",
+                "Khách sạn\n(VNĐ)", "Mua sắm\n(VNĐ)", "Điện thoại\n(VNĐ)", "Khác\n(VNĐ)",
+                "Dự án", "Phương pháp\nNDT"
+            ]
+            headers = ["Tên nhân viên", "Chi tiết"] + day_headers + summary_headers
+            self.table_widget.setColumnCount(len(headers))
+            self.table_widget.setHorizontalHeaderLabels(headers)
+
+            # Resize tên + chi tiết
+            header_view = self.table_widget.horizontalHeader()
+            header_view.setSectionResizeMode(0, QHeaderView.Fixed)
+            header_view.setSectionResizeMode(1, QHeaderView.Fixed)
+            self.table_widget.setColumnWidth(0, 150)
+            self.table_widget.setColumnWidth(1, 80)
+            # Resize cột ngày
+            for idx in range(2, 2 + days_in_month):
+                header_view.setSectionResizeMode(idx, QHeaderView.Fixed)
+                self.table_widget.setColumnWidth(idx, 40)
+                # Tooltip chi tiết cho header ngày
+                day_index = (idx - 2) + 1
+                wd = datetime(year, month, day_index).weekday()
+                tooltip = f"Ngày {day_index:02d}/{month:02d}/{year} - {['Thứ 2','Thứ 3','Thứ 4','Thứ 5','Thứ 6','Thứ 7','Chủ nhật'][wd]}"
+                item = self.table_widget.horizontalHeaderItem(idx)
+                if item:
+                    item.setToolTip(tooltip)
+
+            # Tính các cột chủ nhật
+            sunday_cols = set()
+            for d in range(1, days_in_month + 1):
+                if datetime(year, month, d).weekday() == 6:
+                    sunday_cols.add(2 + (d - 1))
+            # Tô đậm chữ header cho các cột Chủ nhật
+            for col in sunday_cols:
+                header_item = self.table_widget.horizontalHeaderItem(col)
+                if header_item:
+                    font = header_item.font()
+                    font.setBold(True)
+                    header_item.setFont(font)
+
+            # Màu theo loại công
+            def color_for_type(t):
+                if t == 'W':
+                    return QColor("#d4edda")  # xanh lá
+                if t == 'O':
+                    return QColor("#d1ecf1")  # xanh dương nhạt
+                if t == 'T':
+                    return QColor("#fff3cd")  # vàng nhạt
+                if t == 'P':
+                    return QColor("#f8d7da")  # đỏ nhạt
+                if t == 'N':
+                    return QColor("#f5c6cb")  # đỏ đậm hơn
+                return QColor("#f8f9fa")
+
+            # Lấy tháng/năm hiện tại để hiển thị
+            current_month_year = f"{month:02d}/{year}"
+            
+            # Lấy dữ liệu từ monthly_data thay vì data_chamcong
+            if current_month_year not in self.monthly_data or not self.monthly_data[current_month_year]['is_loaded']:
+                print(f"⚠️ Không có dữ liệu cho tháng {current_month_year}")
+                return
+            
+            employees_data = self.monthly_data[current_month_year]['data_chamcong']
+            print(f"🔍 Tìm thấy {len(employees_data)} nhân viên cho tháng {current_month_year}")
+            
+            # Đổ dữ liệu từng nhân viên
+            for msnv, employee_data in employees_data.items():
+                # Lấy thông tin nhân viên từ website format
+                info = employee_data.get('info', {})
+                attendance = employee_data.get('attendance', {})
+                summary = attendance.get('summary', {})
+                days_data = attendance.get('days', {})
+                
+                # Lấy tên từ info hoặc dùng MSNV
+                employee_name = info.get('name', msnv)
+                
+                print(f"📋 Hiển thị nhân viên: {msnv} - {employee_name}")
+
+                row = self.table_widget.rowCount()
+                self.table_widget.insertRow(row)
+
+                # Tên nhân viên
+                self.table_widget.setItem(row, 0, QTableWidgetItem(employee_name))
+
                 # Nút chi tiết
                 detail_btn = QPushButton("Chi tiết")
-                detail_btn.setFont(QFont("Times New Roman", 9))
-                detail_btn.setStyleSheet("""
-                    QPushButton {
-                        background-color: #f8f9fa;
-                        color: #495057;
-                        border: 1px solid #ced4da;
-                        border-radius: 2px;
-                        padding: 4px 8px;
-                        font-family: "Times New Roman";
-                    }
-                    QPushButton:hover {
-                        background-color: #e9ecef;
-                        border-color: #495057;
-                    }
-                """)
-                detail_btn.clicked.connect(lambda checked, emp=employee_name, data=employee_data: self.show_detail(emp, data))
+                detail_btn.clicked.connect(lambda checked, m=msnv: self.show_detail(m))
                 self.table_widget.setCellWidget(row, 1, detail_btn)
+
+                # Cột ngày 1..N - chuyển đổi từ format website
+                print(f"🔍 Debug dữ liệu cho {msnv}:")
+                print(f"   - info keys: {list(info.keys())}")
+                print(f"   - attendance keys: {list(attendance.keys())}")
+                print(f"   - days_data keys: {list(days_data.keys()) if days_data else 'None'}")
                 
-                # Dữ liệu các ngày
-                days_data = employee_data.get('days', {})
-                
-                for day in range(1, days_in_month + 1):
-                    # Thử cả 2 format: day_01 và day_1
-                    work_type = days_data.get(f"day_{day:02d}", days_data.get(f"day_{day}", ""))
-                    item = QTableWidgetItem(work_type)
-                    item.setTextAlignment(Qt.AlignCenter)
+                # Thử nhiều format key khác nhau
+                for d in range(1, days_in_month + 1):
+                    col = 2 + (d - 1)
+                    day_value = ""
                     
-                    # Kiểm tra xem có phải chủ nhật không
-                    col_index = 1 + day
-                    is_sunday = False
-                    try:
-                        date_obj = datetime(year, month, day)
-                        is_sunday = (date_obj.weekday() == 6)  # 6 = Sunday
-                    except ValueError:
-                        pass
+                    # Thử các format key khác nhau
+                    possible_keys = [
+                        f"day_{d:02d}",      # day_01, day_02...
+                        f"{d:02d}",          # 01, 02...
+                        f"day_{d}",          # day_1, day_2...
+                        str(d),              # 1, 2...
+                        f"{d}",              # 1, 2...
+                        f"2025-07-{d:02d}"   # YYYY-MM-DD format
+                    ]
                     
-                    # Thêm màu sắc cho các loại công
-                    if is_sunday:
-                        # Chủ nhật - màu vàng với độ ưu tiên cao nhất
-                        item.setBackground(QColor("#fff3cd"))  # Màu vàng cho chủ nhật
-                        item.setForeground(QColor("#856404"))  # Chữ màu nâu đậm
-                    elif work_type == 'W':
-                        item.setBackground(QColor("#e3f2fd"))  # Xanh nhạt cho công trường
-                    elif work_type == 'O':
-                        item.setBackground(QColor("#f3e5f5"))  # Tím nhạt cho văn phòng
-                    elif work_type == 'T':
-                        item.setBackground(QColor("#e8f5e8"))  # Xanh lá nhạt cho đào tạo
-                    elif work_type == 'P':
-                        item.setBackground(QColor("#fff3e0"))  # Cam nhạt cho nghỉ phép
-                    elif work_type == 'N':
-                        item.setBackground(QColor("#ffebee"))  # Đỏ nhạt cho nghỉ không phép
+                    for key in possible_keys:
+                        if key in days_data:
+                            day_info = days_data[key]
+                            if isinstance(day_info, dict):
+                                day_value = day_info.get('type', '')
+                            else:
+                                day_value = str(day_info)
+                            if day_value:
+                                print(f"   - Ngày {d}: key='{key}', value='{day_value}'")
+                                break
+                    
+                    # Hiển thị dữ liệu
+                    item = QTableWidgetItem(day_value)
+                    # Chủ nhật tô vàng ưu tiên
+                    if col in sunday_cols:
+                        item.setBackground(QColor("#fff3cd"))
+                        item.setData(Qt.UserRole, 'sunday')
                     else:
-                        # Nếu chưa có dữ liệu, để trống
-                        item = QTableWidgetItem("")
-                        item.setTextAlignment(Qt.AlignCenter)
-                        if is_sunday:
-                            item.setBackground(QColor("#fff3cd"))
-                            item.setForeground(QColor("#856404"))
+                        item.setBackground(color_for_type(day_value))
+                    self.table_widget.setItem(row, col, item)
+
+                # Bắt đầu cột tổng hợp sau các cột ngày
+                base = 2 + days_in_month
+                def set_summary(col_offset, value):
+                    self.table_widget.setItem(row, base + col_offset, QTableWidgetItem(str(value)))
+
+                # Lấy summary từ website format
+                set_summary(0, summary.get('total_work_days', 0))
+                set_summary(1, summary.get('total_office_days', 0))
+                set_summary(2, summary.get('total_training_days', 0))
+                set_summary(3, summary.get('total_leave_days', 0))
+                set_summary(4, summary.get('total_absent_days', 0))
+                set_summary(5, summary.get('total_overtime_hours', 0))
+                set_summary(6, summary.get('sunday_200_hours', 0))
+                set_summary(7, summary.get('holiday_300_hours', 0))
+                set_summary(8, summary.get('ut_total_meters', 0))
+                set_summary(9, summary.get('total_paut_meters', 0))
+                set_summary(10, summary.get('total_tofd_meters', 0))
+                set_summary(11, summary.get('base_salary_days', 0))
+                set_summary(12, summary.get('advance_amount', 0))
+                set_summary(13, summary.get('total_expenses', 0))
+                set_summary(14, summary.get('total_hotel_expense', 0))
+                set_summary(15, summary.get('total_shopping_expense', 0))
+                set_summary(16, summary.get('total_phone_expense', 0))
+                set_summary(17, summary.get('total_other_expense', 0))
+                set_summary(18, ", ".join(summary.get('construction_projects', [])))
+                set_summary(19, ", ".join(summary.get('ndt_methods_used', [])))
+        
+        except Exception as e:
+            print(f"Lỗi update table: {e}")
+    
+    def show_detail(self, msnv):
+        """Hiển thị chi tiết chấm công của nhân viên"""
+        try:
+            # Lấy tháng/năm hiện tại
+            month = int(self.combo_month.currentText()) if hasattr(self, 'combo_month') else self.current_month
+            year = int(self.combo_year.currentText()) if hasattr(self, 'combo_year') else self.current_year
+            current_month_year = f"{month:02d}/{year}"
+            
+            if msnv in self.data_chamcong and current_month_year in self.data_chamcong[msnv]:
+                data = self.data_chamcong[msnv][current_month_year]
+                employee_info = data.get('employee_info', {})
+                attendance_data = data.get('attendance_data', {})
+                
+                # Tạo dialog hiển thị chi tiết
+                detail_dialog = QDialog(self)
+                detail_dialog.setWindowTitle(f"Chi tiết chấm công - {employee_info.get('name', '')}")
+                detail_dialog.setModal(True)
+                detail_dialog.resize(800, 600)
+                
+                layout = QVBoxLayout()
+                
+                # Thông tin nhân viên
+                info_label = QLabel(f"MSNV: {msnv} | Tên: {employee_info.get('name', '')}")
+                layout.addWidget(info_label)
+                
+                # Bảng chi tiết
+                table = QTableWidget()
+                table.setColumnCount(8)
+                table.setHorizontalHeaderLabels([
+                    "Ngày", "Loại", "Địa điểm", "Phương pháp", 
+                    "PAUT (m)", "TOFD (m)", "Ca", "Ghi chú"
+                ])
+                
+                # Điền dữ liệu
+                for day_num, day_data in attendance_data.items():
+                    row = table.rowCount()
+                    table.insertRow(row)
                     
-                    self.table_widget.setItem(row, col_index, item)
-                
-                # Tính tổng các loại công
-                work_counts = self.calculate_work_summary(days_data, days_in_month)
-                
-                col_offset = 2 + days_in_month
-                
-                # Tính tổng số tiền cho từng loại chi phí
-                days_detail = employee_data.get('days_detail', {})
-                hotel_total = 0
-                shopping_total = 0
-                phone_total = 0
-                other_total = 0
-                
-                # Thu thập thông tin dự án và phương pháp NDT
-                projects = set()
-                ndt_methods = set()
-                
-                # Chỉ tính toán nếu có dữ liệu
-                if days_detail:
-                    for day_key in days_detail.keys():
-                        if day_key.startswith('day_'):
-                            day_data = days_detail[day_key]
-                            if isinstance(day_data, dict):
-                                # Tính tổng tiền khách sạn
-                                hotel = day_data.get('hotel_expense', 0)
-                                hotel_total += float(hotel) if hotel else 0
-                                
-                                # Tính tổng tiền mua sắm
-                                shopping = day_data.get('shopping_expense', 0)
-                                shopping_total += float(shopping) if shopping else 0
-                                
-                                # Tính tổng tiền điện thoại
-                                phone = day_data.get('phone_expense', 0)
-                                phone_total += float(phone) if phone else 0
-                                
-                                # Tính tổng tiền khác
-                                other = day_data.get('other_expense', 0)
-                                other_total += float(other) if other else 0
-                                
-                                # Thu thập dự án và phương pháp
-                                location = day_data.get('location', '')
-                                if location and location.strip():
-                                    projects.add(location)
-                                
-                                method = day_data.get('method', '')
-                                if method and method.strip():
-                                    ndt_methods.add(method)
-                
-                # Tính tổng chi phí = tổng các khoản: KS + MS + ĐT + Khác
-                total_chi_phi = hotel_total + shopping_total + phone_total + other_total
-                
-                # Lấy thông tin từ summary nếu có
-                summary = employee_data.get('summary', {})
-                if summary:
-                    projects.update(summary.get('construction_projects', []))
-                    ndt_methods.update(summary.get('ndt_methods_used', []))
-                
-                # Format dự án và phương pháp
-                projects_text = ", ".join(list(projects)[:3])  # Giới hạn 3 dự án
-                if len(projects) > 3:
-                    projects_text += "..."
-                
-                ndt_methods_text = ", ".join(list(ndt_methods)[:3])  # Giới hạn 3 phương pháp
-                if len(ndt_methods) > 3:
-                    ndt_methods_text += "..."
-                
-                summary_values = [
-                    work_counts['W'], work_counts['O'], work_counts['T'], 
-                    work_counts['P'], work_counts['N'],
-                    employee_data.get('ot_150', 0), employee_data.get('sunday_200', 0), employee_data.get('holiday_300', 0),
-                    employee_data.get('nang_suat_ut', 0), employee_data.get('nang_suat_paut', 0), employee_data.get('nang_suat_tofd', 0),
-                    employee_data.get('ngay_tinh_luong', 0), employee_data.get('tam_ung', 0), total_chi_phi,
-                    hotel_total, shopping_total, phone_total, other_total,
-                    projects_text, ndt_methods_text
-                ]
-                
-                # Format số tiền với dấu phẩy và số ngày
-                for i in range(len(summary_values)):
-                    if i == 12:  # Cột tạm ứng (VNĐ)
-                        if isinstance(summary_values[i], (int, float)) and summary_values[i] > 0:
-                            summary_values[i] = f"{summary_values[i]:,}"
-                        else:
-                            summary_values[i] = ""
-                    elif i == 13:  # Cột chi phí (VNĐ)
-                        if isinstance(summary_values[i], (int, float)) and summary_values[i] > 0:
-                            summary_values[i] = f"{summary_values[i]:,}"
-                        else:
-                            summary_values[i] = ""
-                    elif i >= 14 and i <= 17:  # Các cột tiền (Khách sạn, Mua sắm, Điện thoại, Khác)
-                        if isinstance(summary_values[i], (int, float)) and summary_values[i] > 0:
-                            summary_values[i] = f"{summary_values[i]:,}"
-                        else:
-                            summary_values[i] = ""
-                    elif i >= 18:  # Các cột text (Dự án, Phương pháp NDT)
-                        if summary_values[i]:
-                            summary_values[i] = str(summary_values[i])
-                        else:
-                            summary_values[i] = ""
-                    elif i == 5:  # Cột giờ tăng ca (OT 150%)
-                        if isinstance(summary_values[i], (int, float)) and summary_values[i] > 0:
-                            summary_values[i] = f"{summary_values[i]:.1f}"
-                        else:
-                            summary_values[i] = ""
-                
-                for i, value in enumerate(summary_values):
-                    item = QTableWidgetItem(str(value))
-                    item.setTextAlignment(Qt.AlignCenter)
-                    self.table_widget.setItem(row, col_offset + i, item)
+                    table.setItem(row, 0, QTableWidgetItem(day_num))
+                    table.setItem(row, 1, QTableWidgetItem(day_data.get('type', '')))
+                    table.setItem(row, 2, QTableWidgetItem(day_data.get('location', '')))
+                    table.setItem(row, 3, QTableWidgetItem(day_data.get('method', '')))
+                    table.setItem(row, 4, QTableWidgetItem(str(day_data.get('paut_meters', 0))))
+                    table.setItem(row, 5, QTableWidgetItem(str(day_data.get('tofd_meters', 0))))
                     
-            except Exception as e:
-                print(f"Lỗi khi xử lý nhân viên {employee}: {e}")
-                # Tạo row trống nếu có lỗi
-                self.table_widget.setItem(row, 0, QTableWidgetItem(employee))
-                for col in range(1, self.table_widget.columnCount()):
-                    self.table_widget.setItem(row, col, QTableWidgetItem(""))
-    
-    def calculate_work_summary(self, days_data, days_in_month):
-        """Tính tổng số ngày cho mỗi loại công"""
-        work_counts = {'W': 0, 'O': 0, 'T': 0, 'P': 0, 'N': 0}
-        
-        for day in range(1, days_in_month + 1):
-            # Thử cả 2 format: day_01 và day_1
-            work_type = days_data.get(f"day_{day:02d}", days_data.get(f"day_{day}", ""))
-            if work_type in work_counts:
-                work_counts[work_type] += 1
-        
-        return work_counts
-    
-    def show_employee_info(self, employee_name, employee_info):
-        """Hiển thị thông tin chi tiết của nhân viên"""
-        dialog = QDialog(self)
-        dialog.setWindowTitle(f"Thông tin nhân viên - {employee_name}")
-        dialog.setModal(True)
-        dialog.resize(400, 300)
-        
-        layout = QVBoxLayout(dialog)
-        
-        # Tiêu đề
-        title = QLabel(f"Thông tin chi tiết - {employee_name}")
-        title.setAlignment(Qt.AlignCenter)
-        title.setFont(QFont("Times New Roman", 14, QFont.Bold))
-        layout.addWidget(title)
-        
-        # Form thông tin
-        form_layout = QFormLayout()
-        
-        info_fields = [
-            ("MSNV", employee_info.get('msnv', '')),
-            ("Email", employee_info.get('email', '')),
-            ("Chức vụ", employee_info.get('position', '')),
-            ("Phòng ban", employee_info.get('department', '')),
-            ("Số điện thoại", employee_info.get('phone', ''))
-        ]
-        
-        for label, value in info_fields:
-            label_widget = QLabel(label)
-            label_widget.setFont(QFont("Times New Roman", 10, QFont.Bold))
-            value_widget = QLabel(value if value else "Chưa có thông tin")
-            value_widget.setFont(QFont("Times New Roman", 10))
-            value_widget.setStyleSheet("color: #495057;")
-            form_layout.addRow(label_widget, value_widget)
-        
-        layout.addLayout(form_layout)
-        
-        # Nút đóng
-        close_btn = QPushButton("Đóng")
-        close_btn.setFont(QFont("Times New Roman", 10))
-        close_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #495057;
-                color: white;
-                border: none;
-                border-radius: 2px;
-                padding: 8px 16px;
-                font-family: "Times New Roman";
-            }
-            QPushButton:hover {
-                background-color: #343a40;
-            }
-        """)
-        close_btn.clicked.connect(dialog.close)
-        layout.addWidget(close_btn)
-        
-        dialog.exec_()
-    
-    def show_detail(self, employee_name, employee_data):
-        """Hiển thị chi tiết bảng công của nhân viên"""
-        # Ưu tiên sử dụng days_detail nếu có (từ JSON website)
-        days_detail = employee_data.get('days_detail', {})
-        
-        # Nếu không có days_detail, sử dụng days thông thường
-        if not days_detail:
-            days_detail = employee_data.get('days', {})
-        
-        dialog = BangCongDialog(employee_name, days_detail, self)
-        dialog.exec_()
+                    shift_text = ""
+                    if day_data.get('day_shift'):
+                        shift_text += "Ngày"
+                    if day_data.get('night_shift'):
+                        if shift_text:
+                            shift_text += " + "
+                        shift_text += "Đêm"
+                    
+                    table.setItem(row, 6, QTableWidgetItem(shift_text))
+                    table.setItem(row, 7, QTableWidgetItem(day_data.get('note', '')))
+                
+                layout.addWidget(table)
+                detail_dialog.setLayout(layout)
+                detail_dialog.exec_()
+                
+        except Exception as e:
+            print(f"Lỗi hiển thị chi tiết: {e}")
+            QMessageBox.warning(self, "Lỗi", f"Không thể hiển thị chi tiết: {e}")
     
     def export_report(self):
         """Xuất báo cáo Excel"""
@@ -2133,4 +2455,113 @@ class TabBangCong(QWidget):
             print(f"Lỗi kiểm tra công ty mới: {e}")
             import traceback
             traceback.print_exc()
+
+    def populate_month_combo(self):
+        """Cập nhật combo box tháng"""
+        try:
+            if hasattr(self, 'combo_month'):
+                self.combo_month.clear()
+                # Thêm các tháng có dữ liệu
+                for period in sorted(self.available_months, reverse=True):
+                    self.combo_month.addItem(period)
+                # Chọn tháng hiện tại
+                current_period = f"{self.current_month:02d}/{self.current_year}"
+                index = self.combo_month.findText(current_period)
+                if index >= 0:
+                    self.combo_month.setCurrentIndex(index)
+        except Exception as e:
+            print(f"Lỗi populate_month_combo: {e}")
+
+    def populate_year_combo(self):
+        """Cập nhật combo box năm"""
+        try:
+            if hasattr(self, 'combo_year'):
+                self.combo_year.clear()
+                # Lấy danh sách năm từ available_months
+                years = set()
+                for period in self.available_months:
+                    if '/' in period:
+                        year = period.split('/')[1]
+                        years.add(year)
+                # Thêm các năm vào combo
+                for year in sorted(years, reverse=True):
+                    self.combo_year.addItem(year)
+                # Chọn năm hiện tại
+                index = self.combo_year.findText(str(self.current_year))
+                if index >= 0:
+                    self.combo_year.setCurrentIndex(index)
+        except Exception as e:
+            print(f"Lỗi populate_year_combo: {e}")
+
+    def save_month_data(self, period):
+        """Lưu dữ liệu tháng vào file"""
+        try:
+            if period not in self.monthly_data:
+                return False
+                
+            # Tạo tên file theo format: chamcong_MM_YYYY.json
+            month_str, year_str = period.split('/')
+            filename = f"chamcong_{month_str}_{year_str}.json"
+            file_path = os.path.join(self.data_manager.data_dir, filename)
+            
+            # Chuẩn bị dữ liệu để lưu
+            save_data = {
+                'export_info': {
+                    'period': period,
+                    'export_date': datetime.now().isoformat(),
+                    'company': 'Hitech NDT'
+                },
+                'employees': self.monthly_data[period].get('data_chamcong', {})
+            }
+            
+            # Lưu file
+            with open(file_path, 'w', encoding='utf-8') as f:
+                json.dump(save_data, f, ensure_ascii=False, indent=2)
+            
+            # Cập nhật đường dẫn file trong monthly_data
+            self.monthly_data[period]['file_path'] = file_path
+            print(f"✅ Đã lưu dữ liệu tháng {period} vào file: {file_path}")
+            return True
+            
+        except Exception as e:
+            print(f"❌ Lỗi lưu dữ liệu tháng {period}: {e}")
+            return False
+
+    def auto_load_imported_file(self):
+        """Tự động load file chấm công đã import trước đó"""
+        try:
+            imported_file_path = self.data_manager.get_imported_file_path("chamcong")
+            if imported_file_path and os.path.exists(imported_file_path):
+                print(f"🔄 Tự động load file đã import: {imported_file_path}")
+                if imported_file_path.endswith('.json'):
+                    self.import_json(imported_file_path)
+                elif imported_file_path.endswith('.csv'):
+                    self.import_csv(imported_file_path)
+                elif imported_file_path.endswith('.txt'):
+                    self.import_txt(imported_file_path)
+                print("✅ Đã tự động load file chấm công đã import")
+        except Exception as e:
+            print(f"❌ Lỗi tự động load file đã import: {e}")
+
+    def clear_imported_file(self):
+        """Xóa file đã import để có thể import file mới"""
+        try:
+            reply = QMessageBox.question(
+                self, 
+                "Xác nhận", 
+                "Bạn có chắc muốn xóa file đã import?\nSau đó bạn có thể import file mới.",
+                QMessageBox.Yes | QMessageBox.No
+            )
+            
+            if reply == QMessageBox.Yes:
+                self.data_manager.remove_imported_file("chamcong")
+                # Xóa dữ liệu hiện tại
+                self.monthly_data = {}
+                self.data_chamcong = {}
+                self.available_months = []
+                self.update_table()
+                self.update_info_panel()
+                QMessageBox.information(self, "Thành công", "Đã xóa file đã import!")
+        except Exception as e:
+            QMessageBox.warning(self, "Lỗi", f"Không thể xóa file đã import: {str(e)}")
 

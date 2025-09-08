@@ -1,14 +1,109 @@
 {
   "export_info": {
+    "company": "Hitech NDT",
     "period": "07/2025",
-    "export_date": "2025-09-07T18:11:27.350543",
-    "company": "Hitech NDT"
+    "export_date": "2025-08-30 14:03:47",
+    "version": "1.0",
+    "total_employees": 2
   },
   "employees": {
-    "HTNV-008": {
+    "admin": {
+      "info": {
+        "name": "admin",
+        "msnv": "admin",
+        "email": "phihung13102@gmail.com",
+        "position": null,
+        "department": null,
+        "phone": null
+      },
+      "attendance": {
+        "days": {
+          "day_28": {
+            "type": "O",
+            "location": "",
+            "method": "",
+            "paut_meters": 0,
+            "tofd_meters": 0,
+            "day_shift": true,
+            "night_shift": false,
+            "day_overtime_end": "",
+            "night_overtime_end": "",
+            "overtime_hours": 0,
+            "hotel_expense": 0,
+            "shopping_expense": 0,
+            "phone_expense": 0,
+            "other_expense": 0,
+            "other_expense_desc": "",
+            "note": "",
+            "created_at": "2025-07-31 09:36:39",
+            "updated_at": "2025-07-31 09:36:39"
+          },
+          "day_30": {
+            "type": "O",
+            "location": "",
+            "method": "",
+            "paut_meters": 0,
+            "tofd_meters": 0,
+            "day_shift": true,
+            "night_shift": false,
+            "day_overtime_end": "",
+            "night_overtime_end": "",
+            "overtime_hours": 0,
+            "hotel_expense": 0,
+            "shopping_expense": 0,
+            "phone_expense": 0,
+            "other_expense": 0,
+            "other_expense_desc": "",
+            "note": "",
+            "created_at": "2025-07-31 09:26:12",
+            "updated_at": "2025-07-31 09:26:12"
+          },
+          "day_31": {
+            "type": "T",
+            "location": "",
+            "method": "",
+            "paut_meters": 0,
+            "tofd_meters": 0,
+            "day_shift": true,
+            "night_shift": false,
+            "day_overtime_end": "",
+            "night_overtime_end": "",
+            "overtime_hours": 0,
+            "hotel_expense": 0,
+            "shopping_expense": 0,
+            "phone_expense": 0,
+            "other_expense": 0,
+            "other_expense_desc": "",
+            "note": "",
+            "created_at": "2025-07-31 09:25:18",
+            "updated_at": "2025-07-31 09:25:55"
+          }
+        },
+        "summary": {
+          "total_work_days": 0,
+          "total_office_days": 2,
+          "total_training_days": 1,
+          "total_leave_days": 0,
+          "total_absent_days": 0,
+          "total_overtime_hours": 0,
+          "total_expenses": 0.0,
+          "hotel_expenses": 0,
+          "shopping_expenses": 0,
+          "phone_expenses": 0,
+          "other_expenses": 0,
+          "paut_total_meters": 0,
+          "tofd_total_meters": 0,
+          "construction_projects": [],
+          "ndt_methods_used": [],
+          "total_working_days": 3,
+          "total_days_in_month": 31
+        }
+      }
+    },
+    "nguyenphihung": {
       "info": {
         "name": "nguyenphihung",
-        "msnv": "HTNV-008",
+        "msnv": "nguyenphihung",
         "email": "",
         "position": null,
         "department": null,
@@ -16,7 +111,7 @@
       },
       "attendance": {
         "days": {
-          "2025-07-01": {
+          "day_01": {
             "type": "W",
             "location": "HEINEKEN",
             "method": "",
@@ -24,7 +119,9 @@
             "tofd_meters": 0,
             "day_shift": true,
             "night_shift": false,
-            "overtime": 0,
+            "day_overtime_end": "",
+            "night_overtime_end": "",
+            "overtime_hours": 0,
             "hotel_expense": 0,
             "shopping_expense": 0,
             "phone_expense": 0,
@@ -34,7 +131,7 @@
             "created_at": "2025-08-30 06:18:01",
             "updated_at": "2025-08-30 06:18:01"
           },
-          "2025-07-02": {
+          "day_02": {
             "type": "O",
             "location": "",
             "method": "",
@@ -42,7 +139,9 @@
             "tofd_meters": 0,
             "day_shift": true,
             "night_shift": false,
-            "overtime": 0,
+            "day_overtime_end": "",
+            "night_overtime_end": "",
+            "overtime_hours": 0,
             "hotel_expense": 0,
             "shopping_expense": 0,
             "phone_expense": 0,
@@ -52,7 +151,7 @@
             "created_at": "2025-08-30 06:18:14",
             "updated_at": "2025-08-30 06:19:30"
           },
-          "2025-07-03": {
+          "day_03": {
             "type": "W",
             "location": "SOLTEC",
             "method": "PAUT",
@@ -60,7 +159,9 @@
             "tofd_meters": 0,
             "day_shift": true,
             "night_shift": false,
-            "overtime": 0,
+            "day_overtime_end": "",
+            "night_overtime_end": "",
+            "overtime_hours": 0,
             "hotel_expense": 0,
             "shopping_expense": 0,
             "phone_expense": 0,
@@ -70,7 +171,7 @@
             "created_at": "2025-08-30 06:19:50",
             "updated_at": "2025-08-30 06:19:50"
           },
-          "2025-07-04": {
+          "day_04": {
             "type": "W",
             "location": "SOLTEC",
             "method": "PAUT",
@@ -78,7 +179,9 @@
             "tofd_meters": 0,
             "day_shift": true,
             "night_shift": false,
-            "overtime": 0,
+            "day_overtime_end": "",
+            "night_overtime_end": "",
+            "overtime_hours": 0,
             "hotel_expense": 0,
             "shopping_expense": 0,
             "phone_expense": 0,
@@ -88,7 +191,7 @@
             "created_at": "2025-08-30 06:22:27",
             "updated_at": "2025-08-30 06:22:27"
           },
-          "2025-07-05": {
+          "day_05": {
             "type": "O",
             "location": "",
             "method": "",
@@ -96,7 +199,9 @@
             "tofd_meters": 0,
             "day_shift": true,
             "night_shift": false,
-            "overtime": 0,
+            "day_overtime_end": "",
+            "night_overtime_end": "",
+            "overtime_hours": 0,
             "hotel_expense": 0,
             "shopping_expense": 0,
             "phone_expense": 0,
@@ -106,7 +211,7 @@
             "created_at": "2025-08-30 06:22:36",
             "updated_at": "2025-08-30 06:22:36"
           },
-          "2025-07-07": {
+          "day_07": {
             "type": "O",
             "location": "",
             "method": "",
@@ -114,7 +219,9 @@
             "tofd_meters": 0,
             "day_shift": true,
             "night_shift": false,
-            "overtime": 0,
+            "day_overtime_end": "",
+            "night_overtime_end": "",
+            "overtime_hours": 0,
             "hotel_expense": 0,
             "shopping_expense": 0,
             "phone_expense": 0,
@@ -124,7 +231,7 @@
             "created_at": "2025-08-30 06:23:07",
             "updated_at": "2025-08-30 06:23:07"
           },
-          "2025-07-08": {
+          "day_08": {
             "type": "O",
             "location": "",
             "method": "",
@@ -132,7 +239,9 @@
             "tofd_meters": 0,
             "day_shift": true,
             "night_shift": false,
-            "overtime": 0,
+            "day_overtime_end": "",
+            "night_overtime_end": "",
+            "overtime_hours": 0,
             "hotel_expense": 0,
             "shopping_expense": 0,
             "phone_expense": 0,
@@ -142,7 +251,7 @@
             "created_at": "2025-08-30 06:23:24",
             "updated_at": "2025-08-30 06:23:24"
           },
-          "2025-07-09": {
+          "day_09": {
             "type": "W",
             "location": "CSWIND",
             "method": "",
@@ -150,7 +259,9 @@
             "tofd_meters": 0,
             "day_shift": false,
             "night_shift": true,
-            "overtime": 0,
+            "day_overtime_end": "",
+            "night_overtime_end": "",
+            "overtime_hours": 0,
             "hotel_expense": 0,
             "shopping_expense": 0,
             "phone_expense": 0,
@@ -160,7 +271,7 @@
             "created_at": "2025-08-30 06:23:46",
             "updated_at": "2025-08-30 06:23:46"
           },
-          "2025-07-10": {
+          "day_10": {
             "type": "O",
             "location": "",
             "method": "",
@@ -168,7 +279,9 @@
             "tofd_meters": 0,
             "day_shift": true,
             "night_shift": false,
-            "overtime": 0,
+            "day_overtime_end": "",
+            "night_overtime_end": "",
+            "overtime_hours": 0,
             "hotel_expense": 0,
             "shopping_expense": 0,
             "phone_expense": 0,
@@ -178,7 +291,7 @@
             "created_at": "2025-08-30 06:24:14",
             "updated_at": "2025-08-30 06:24:14"
           },
-          "2025-07-11": {
+          "day_11": {
             "type": "O",
             "location": "",
             "method": "",
@@ -186,7 +299,9 @@
             "tofd_meters": 0,
             "day_shift": true,
             "night_shift": false,
-            "overtime": 0,
+            "day_overtime_end": "",
+            "night_overtime_end": "",
+            "overtime_hours": 0,
             "hotel_expense": 0,
             "shopping_expense": 0,
             "phone_expense": 0,
@@ -196,7 +311,7 @@
             "created_at": "2025-08-30 06:24:24",
             "updated_at": "2025-08-30 06:24:24"
           },
-          "2025-07-12": {
+          "day_12": {
             "type": "O",
             "location": "",
             "method": "",
@@ -204,7 +319,9 @@
             "tofd_meters": 0,
             "day_shift": true,
             "night_shift": false,
-            "overtime": 0,
+            "day_overtime_end": "",
+            "night_overtime_end": "",
+            "overtime_hours": 0,
             "hotel_expense": 0,
             "shopping_expense": 0,
             "phone_expense": 0,
@@ -214,7 +331,7 @@
             "created_at": "2025-08-30 06:24:34",
             "updated_at": "2025-08-30 06:24:34"
           },
-          "2025-07-14": {
+          "day_14": {
             "type": "O",
             "location": "",
             "method": "",
@@ -222,7 +339,9 @@
             "tofd_meters": 0,
             "day_shift": true,
             "night_shift": false,
-            "overtime": 0,
+            "day_overtime_end": "",
+            "night_overtime_end": "",
+            "overtime_hours": 0,
             "hotel_expense": 0,
             "shopping_expense": 0,
             "phone_expense": 0,
@@ -232,7 +351,7 @@
             "created_at": "2025-08-30 06:24:52",
             "updated_at": "2025-08-30 06:24:52"
           },
-          "2025-07-15": {
+          "day_15": {
             "type": "O",
             "location": "",
             "method": "",
@@ -240,7 +359,9 @@
             "tofd_meters": 0,
             "day_shift": true,
             "night_shift": false,
-            "overtime": 0,
+            "day_overtime_end": "",
+            "night_overtime_end": "",
+            "overtime_hours": 0,
             "hotel_expense": 0,
             "shopping_expense": 0,
             "phone_expense": 0,
@@ -250,7 +371,7 @@
             "created_at": "2025-08-30 06:25:12",
             "updated_at": "2025-08-30 06:25:12"
           },
-          "2025-07-16": {
+          "day_16": {
             "type": "O",
             "location": "",
             "method": "",
@@ -258,7 +379,9 @@
             "tofd_meters": 0,
             "day_shift": true,
             "night_shift": false,
-            "overtime": 0,
+            "day_overtime_end": "",
+            "night_overtime_end": "",
+            "overtime_hours": 0,
             "hotel_expense": 0,
             "shopping_expense": 0,
             "phone_expense": 0,
@@ -268,7 +391,7 @@
             "created_at": "2025-08-30 06:25:21",
             "updated_at": "2025-08-30 06:25:21"
           },
-          "2025-07-17": {
+          "day_17": {
             "type": "O",
             "location": "",
             "method": "",
@@ -276,7 +399,9 @@
             "tofd_meters": 0,
             "day_shift": true,
             "night_shift": false,
-            "overtime": 0,
+            "day_overtime_end": "",
+            "night_overtime_end": "",
+            "overtime_hours": 0,
             "hotel_expense": 0,
             "shopping_expense": 0,
             "phone_expense": 0,
@@ -286,7 +411,7 @@
             "created_at": "2025-08-30 06:25:29",
             "updated_at": "2025-08-30 06:25:29"
           },
-          "2025-07-18": {
+          "day_18": {
             "type": "W",
             "location": "CAMBODIA",
             "method": "PAUT",
@@ -294,7 +419,9 @@
             "tofd_meters": 0,
             "day_shift": true,
             "night_shift": false,
-            "overtime": 0,
+            "day_overtime_end": "",
+            "night_overtime_end": "",
+            "overtime_hours": 0,
             "hotel_expense": 0,
             "shopping_expense": 0,
             "phone_expense": 0,
@@ -304,7 +431,7 @@
             "created_at": "2025-08-30 06:26:14",
             "updated_at": "2025-08-30 06:28:02"
           },
-          "2025-07-19": {
+          "day_19": {
             "type": "W",
             "location": "CAMBODIA",
             "method": "PAUT",
@@ -312,7 +439,9 @@
             "tofd_meters": 0,
             "day_shift": true,
             "night_shift": false,
-            "overtime": 0,
+            "day_overtime_end": "",
+            "night_overtime_end": "",
+            "overtime_hours": 0,
             "hotel_expense": 0,
             "shopping_expense": 0,
             "phone_expense": 0,
@@ -322,7 +451,7 @@
             "created_at": "2025-08-30 06:28:18",
             "updated_at": "2025-08-30 06:28:18"
           },
-          "2025-07-20": {
+          "day_20": {
             "type": "W",
             "location": "CAMBODIA",
             "method": "PAUT",
@@ -330,7 +459,9 @@
             "tofd_meters": 0,
             "day_shift": true,
             "night_shift": false,
-            "overtime": 0,
+            "day_overtime_end": "",
+            "night_overtime_end": "",
+            "overtime_hours": 0,
             "hotel_expense": 0,
             "shopping_expense": 0,
             "phone_expense": 0,
@@ -340,7 +471,7 @@
             "created_at": "2025-08-30 06:28:34",
             "updated_at": "2025-08-30 06:28:34"
           },
-          "2025-07-21": {
+          "day_21": {
             "type": "O",
             "location": "",
             "method": "",
@@ -348,7 +479,9 @@
             "tofd_meters": 0,
             "day_shift": true,
             "night_shift": false,
-            "overtime": 0,
+            "day_overtime_end": "",
+            "night_overtime_end": "",
+            "overtime_hours": 0,
             "hotel_expense": 0,
             "shopping_expense": 0,
             "phone_expense": 0,
@@ -358,7 +491,7 @@
             "created_at": "2025-08-30 06:28:56",
             "updated_at": "2025-08-30 06:28:56"
           },
-          "2025-07-22": {
+          "day_22": {
             "type": "O",
             "location": "",
             "method": "",
@@ -366,7 +499,9 @@
             "tofd_meters": 0,
             "day_shift": true,
             "night_shift": false,
-            "overtime": 0,
+            "day_overtime_end": "",
+            "night_overtime_end": "",
+            "overtime_hours": 0,
             "hotel_expense": 0,
             "shopping_expense": 0,
             "phone_expense": 0,
@@ -376,7 +511,7 @@
             "created_at": "2025-08-30 06:29:07",
             "updated_at": "2025-08-30 06:29:07"
           },
-          "2025-07-23": {
+          "day_23": {
             "type": "O",
             "location": "",
             "method": "",
@@ -384,7 +519,9 @@
             "tofd_meters": 0,
             "day_shift": true,
             "night_shift": false,
-            "overtime": 0,
+            "day_overtime_end": "",
+            "night_overtime_end": "",
+            "overtime_hours": 0,
             "hotel_expense": 0,
             "shopping_expense": 0,
             "phone_expense": 0,
@@ -394,7 +531,7 @@
             "created_at": "2025-08-30 06:29:15",
             "updated_at": "2025-08-30 06:29:15"
           },
-          "2025-07-24": {
+          "day_24": {
             "type": "O",
             "location": "",
             "method": "",
@@ -402,7 +539,9 @@
             "tofd_meters": 0,
             "day_shift": true,
             "night_shift": false,
-            "overtime": 0,
+            "day_overtime_end": "",
+            "night_overtime_end": "",
+            "overtime_hours": 0,
             "hotel_expense": 0,
             "shopping_expense": 0,
             "phone_expense": 0,
@@ -412,7 +551,7 @@
             "created_at": "2025-08-30 06:29:24",
             "updated_at": "2025-08-30 06:29:24"
           },
-          "2025-07-25": {
+          "day_25": {
             "type": "W",
             "location": "CSWIND",
             "method": "PAUT",
@@ -420,7 +559,9 @@
             "tofd_meters": 0,
             "day_shift": false,
             "night_shift": true,
-            "overtime": 0,
+            "day_overtime_end": "",
+            "night_overtime_end": "",
+            "overtime_hours": 0,
             "hotel_expense": 0,
             "shopping_expense": 0,
             "phone_expense": 0,
@@ -430,7 +571,7 @@
             "created_at": "2025-08-30 06:29:47",
             "updated_at": "2025-08-30 06:29:47"
           },
-          "2025-07-26": {
+          "day_26": {
             "type": "W",
             "location": "CDWIND",
             "method": "PAUT",
@@ -438,7 +579,9 @@
             "tofd_meters": 0,
             "day_shift": true,
             "night_shift": false,
-            "overtime": 0,
+            "day_overtime_end": "",
+            "night_overtime_end": "",
+            "overtime_hours": 0,
             "hotel_expense": 0,
             "shopping_expense": 0,
             "phone_expense": 0,
@@ -448,7 +591,7 @@
             "created_at": "2025-08-30 06:30:32",
             "updated_at": "2025-08-30 06:30:32"
           },
-          "2025-07-28": {
+          "day_28": {
             "type": "W",
             "location": "DLHI",
             "method": "UT",
@@ -456,7 +599,9 @@
             "tofd_meters": 0,
             "day_shift": true,
             "night_shift": false,
-            "overtime": 0,
+            "day_overtime_end": "",
+            "night_overtime_end": "",
+            "overtime_hours": 0,
             "hotel_expense": 0,
             "shopping_expense": 0,
             "phone_expense": 0,
@@ -466,7 +611,7 @@
             "created_at": "2025-08-30 07:02:30",
             "updated_at": "2025-08-30 07:02:30"
           },
-          "2025-07-29": {
+          "day_29": {
             "type": "W",
             "location": "CSWIND",
             "method": "PAUT",
@@ -474,7 +619,9 @@
             "tofd_meters": 0,
             "day_shift": true,
             "night_shift": false,
-            "overtime": 0,
+            "day_overtime_end": "",
+            "night_overtime_end": "",
+            "overtime_hours": 0,
             "hotel_expense": 0,
             "shopping_expense": 0,
             "phone_expense": 0,
@@ -484,7 +631,7 @@
             "created_at": "2025-08-30 07:02:58",
             "updated_at": "2025-08-30 07:02:58"
           },
-          "2025-07-30": {
+          "day_30": {
             "type": "O",
             "location": "",
             "method": "",
@@ -492,7 +639,9 @@
             "tofd_meters": 0,
             "day_shift": true,
             "night_shift": false,
-            "overtime": 3,
+            "day_overtime_end": "",
+            "night_overtime_end": "",
+            "overtime_hours": 0,
             "hotel_expense": 0,
             "shopping_expense": 0,
             "phone_expense": 0,
@@ -500,9 +649,9 @@
             "other_expense_desc": "",
             "note": "",
             "created_at": "2025-08-30 07:03:11",
-            "updated_at": "2025-09-02 07:27:29"
+            "updated_at": "2025-08-30 07:03:11"
           },
-          "2025-07-31": {
+          "day_31": {
             "type": "O",
             "location": "",
             "method": "",
@@ -510,7 +659,9 @@
             "tofd_meters": 0,
             "day_shift": true,
             "night_shift": false,
-            "overtime": 0,
+            "day_overtime_end": "",
+            "night_overtime_end": "",
+            "overtime_hours": 0,
             "hotel_expense": 0,
             "shopping_expense": 0,
             "phone_expense": 0,
@@ -527,13 +678,14 @@
           "total_training_days": 0,
           "total_leave_days": 0,
           "total_absent_days": 0,
-          "total_overtime_hours": 3,
-          "total_hotel": 0,
-          "total_shopping": 0,
-          "total_phone": 0,
-          "total_other": 0,
-          "total_paut_meters": 0,
-          "total_tofd_meters": 0,
+          "total_overtime_hours": 0,
+          "total_expenses": 0.0,
+          "hotel_expenses": 0,
+          "shopping_expenses": 0,
+          "phone_expenses": 0,
+          "other_expenses": 0,
+          "paut_total_meters": 0,
+          "tofd_total_meters": 0,
           "construction_projects": [
             "HEINEKEN",
             "SOLTEC",
@@ -546,56 +698,8 @@
             "PAUT",
             "UT"
           ],
-          "sunday_200_hours": 8.0
-        }
-      }
-    },
-    "admin": {
-      "info": {
-        "name": "admin",
-        "msnv": "admin",
-        "email": "phihung13102@gmail.com",
-        "position": null,
-        "department": null,
-        "phone": null
-      },
-      "attendance": {
-        "days": {
-          "2025-07-03": {
-            "type": "O",
-            "location": "",
-            "method": "",
-            "paut_meters": 0,
-            "tofd_meters": 0,
-            "day_shift": true,
-            "night_shift": false,
-            "overtime": 0,
-            "hotel_expense": 0,
-            "shopping_expense": 0,
-            "phone_expense": 0,
-            "other_expense": 0,
-            "other_expense_desc": "",
-            "note": "",
-            "created_at": "2025-09-04 10:29:19",
-            "updated_at": "2025-09-04 10:29:19"
-          }
-        },
-        "summary": {
-          "total_work_days": 0,
-          "total_office_days": 1,
-          "total_training_days": 0,
-          "total_leave_days": 0,
-          "total_absent_days": 0,
-          "total_overtime_hours": 0,
-          "total_hotel": 0,
-          "total_shopping": 0,
-          "total_phone": 0,
-          "total_other": 0,
-          "total_paut_meters": 0,
-          "total_tofd_meters": 0,
-          "construction_projects": [],
-          "ndt_methods_used": [],
-          "sunday_200_hours": 0.0
+          "total_working_days": 28,
+          "total_days_in_month": 31
         }
       }
     }

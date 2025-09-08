@@ -1499,7 +1499,7 @@ class Attendance(models.Model):
     class Meta:
         verbose_name = 'Chấm công'
         verbose_name_plural = 'Chấm công'
-        unique_together = ['employee', 'date']
+        # Bỏ unique_together để cho phép nhiều ca trong 1 ngày
         ordering = ['-date', '-created_at']
     
     def __str__(self):

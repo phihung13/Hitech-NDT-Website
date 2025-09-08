@@ -4,7 +4,9 @@ from PyQt5.QtCore import QTimer, pyqtSignal
 from nhanvien import TabNhanVien
 from quy_dinh_luong import TabQuyDinhLuong
 from bang_cong import TabBangCong
+# from cham_cong_chi_tiet import TabChamCongChiTiet  # Đã xóa tab này
 from phieu_luong import TabPhieuLuong
+from phieu_luong_2 import PhieuLuong2
 from tong_luong import TabTongLuong
 from data_manager import DataManager
 
@@ -44,6 +46,12 @@ class MainWindow(QMainWindow):
         
         self.tabs.addTab(self.tab_quydinh, "Quy định lương")
         
+        # Đã xóa tab Chấm công chi tiết theo yêu cầu
+        # self.tab_chamcong_chitiet = TabChamCongChiTiet(
+        #     on_data_changed=self.on_chamcong_data_changed
+        # )
+        # self.tabs.addTab(self.tab_chamcong_chitiet, "Chấm công chi tiết")
+        
         # Tạo tab Bảng công trước
         self.tab_bangcong = TabBangCong(
             on_data_changed=self.on_chamcong_data_changed,
@@ -51,9 +59,13 @@ class MainWindow(QMainWindow):
         )
         self.tabs.addTab(self.tab_bangcong, "Bảng công tổng hợp")
         
-        # Tạo tab phiếu lương
+        # Tạo tab phiếu lương (cũ)
         self.tab_phieuluong = TabPhieuLuong()
         self.tabs.addTab(self.tab_phieuluong, "Phiếu lương")
+        
+        # Tạo tab phiếu lương 2 (mới) - kết nối với tab bảng công
+        self.tab_phieuluong2 = PhieuLuong2(bang_cong_tab=self.tab_bangcong)
+        self.tabs.addTab(self.tab_phieuluong2, "Phiếu lương 2")
         
         # Tạo tab Tổng lương với reference đến tab phiếu lương
         self.tab_tongluong = TabTongLuong({}, self.tab_phieuluong)
@@ -65,19 +77,36 @@ class MainWindow(QMainWindow):
         # Kết nối signals
         self.data_changed.connect(self.refresh_all_tabs)
         
-    def on_chamcong_data_changed(self, data_chamcong):
+    def on_chamcong_data_changed(self, data_with_period=None):
         """Xử lý khi dữ liệu chấm công thay đổi"""
         try:
             print("=== DỮ LIỆU CHẤM CÔNG ĐÃ THAY ĐỔI ===")
-            # print(f"DEBUG: Số nhân viên trong dữ liệu chấm công: {len(data_chamcong)}")
             
-            # 1. Cập nhật dữ liệu cho tab phiếu lương (sẽ tự động tính toán)
-            # print("DEBUG: Cập nhật tab phiếu lương...")
-            self.tab_phieuluong.update_chamcong_data(data_chamcong)
+            # Xử lý dữ liệu với period
+            if isinstance(data_with_period, dict) and 'period' in data_with_period:
+                data_chamcong = data_with_period.get('data', {})
+                period = data_with_period.get('period')
+                print(f"📅 Period được import: {period}")
+            else:
+                # Tương thích với định dạng cũ
+                data_chamcong = data_with_period
+                period = None
+                print("⚠️ Không có thông tin period")
+            
+            # 1. Cập nhật dữ liệu cho tab phiếu lương (với period nếu có)
+            if hasattr(self, 'tab_phieuluong') and self.tab_phieuluong:
+                if hasattr(self.tab_phieuluong, 'update_chamcong_data_with_period') and period:
+                    self.tab_phieuluong.update_chamcong_data_with_period(data_chamcong, period)
+                else:
+                    self.tab_phieuluong.update_chamcong_data(data_chamcong)
+            else:
+                print("⚠️ Tab phiếu lương chưa được khởi tạo")
             
             # 2. Cập nhật tab tổng lương với dữ liệu đã tính toán
-            # print("DEBUG: Cập nhật tab tổng lương...")
-            self.tab_tongluong.update_data(data_chamcong)
+            if hasattr(self, 'tab_tongluong') and self.tab_tongluong:
+                self.tab_tongluong.update_data(data_chamcong)
+            else:
+                print("⚠️ Tab tổng lương chưa được khởi tạo")
             
             print("✅ Đã hoàn thành cập nhật dữ liệu lương!")
             
