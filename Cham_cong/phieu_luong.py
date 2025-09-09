@@ -1500,7 +1500,21 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
                             
                             # Đếm các loại ngày làm việc
                             if day_type == 'W':  # Công trường
-                                total_work_days += 1
+                                # Lấy thông tin ca ngày và ca đêm
+                                day_shift = day_data.get('day_shift', False)
+                                night_shift = day_data.get('night_shift', False)
+                                
+                                # Tính công trường theo ca:
+                                # - Sáng W + Tối W = 2W
+                                # - Chỉ sáng W hoặc chỉ tối W = 1W
+                                if day_shift and night_shift:
+                                    total_work_days += 2  # Cả sáng và tối
+                                    print(f"📅 {day_key}: Sáng W + Tối W = 2W")
+                                elif day_shift or night_shift:
+                                    total_work_days += 1  # Chỉ sáng hoặc chỉ tối
+                                    shift_type = "Sáng" if day_shift else "Tối"
+                                    print(f"📅 {day_key}: {shift_type} W = 1W")
+                                
                                 # Tính xăng xe cho công trường có địa điểm
                                 if location:
                                     # TODO: Tính xăng xe dựa trên địa điểm

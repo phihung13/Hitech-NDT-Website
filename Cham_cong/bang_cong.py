@@ -229,7 +229,25 @@ class BangCongDialog(QDialog):
             if isinstance(day_data, dict):
                 # Dữ liệu JSON chi tiết từ website
                 table.setItem(day-1, 0, QTableWidgetItem(str(day)))
-                table.setItem(day-1, 1, QTableWidgetItem(day_data.get('type', '')))
+                
+                # Ghép ký tự ca ngày + ca đêm để hiển thị
+                day_shift_type = day_data.get('type', '')
+                night_shift_type = day_data.get('type', '')  # Mặc định cùng loại
+                day_shift = day_data.get('day_shift', False)
+                night_shift = day_data.get('night_shift', False)
+                
+                # Tạo ký tự hiển thị: sáng + tối
+                display_type = ""
+                if day_shift and night_shift:
+                    display_type = f"{day_shift_type}{night_shift_type}"  # WW, OO, TT
+                elif day_shift:
+                    display_type = day_shift_type  # W, O, T
+                elif night_shift:
+                    display_type = night_shift_type  # W, O, T
+                else:
+                    display_type = day_data.get('type', '')
+                
+                table.setItem(day-1, 1, QTableWidgetItem(display_type))
                 table.setItem(day-1, 2, QTableWidgetItem(day_data.get('location', '')))
                 table.setItem(day-1, 3, QTableWidgetItem(day_data.get('method', '')))
                 
@@ -1946,12 +1964,33 @@ class TabBangCong(QWidget):
                     
                     # Nếu là chủ nhật (weekday = 6)
                     if weekday == 6:
-                        col_index = day + 1  # +2 cho "Tên nhân viên" và "Chi tiết", -1 vì day bắt đầu từ 1
+                        col_index = 2 + (day - 1)  # +2 cho "Tên nhân viên" và "Chi tiết"
                         
-                        # Lưu thông tin cột chủ nhật để set background sau
-                        if not hasattr(self, 'sunday_columns'):
-                            self.sunday_columns = []
-                        self.sunday_columns.append(col_index)
+                        # Tô màu header cột chủ nhật
+                        header_item = self.table_widget.horizontalHeaderItem(col_index)
+                        if header_item:
+                            header_item.setBackground(QColor("#fff3cd"))  # Vàng nhạt
+                            header_item.setForeground(QColor("#856404"))  # Chữ đậm hơn
+                        
+                        # Tô màu tất cả cells trong cột chủ nhật
+                        for row in range(self.table_widget.rowCount()):
+                            cell_item = self.table_widget.item(row, col_index)
+                            if cell_item:
+                                # Giữ màu gốc nếu có, chỉ thêm màu nền vàng nhạt
+                                current_bg = cell_item.background()
+                                if not current_bg.color().isValid():
+                                    cell_item.setBackground(QColor("#fff3cd"))  # Vàng nhạt
+                                else:
+                                    # Nếu đã có màu, pha trộn với vàng
+                                    original_color = current_bg.color()
+                                    mixed_color = QColor(
+                                        min(255, original_color.red() + 50),
+                                        min(255, original_color.green() + 50), 
+                                        min(255, original_color.blue() - 50)
+                                    )
+                                    cell_item.setBackground(mixed_color)
+                        
+                        print(f"🎨 Đã tô màu vàng cho cột chủ nhật ngày {day}")
                         
                 except ValueError:
                     # Bỏ qua ngày không hợp lệ
@@ -2067,8 +2106,9 @@ class TabBangCong(QWidget):
                 if item:
                     item.setToolTip(tooltip)
 
-            # Tính các cột chủ nhật
+            # Tính các cột chủ nhật và tô màu
             sunday_cols = set()
+            self.highlight_sunday_columns(month, year, days_in_month)
             for d in range(1, days_in_month + 1):
                 if datetime(year, month, d).weekday() == 6:
                     sunday_cols.add(2 + (d - 1))
@@ -2165,7 +2205,7 @@ class TabBangCong(QWidget):
                     item = QTableWidgetItem(day_value)
                     # Chủ nhật tô vàng ưu tiên
                     if col in sunday_cols:
-                        item.setBackground(QColor("#fff3cd"))
+                        item.setBackground(QColor("#fff3cd"))  # Vàng nhạt cho chủ nhật
                         item.setData(Qt.UserRole, 'sunday')
                     else:
                         item.setBackground(color_for_type(day_value))
@@ -2197,6 +2237,9 @@ class TabBangCong(QWidget):
                 set_summary(17, summary.get('total_other_expense', 0))
                 set_summary(18, ", ".join(summary.get('construction_projects', [])))
                 set_summary(19, ", ".join(summary.get('ndt_methods_used', [])))
+            
+            # Tô màu vàng cho tất cả các cột chủ nhật sau khi đã điền hết dữ liệu
+            self.highlight_sunday_columns(month, year, days_in_month)
         
         except Exception as e:
             print(f"Lỗi update table: {e}")

@@ -313,22 +313,40 @@ class TabChamCongChiTiet(QWidget):
                     
                     if day in days_data:
                         day_info = days_data[day]
-                        work_type = day_info.get('type', '')
+                        
+                        # Ghép ký tự ca ngày + ca đêm để hiển thị
+                        day_shift_type = day_info.get('type', '')
+                        night_shift_type = day_info.get('type', '')  # Mặc định cùng loại
+                        day_shift = day_info.get('day_shift', False)
+                        night_shift = day_info.get('night_shift', False)
+                        
+                        # Tạo ký tự hiển thị: sáng + tối
+                        work_type = ""
+                        if day_shift and night_shift:
+                            work_type = f"{day_shift_type}{night_shift_type}"  # WW, OO, TT
+                        elif day_shift:
+                            work_type = day_shift_type  # W, O, T
+                        elif night_shift:
+                            work_type = night_shift_type  # W, O, T
+                        else:
+                            work_type = day_info.get('type', '')
                         
                         # Tạo item với màu sắc
                         item = QTableWidgetItem(work_type)
                         
                         # Màu sắc theo loại công việc
-                        if work_type == 'W':
+                        if work_type in ['W', 'WW']:
                             item.setBackground(QColor("#d4edda"))  # Xanh lá - Công trường
-                        elif work_type == 'O':
+                        elif work_type in ['O', 'OO']:
                             item.setBackground(QColor("#d1ecf1"))  # Xanh dương - Văn phòng
-                        elif work_type == 'T':
+                        elif work_type in ['T', 'TT']:
                             item.setBackground(QColor("#fff3cd"))  # Vàng - Đào tạo
-                        elif work_type == 'P':
+                        elif work_type in ['P', 'PP']:
                             item.setBackground(QColor("#f8d7da"))  # Đỏ nhạt - Nghỉ có phép
-                        elif work_type == 'N':
+                        elif work_type in ['N', 'NN']:
                             item.setBackground(QColor("#f5c6cb"))  # Đỏ - Nghỉ không phép
+                        elif work_type in ['OW', 'WO', 'OT', 'TO', 'WT', 'TW']:
+                            item.setBackground(QColor("#e2e3e5"))  # Xám - Ca hỗn hợp
                         
                         self.table_widget.setItem(row, col_index, item)
                         
