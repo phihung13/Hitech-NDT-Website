@@ -159,17 +159,6 @@ class DataManager:
             luong_nv = data.get("luong_nv", [])
             phu_cap_ct = data.get("phu_cap_ct", [])
             
-            # Debug: In ra dữ liệu lương để kiểm tra
-            print(f"🔍 DEBUG - Load quy định lương:")
-            print(f"   📁 File: {self.quydinh_file}")
-            print(f"    Số lượng bản ghi lương: {len(luong_nv)}")
-            
-            for i, luong in enumerate(luong_nv):
-                if isinstance(luong, list) and len(luong) >= 4:
-                    name = luong[1] if len(luong) > 1 else "N/A"
-                    salary = luong[3] if len(luong) > 3 else "N/A"
-                    print(f"   👤 {i}: {name} - Lương: {salary}")
-            
             return luong_nv, phu_cap_ct
         return [], []
     

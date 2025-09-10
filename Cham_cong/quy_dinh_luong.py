@@ -486,11 +486,8 @@ class TabQuyDinhLuong(QWidget):
 
     def capnhat_bang_luong(self):
         self.tableLuong.setRowCount(0)
-        print(f" DEBUG - Cập nhật bảng lương:")
-        print(f"   📊 Số lượng bản ghi: {len(self.ds_luong_nv)}")
         
         for i, luong in enumerate(self.ds_luong_nv):
-            print(f"   📋 Bản ghi {i}: {luong}")
             row = self.tableLuong.rowCount()
             self.tableLuong.insertRow(row)
             

@@ -1037,19 +1037,16 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
         """Xử lý khi thay đổi nhân viên"""
         try:
             selected_employee = self.comboNhanVien.currentText()
-            print(f"Debug: on_employee_changed - selected_employee = {selected_employee}")
             
             # Xóa dữ liệu cũ trước khi tải dữ liệu mới
             self.clear_salary_data()
             
             if selected_employee and selected_employee != "---":
                 self.current_employee = selected_employee
-                print(f"Debug: Đã chọn nhân viên: {self.current_employee}")
                 self.update_employee_info()
                 self.auto_fill_salary_data()
             else:
                 self.current_employee = None
-                print("Debug: Không chọn nhân viên nào")
                 self.update_employee_info()
         except Exception as e:
             print(f"Lỗi khi thay đổi nhân viên: {e}")
@@ -1059,62 +1056,42 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
     def auto_fill_salary_data(self):
         """Tự động điền dữ liệu lương dựa trên nhân viên và tháng được chọn"""
         try:
-            print("=== BẮT ĐẦU auto_fill_salary_data ===")
-            
             if not self.current_employee:
-                print("Debug: Không có nhân viên được chọn")
                 return
-            
-            print(f"Debug: Nhân viên hiện tại = {self.current_employee}")
             
             # Ưu tiên sử dụng period từ JSON được import, fallback về combo box
             if hasattr(self, 'current_period') and self.current_period:
                 month_year = self.current_period
-                print(f"📅 Sử dụng period từ JSON: {month_year}")
             else:
                 # Lấy tháng và năm được chọn từ combo box
                 month, year = self.get_selected_month_year()
                 month_year = f"{month:02d}/{year}"
-                print(f"📅 Sử dụng period từ combo box: {month_year}")
             
-            # Debug: Kiểm tra dữ liệu chấm công có tồn tại không
-            print(f"Debug: self.data_chamcong keys = {list(self.data_chamcong.keys()) if hasattr(self, 'data_chamcong') and self.data_chamcong else 'KHÔNG CÓ'}")
-            
+            # Lấy dữ liệu chấm công
             chamcong_data = self.get_chamcong_data(month_year)
-            print(f"Debug: chamcong_data từ get_chamcong_data = {type(chamcong_data)} - {bool(chamcong_data)}")
             
             # Lấy dữ liệu lương
             luong_data = self.get_luong_data()
-            print(f"Debug: luong_data = {type(luong_data)} - {bool(luong_data)}")
             
             # Điền dữ liệu chấm công
             if chamcong_data:
-                print("🟢 Debug: Có dữ liệu chấm công, gọi fill_chamcong_data")
                 try:
                     self.fill_chamcong_data(chamcong_data)
-                    print("✅ Debug: Đã gọi xong fill_chamcong_data THÀNH CÔNG")
                 except Exception as e:
-                    print(f"❌ Debug: LỖI khi gọi fill_chamcong_data: {e}")
-                    import traceback
-                    traceback.print_exc()
+                    print(f"Lỗi khi điền dữ liệu chấm công: {e}")
             else:
-                print("🔴 Debug: KHÔNG CÓ dữ liệu chấm công!")
-                print(f"   - Tháng/năm tìm kiếm: {month_year}")
-                print(f"   - Nhân viên hiện tại: {self.current_employee}")
-                print(f"   - MSNV hiện tại: {self.get_current_msnv()}")
                 # Xóa dữ liệu cũ nếu không có dữ liệu mới
                 self.clear_salary_data()
+            
+            # Load dữ liệu đã chỉnh sửa sau khi fill_chamcong_data
+            self.load_saved_xang_xe_mua_sam_data()
             
             # Điền dữ liệu lương
             if luong_data:
-                print("Debug: Có dữ liệu lương, gọi fill_luong_data")
                 self.fill_luong_data(luong_data)
             else:
-                print("Debug: KHÔNG CÓ dữ liệu lương!")
                 # Xóa dữ liệu cũ nếu không có dữ liệu mới
                 self.clear_salary_data()
-            
-            print("=== KẾT THÚC auto_fill_salary_data ===")
             
             # Đảm bảo tổng cộng được cập nhật cuối cùng
             self.update_totals()
@@ -1313,8 +1290,6 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
             if not self.current_employee:
                 return {}
             
-            print(f"🔍 DEBUG: current_employee = '{self.current_employee}'")
-            
             # Thử lấy MSNV từ EmployeeMapper theo tên hiện tại nếu có
             msnv_current = None
             try:
@@ -1329,14 +1304,6 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
             except Exception:
                 msnv_current = None
             
-            print(f"🔍 DEBUG: msnv_current = '{msnv_current}'")
-            print(f"🔍 DEBUG: ds_luong type = {type(self.ds_luong)}")
-            if self.ds_luong and isinstance(self.ds_luong, tuple) and len(self.ds_luong) >= 2:
-                print(f"🔍 DEBUG: nhan_vien_list length = {len(self.ds_luong[0])}")
-                for i, luong in enumerate(self.ds_luong[0][:3]):  # Chỉ in 3 record đầu
-                    if isinstance(luong, list) and len(luong) >= 2:
-                        print(f"   Record {i}: MSNV='{luong[0]}', Tên='{luong[1]}'")
-            
             if self.ds_luong:
                 # ds_luong là tuple với 2 phần: (nhan_vien_list, cong_ty_list)
                 if isinstance(self.ds_luong, tuple) and len(self.ds_luong) >= 2:
@@ -1347,7 +1314,6 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
                         for luong in nhan_vien_list:
                             if isinstance(luong, list) and len(luong) > 0:
                                 if str(luong[0]).strip() == str(msnv_current).strip():
-                                    print(f"✅ TÌM THẤY THEO MSNV: {msnv_current}")
                                     return luong
                     
                     # Thử tìm theo MSNV nếu current_employee có thể là MSNV
@@ -1594,7 +1560,6 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
                 if hasattr(self, 'holiday_dates') and check_date in self.holiday_dates:
                     holidays_in_month += 1
             
-            print(f"🔍 DEBUG: Các ngày chủ nhật trong tháng {current_month}/{current_year}: {sunday_dates}")
             
             # Ngày làm việc bình thường = Tổng ngày - Chủ nhật - Lễ tết
             ngay_tinh_luong = max_days_in_month - sundays_in_month - holidays_in_month
@@ -1606,10 +1571,6 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
             print(f"   Ngày làm việc bình thường (chuẩn): {ngay_tinh_luong}")
             print(f"   Chủ nhật 200%: {sunday_200_hours} giờ")
             print(f"   Lễ tết 300%: {holiday_300_hours} giờ")
-            print(f"🔍 DEBUG THÊM GIỜ:")
-            print(f"   ot_150_hours = {ot_150_hours}")
-            print(f"   sunday_200_hours = {sunday_200_hours}")  
-            print(f"   holiday_300_hours = {holiday_300_hours}")
             
             # Xử lý từng ngày (chỉ tính những thứ chưa có trong summary)
             for day_key, day_data in days_detail.items():
@@ -1711,17 +1672,9 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
                     if isinstance(tofd_meters, (int, float)) and tofd_meters > 0:
                         nang_suat_tofd += tofd_meters
             
-            print(f"=== DEBUG: DỮ LIỆU CHẤM CÔNG ===")
-            print(f"Ngày làm việc: {ngay_tinh_luong} ngày")
-            print(f"Phân loại: Công trường={ngay_cong_truong}, Văn phòng={ngay_van_phong}, Đào tạo={ngay_dao_tao}")
-            print(f"Thêm giờ: {ot_150_hours} giờ")
-            print(f"Phụ cấp: Xăng xe={tong_xang_xe:,}, Điện thoại={tong_dien_thoai:,}, Khách sạn={tong_khach_san:,}")
-            print(f"Năng suất: PAUT={nang_suat_paut:.2f}m, TOFD={nang_suat_tofd:.2f}m")
             
             # A) LƯƠNG CƠ BẢN - Số ngày làm việc bình thường vào cột 0 (CHÍNH XÁC!)
-            print(f"Debug: hasattr tableLuongCoBan = {hasattr(self, 'tableLuongCoBan')}")
             if hasattr(self, 'tableLuongCoBan') and self.tableLuongCoBan:
-                print(f"Debug: Điền ngày làm việc vào bảng lương cơ bản: {ngay_tinh_luong}")
                 
                 # Đảm bảo bảng có đủ hàng và cột
                 if self.tableLuongCoBan.rowCount() == 0:
@@ -1771,7 +1724,6 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
                 self.update_section_display("A) LƯƠNG CƠ BẢN", self.tableLuongCoBan)
         
             # B) THÊM GIỜ - Lấy từ dữ liệu chấm công
-            print(f"Debug: hasattr tableThemGio = {hasattr(self, 'tableThemGio')}")
             if hasattr(self, 'tableThemGio') and self.tableThemGio:
                 # Đảm bảo bảng có đủ hàng và cột
                 if self.tableThemGio.rowCount() == 0:
@@ -1841,16 +1793,12 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
                 total_overtime_item.setToolTip(f"🔍 CÔNG THỨC\nTổng thu nhập thêm giờ = {thanh_tien_150:,.0f} + {thanh_tien_200:,.0f} + {thanh_tien_300:,.0f} = {total_overtime_amount:,.0f}")
                 self.tableThemGio.setItem(3, 2, total_overtime_item)
             
-            # print(f"=== DEBUG: THÊM GIỜ ===")
-                        # print(f"Lương cơ bản: {luong_co_ban:,}")
-            # print(f"Lương 1 giờ: {luong_1_gio:,.0f} = {luong_co_ban:,} ÷ {working_days_in_month} ngày ÷ 8 giờ")
             # print(f"150%: {ot_150_hours} giờ × {luong_1_gio:,.0f} × 1.5 = {thanh_tien_150:,.0f}")
             # print(f"200%: {sunday_200_hours} giờ × {luong_1_gio:,.0f} × 2.0 = {thanh_tien_200:,.0f}")
             # print(f"300%: {holiday_300_hours} giờ × {luong_1_gio:,.0f} × 3.0 = {thanh_tien_300:,.0f}")
             # print(f"Tổng thêm giờ: {total_overtime_amount:,.0f}")
             
             # C) PHỤ CẤP - Đếm số ngày theo loại
-            print(f"Debug: hasattr tablePhuCap = {hasattr(self, 'tablePhuCap')}")
             if hasattr(self, 'tablePhuCap') and self.tablePhuCap:
                 # Đảm bảo bảng có đủ hàng và cột
                 if self.tablePhuCap.rowCount() == 0:
@@ -1928,8 +1876,18 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
                         
                         # Thêm xăng xe, điện thoại, khách sạn vào bảng phụ cấp với tooltip
                         self.tablePhuCap.setItem(4, 1, QTableWidgetItem(""))
-                        xang_xe_item = QTableWidgetItem(f"{tong_xang_xe:,.0f}")
-                        xang_xe_item.setToolTip("🔍 CÔNG THỨC\nXăng xe = Tổng chi phí xăng xe từ dữ liệu chấm công (theo công ty)")
+                        
+                        # Kiểm tra xem có dữ liệu xăng xe đã chỉnh sửa không
+                        saved_xang_xe = self.get_saved_xang_xe_value()
+                        if saved_xang_xe is not None:
+                            # Sử dụng dữ liệu đã chỉnh sửa
+                            xang_xe_item = QTableWidgetItem(f"{saved_xang_xe:,.0f}")
+                            xang_xe_item.setToolTip(f"🔍 XĂNG XE (Đã chỉnh sửa)\n💰 Số tiền: {saved_xang_xe:,} VNĐ\n\n👤 Nhân viên: {self.current_employee}\n📅 Tháng: {month_year}")
+                        else:
+                            # Sử dụng dữ liệu từ chấm công
+                            xang_xe_item = QTableWidgetItem(f"{tong_xang_xe:,.0f}")
+                            xang_xe_item.setToolTip("🔍 CÔNG THỨC\nXăng xe = Tổng chi phí xăng xe từ dữ liệu chấm công (theo công ty)")
+                        
                         self.tablePhuCap.setItem(4, 2, xang_xe_item)
                         
                         self.tablePhuCap.setItem(5, 1, QTableWidgetItem(""))
@@ -1953,7 +1911,6 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
                     traceback.print_exc()
             
             # D) KPI - Năng suất (số mét vượt và thành tiền)
-            print(f"Debug: hasattr tableKPI = {hasattr(self, 'tableKPI')}")
             if hasattr(self, 'tableKPI') and self.tableKPI:
                 # Đảm bảo bảng có đủ hàng và cột
                 if self.tableKPI.rowCount() == 0:
@@ -2014,8 +1971,17 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
                             if isinstance(shopping_expense, (int, float)):
                                 tong_mua_sam += shopping_expense
                 
-                mua_sam_item = QTableWidgetItem(f"{tong_mua_sam:,}")
-                mua_sam_item.setToolTip("🔍 CÔNG THỨC\nMua sắm = Tổng chi phí mua sắm từ dữ liệu chấm công")
+                # Kiểm tra xem có dữ liệu mua sắm đã chỉnh sửa không
+                saved_mua_sam = self.get_saved_mua_sam_value()
+                if saved_mua_sam is not None:
+                    # Sử dụng dữ liệu đã chỉnh sửa
+                    mua_sam_item = QTableWidgetItem(f"{saved_mua_sam:,}")
+                    mua_sam_item.setToolTip(f"🔍 MUA SẮM (Đã chỉnh sửa)\n💰 Số tiền: {saved_mua_sam:,} VNĐ\n\n👤 Nhân viên: {self.current_employee}\n📅 Tháng: {month_year}")
+                else:
+                    # Sử dụng dữ liệu từ chấm công
+                    mua_sam_item = QTableWidgetItem(f"{tong_mua_sam:,}")
+                    mua_sam_item.setToolTip("🔍 CÔNG THỨC\nMua sắm = Tổng chi phí mua sắm từ dữ liệu chấm công")
+                
                 self.tableMuaSam.setItem(0, 1, mua_sam_item)
             
             # Cập nhật tổng cộng và thực nhận
@@ -2035,19 +2001,6 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
             
             # print("=== KẾT THÚC fill_chamcong_data ===")
             
-            # Debug: Kiểm tra dữ liệu CUỐI CÙNG trong bảng lương cơ bản
-            print("\n🔍 KIỂM TRA CUỐI CÙNG - Dữ liệu trong bảng lương cơ bản:")
-            if hasattr(self, 'tableLuongCoBan'):
-                for row in range(self.tableLuongCoBan.rowCount()):
-                    for col in range(self.tableLuongCoBan.columnCount()):
-                        item = self.tableLuongCoBan.item(row, col)
-                        if item and item.text():
-                            print(f"✅ CUỐI: Ô ({row},{col}): '{item.text()}'")
-                        else:
-                            print(f"❌ CUỐI: Ô ({row},{col}): Trống")
-            else:
-                print("❌ CUỐI: tableLuongCoBan không tồn tại!")
-            print("🔍 KẾT THÚC KIỂM TRA CUỐI CÙNG\n")
                 
         except Exception as e:
             print(f"Lỗi điền dữ liệu chấm công: {e}")
@@ -3796,6 +3749,13 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
                         xang_xe_item.setToolTip(f"🔍 XĂNG XE\n💰 Số tiền: {new_value:,} VNĐ\n\n👤 Nhân viên: {self.current_employee}\n📅 Tháng: {month_year}")
                         self.tablePhuCap.setItem(4, 2, xang_xe_item)
                         self.update_totals()  # Cập nhật tổng cộng
+                    
+                    # Lưu dữ liệu xăng xe vào file
+                    self.save_xang_xe_mua_sam_data("xang_xe", new_value)
+                    
+                    # Cập nhật lại tổng cộng để đảm bảo hiển thị đúng
+                    self.update_totals()
+                    
                 elif field_type == "mua_sam":
                     # Cập nhật giá trị mua sắm
                     if hasattr(self, 'tableMuaSam'):
@@ -3803,10 +3763,166 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
                         mua_sam_item.setToolTip(f"🔍 MUA SẮM\n💰 Số tiền: {new_value:,} VNĐ\n\n👤 Nhân viên: {self.current_employee}\n📅 Tháng: {month_year}")
                         self.tableMuaSam.setItem(0, 1, mua_sam_item)
                         self.update_totals()  # Cập nhật tổng cộng
+                    
+                    # Lưu dữ liệu mua sắm vào file
+                    self.save_xang_xe_mua_sam_data("mua_sam", new_value)
+                    
+                    # Cập nhật lại tổng cộng để đảm bảo hiển thị đúng
+                    self.update_totals()
                 
         except Exception as e:
             print(f"Lỗi hiển thị dialog nhập liệu: {e}")
     
+    def save_xang_xe_mua_sam_data(self, field_type, value):
+        """Lưu dữ liệu xăng xe hoặc mua sắm cho nhân viên và tháng hiện tại"""
+        try:
+            if not self.current_employee:
+                print("⚠️ Chưa chọn nhân viên")
+                return
+            
+            # Lấy tháng/năm hiện tại
+            month, year = self.get_selected_month_year()
+            month_year = f"{month:02d}/{year}"
+            
+            # Tạo key cho dữ liệu
+            data_key = f"{self.current_employee}_{month_year}"
+            
+            # Load dữ liệu hiện tại
+            data_file = "data/salary_data.json"
+            if os.path.exists(data_file):
+                with open(data_file, 'r', encoding='utf-8') as f:
+                    salary_data = json.load(f)
+            else:
+                salary_data = {}
+            
+            # Khởi tạo dữ liệu cho nhân viên nếu chưa có
+            if data_key not in salary_data:
+                salary_data[data_key] = {}
+            
+            # Lưu dữ liệu
+            if field_type == "xang_xe":
+                salary_data[data_key]["xang_xe"] = value
+                print(f"💾 Đã lưu xăng xe: {value:,} VNĐ cho {self.current_employee} - {month_year}")
+            elif field_type == "mua_sam":
+                salary_data[data_key]["mua_sam"] = value
+                print(f"💾 Đã lưu mua sắm: {value:,} VNĐ cho {self.current_employee} - {month_year}")
+            
+            # Lưu vào file
+            os.makedirs(os.path.dirname(data_file), exist_ok=True)
+            with open(data_file, 'w', encoding='utf-8') as f:
+                json.dump(salary_data, f, ensure_ascii=False, indent=2)
+                
+        except Exception as e:
+            print(f"Lỗi lưu dữ liệu {field_type}: {e}")
+
+    def load_saved_xang_xe_mua_sam_data(self):
+        """Load dữ liệu xăng xe và mua sắm đã lưu"""
+        try:
+            if not self.current_employee:
+                return
+            
+            # Lấy tháng/năm hiện tại
+            month, year = self.get_selected_month_year()
+            month_year = f"{month:02d}/{year}"
+            
+            # Tạo key cho dữ liệu
+            data_key = f"{self.current_employee}_{month_year}"
+            
+            # Load dữ liệu từ file
+            data_file = "data/salary_data.json"
+            if not os.path.exists(data_file):
+                print(f"⚠️ File {data_file} không tồn tại")
+                return
+            
+            with open(data_file, 'r', encoding='utf-8') as f:
+                salary_data = json.load(f)
+            
+            if data_key not in salary_data:
+                return
+            
+            saved_data = salary_data[data_key]
+            
+            # Load xăng xe
+            if "xang_xe" in saved_data and hasattr(self, 'tablePhuCap'):
+                xang_xe_value = saved_data["xang_xe"]
+                xang_xe_item = QTableWidgetItem(f"{xang_xe_value:,}")
+                xang_xe_item.setToolTip(f"🔍 XĂNG XE (Đã chỉnh sửa)\n💰 Số tiền: {xang_xe_value:,} VNĐ\n\n👤 Nhân viên: {self.current_employee}\n📅 Tháng: {month_year}")
+                self.tablePhuCap.setItem(4, 2, xang_xe_item)
+                print(f"📂 Đã load xăng xe đã lưu: {xang_xe_value:,} VNĐ")
+            
+            # Load mua sắm
+            if "mua_sam" in saved_data and hasattr(self, 'tableMuaSam'):
+                mua_sam_value = saved_data["mua_sam"]
+                mua_sam_item = QTableWidgetItem(f"{mua_sam_value:,}")
+                mua_sam_item.setToolTip(f"🔍 MUA SẮM (Đã chỉnh sửa)\n💰 Số tiền: {mua_sam_value:,} VNĐ\n\n👤 Nhân viên: {self.current_employee}\n📅 Tháng: {month_year}")
+                self.tableMuaSam.setItem(0, 1, mua_sam_item)
+                print(f"📂 Đã load mua sắm đã lưu: {mua_sam_value:,} VNĐ")
+                
+        except Exception as e:
+            print(f"Lỗi load dữ liệu xăng xe/mua sắm: {e}")
+
+    def get_saved_xang_xe_value(self):
+        """Lấy giá trị xăng xe đã lưu (nếu có)"""
+        try:
+            if not self.current_employee:
+                return None
+            
+            # Lấy tháng/năm hiện tại
+            month, year = self.get_selected_month_year()
+            month_year = f"{month:02d}/{year}"
+            
+            # Tạo key cho dữ liệu
+            data_key = f"{self.current_employee}_{month_year}"
+            
+            # Load dữ liệu từ file
+            data_file = "data/salary_data.json"
+            if not os.path.exists(data_file):
+                return None
+            
+            with open(data_file, 'r', encoding='utf-8') as f:
+                salary_data = json.load(f)
+            
+            if data_key not in salary_data:
+                return None
+            
+            saved_data = salary_data[data_key]
+            return saved_data.get("xang_xe", None)
+                
+        except Exception as e:
+            print(f"Lỗi get_saved_xang_xe_value: {e}")
+            return None
+
+    def get_saved_mua_sam_value(self):
+        """Lấy giá trị mua sắm đã lưu (nếu có)"""
+        try:
+            if not self.current_employee:
+                return None
+            
+            # Lấy tháng/năm hiện tại
+            month, year = self.get_selected_month_year()
+            month_year = f"{month:02d}/{year}"
+            
+            # Tạo key cho dữ liệu
+            data_key = f"{self.current_employee}_{month_year}"
+            
+            # Load dữ liệu từ file
+            data_file = "data/salary_data.json"
+            if not os.path.exists(data_file):
+                return None
+            
+            with open(data_file, 'r', encoding='utf-8') as f:
+                salary_data = json.load(f)
+            
+            if data_key not in salary_data:
+                return None
+            
+            saved_data = salary_data[data_key]
+            return saved_data.get("mua_sam", None)
+                
+        except Exception as e:
+            print(f"Lỗi get_saved_mua_sam_value: {e}")
+            return None
+
     def save_tam_ung_vi_pham_data(self, field_type, value):
         """Lưu dữ liệu tạm ứng hoặc vi phạm cho nhân viên và tháng hiện tại"""
         try:
