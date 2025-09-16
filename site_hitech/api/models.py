@@ -4,6 +4,8 @@ from django_ckeditor_5.fields import CKEditor5Field
 from django.utils.text import slugify
 from django.core.exceptions import ValidationError
 from colorfield.fields import ColorField
+import hashlib
+from django.utils import timezone
 
 
 class SiteSettings(models.Model):
@@ -476,6 +478,11 @@ class UserProfile(models.Model):
     is_active = models.BooleanField(default=True, verbose_name='Đang hoạt động')
     is_team_lead = models.BooleanField(default=False, verbose_name='Là trưởng nhóm')
     
+    # Bắt đổi thông tin khi đăng nhập lần đầu
+    must_change_password = models.BooleanField(default=True, verbose_name='Phải đổi mật khẩu lần đầu')
+    must_set_email = models.BooleanField(default=True, verbose_name='Phải bổ sung email lần đầu')
+    password_last_changed_at = models.DateTimeField(null=True, blank=True, verbose_name='Lần đổi mật khẩu gần nhất')
+    
     # Quyền hạn chi tiết
     can_create_posts = models.BooleanField(default=True, verbose_name='Có thể tạo bài viết')
     can_edit_all_posts = models.BooleanField(default=False, verbose_name='Có thể chỉnh sửa tất cả bài viết')
@@ -812,165 +819,197 @@ class DocumentCategory(models.Model):
         ordering = ['order', 'name']
 
 class Document(models.Model):
-    """Tài liệu nội bộ"""
-    FILE_TYPES = [
-        ('pdf', 'PDF'),
-        ('doc', 'Word Document'),
-        ('docx', 'Word Document (DOCX)'),
-        ('xls', 'Excel'),
-        ('xlsx', 'Excel (XLSX)'),
-        ('ppt', 'PowerPoint'),
-        ('pptx', 'PowerPoint (PPTX)'),
-        ('txt', 'Text'),
-        ('image', 'Hình ảnh'),
-        ('video', 'Video'),
-        ('zip', 'Archive'),
-        ('other', 'Khác')
-    ]
+    title = models.CharField(max_length=200)
+    file = models.FileField(upload_to='documents/')  # File hiện tại
+    description = models.TextField(blank=True)
+    category = models.ForeignKey(DocumentCategory, on_delete=models.CASCADE, null=True, blank=True)
+    tags = models.ManyToManyField('DocumentTag', blank=True)
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_documents')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    is_active = models.BooleanField(default=True)
+    version = models.PositiveIntegerField(default=1)
+    parent_document = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='document_versions')
+    file_size = models.BigIntegerField(default=0)
+    file_hash = models.CharField(max_length=64, blank=True)
+    slug = models.SlugField(max_length=200, unique=True, blank=True)
+    document_code = models.CharField(max_length=50, blank=True)
+    view_count = models.PositiveIntegerField(default=0)
+    download_count = models.PositiveIntegerField(default=0)
+    file_type = models.CharField(max_length=50, blank=True, default='')
+    access_level = models.CharField(max_length=20, default='public', blank=True)
+    allowed_roles = models.CharField(max_length=100, default='all', blank=True)
+    status = models.CharField(max_length=20, default='published', blank=True)
     
-    ACCESS_LEVELS = [
-        ('public', 'Công khai'),
-        ('internal', 'Nội bộ'),
-        ('restricted', 'Hạn chế'),
-        ('confidential', 'Bí mật')
-    ]
+    @property
+    def current_file(self):
+        """Lấy file hiện tại (mới nhất)"""
+        return self.file_versions.filter(is_current=True).first()
     
-    STATUS_CHOICES = [
-        ('draft', 'Bản nháp'),
-        ('review', 'Đang xem xét'),
-        ('approved', 'Đã phê duyệt'),
-        ('published', 'Đã xuất bản'),
-        ('archived', 'Lưu trữ')
-    ]
+    @property
+    def current_file_version(self):
+        """Lấy phiên bản file hiện tại"""
+        return self.file_versions.filter(is_current=True).first()
     
-    title = models.CharField(max_length=200, verbose_name='Tiêu đề tài liệu')
-    slug = models.SlugField(unique=True, blank=True, verbose_name='Slug')
-    category = models.ForeignKey(DocumentCategory, on_delete=models.CASCADE, 
-                                related_name='documents', verbose_name='Danh mục')
-    description = models.TextField(blank=True, verbose_name='Mô tả')
-    file = models.FileField(upload_to='documents/%Y/%m/%d/', verbose_name='File tài liệu')
-    file_type = models.CharField(max_length=20, choices=FILE_TYPES, verbose_name='Loại file')
-    file_size = models.PositiveIntegerField(null=True, blank=True, verbose_name='Kích thước file (bytes)')
+    def get_file_versions(self):
+        """Lấy tất cả phiên bản file"""
+        return self.file_versions.all().order_by('-uploaded_at')
     
-    # Metadata
-    version = models.CharField(max_length=10, default='1.0', verbose_name='Phiên bản')
-    document_code = models.CharField(max_length=50, unique=True, verbose_name='Mã tài liệu')
-    tags = models.ManyToManyField('DocumentTag', blank=True, verbose_name='Thẻ tags')
-    
-    # Access control
-    access_level = models.CharField(max_length=20, choices=ACCESS_LEVELS, 
-                                   default='internal', verbose_name='Mức độ truy cập')
-    allowed_roles = models.CharField(max_length=100, blank=True, 
-                                    help_text='Các vai trò được phép truy cập (admin,manager,staff)',
-                                    verbose_name='Vai trò được phép')
-    
-    # Status và approval
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, 
-                             default='draft', verbose_name='Trạng thái')
-    created_by = models.ForeignKey(User, on_delete=models.CASCADE, 
-                                  related_name='created_documents', verbose_name='Người tạo')
-    approved_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True,
-                                   related_name='approved_documents', verbose_name='Người phê duyệt')
-    approved_at = models.DateTimeField(null=True, blank=True, verbose_name='Thời gian phê duyệt')
-    
-    # Timestamps
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Ngày tạo')
-    updated_at = models.DateTimeField(auto_now=True, verbose_name='Ngày cập nhật')
-    updated_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True,
-                                  related_name='updated_documents', verbose_name='Người cập nhật cuối')
-    
-    # Analytics
-    download_count = models.PositiveIntegerField(default=0, verbose_name='Số lượt tải')
-    view_count = models.PositiveIntegerField(default=0, verbose_name='Số lượt xem')
-    
-    def save(self, *args, **kwargs):
-        if not self.slug:
-            self.slug = slugify(self.title)
-        
-        # Auto-detect file type from extension
-        if self.file and not self.file_type:
-            ext = self.file.name.split('.')[-1].lower()
-            type_mapping = {
-                'pdf': 'pdf', 'doc': 'doc', 'docx': 'docx',
-                'xls': 'xls', 'xlsx': 'xlsx', 'ppt': 'ppt', 'pptx': 'pptx',
-                'txt': 'txt', 'jpg': 'image', 'jpeg': 'image', 'png': 'image', 
-                'gif': 'image', 'mp4': 'video', 'avi': 'video', 'zip': 'zip', 'rar': 'zip'
-            }
-            self.file_type = type_mapping.get(ext, 'other')
-        
-        # Get file size
-        if self.file and hasattr(self.file, 'size'):
-            self.file_size = self.file.size
-            
-        super().save(*args, **kwargs)
-    
-    def get_file_icon(self):
-        """Trả về icon FontAwesome cho loại file"""
-        icons = {
-            'pdf': 'fas fa-file-pdf text-danger',
-            'doc': 'fas fa-file-word text-primary', 
-            'docx': 'fas fa-file-word text-primary',
-            'xls': 'fas fa-file-excel text-success',
-            'xlsx': 'fas fa-file-excel text-success',
-            'ppt': 'fas fa-file-powerpoint text-warning',
-            'pptx': 'fas fa-file-powerpoint text-warning',
-            'txt': 'fas fa-file-alt text-secondary',
-            'image': 'fas fa-file-image text-info',
-            'video': 'fas fa-file-video text-purple',
-            'zip': 'fas fa-file-archive text-dark',
-            'other': 'fas fa-file text-muted'
-        }
-        return icons.get(self.file_type, icons['other'])
-    
-    def get_file_size_display(self):
-        """Hiển thị kích thước file dễ đọc"""
-        if not self.file_size:
-            return 'N/A'
-        
-        size = self.file_size
-        for unit in ['B', 'KB', 'MB', 'GB']:
-            if size < 1024:
-                return f"{size:.1f} {unit}"
-            size /= 1024
-        return f"{size:.1f} TB"
-    
-    def can_access(self, user):
-        """Kiểm tra quyền truy cập của user"""
-        if not user.is_authenticated:
-            return self.access_level == 'public'
-        
-        if user.is_superuser:
-            return True
-            
-        profile = getattr(user, 'user_profile', None)
-        if not profile:
-            return False
-            
-        # Check role-based access
-        if self.allowed_roles:
-            allowed = [role.strip() for role in self.allowed_roles.split(',')]
-            if profile.role not in allowed:
-                return False
-        
-        # Check access level
-        if self.access_level == 'public':
-            return True
-        elif self.access_level == 'internal':
-            return True
-        elif self.access_level == 'restricted':
-            return profile.role in ['manager', 'admin']
-        elif self.access_level == 'confidential':
-            return profile.role == 'admin'
-            
-        return False
-    
-    def __str__(self):
-        return self.title
+    def get_latest_version_number(self):
+        """Lấy số phiên bản mới nhất"""
+        latest = self.file_versions.aggregate(max_version=models.Max('version_number'))['max_version']
+        return latest or 0
     
     class Meta:
-        verbose_name = 'Tài liệu'
-        verbose_name_plural = 'Tài liệu'
-        ordering = ['-created_at']
+        ordering = ['-updated_at']
+        unique_together = ['parent_document', 'version']
+    
+    def _generate_unique_slug(self, base, suffix=None):
+        base_slug = slugify(base) if base else ''
+        candidate = f"{base_slug}-{suffix}" if suffix else base_slug
+        if not candidate:
+            candidate = timezone.now().strftime("doc-%Y%m%d%H%M%S")
+        unique = candidate
+        counter = 2
+        while Document.objects.filter(slug=unique).exclude(id=self.id).exists():
+            unique = f"{candidate}-{counter}"
+            counter += 1
+        return unique
+    
+    def save(self, *args, **kwargs):
+        is_new = self.pk is None
+        has_parent = bool(self.parent_document_id)
+
+        # Defaults for legacy fields
+        if not getattr(self, 'access_level', None):
+            self.access_level = 'public'
+        if not getattr(self, 'allowed_roles', None):
+            self.allowed_roles = 'all'
+        if not getattr(self, 'status', None):
+            self.status = 'published'
+
+        # Update file metadata early
+        if self.file:
+            self.file_size = getattr(self.file, 'size', 0)
+            self.file_hash = self._calculate_file_hash()
+            self.file_type = self._get_file_type()
+
+        if is_new and not has_parent:
+            # Creating a root document (first version)
+            if not self.version:
+                self.version = 1
+            if not self.slug:
+                self.slug = self._generate_unique_slug(self.title, None)
+            super().save(*args, **kwargs)
+            if not self.parent_document_id:
+                self.parent_document = self
+                super().save(update_fields=['parent_document'])
+            return
+
+        # Nếu đang cập nhật tài liệu hiện có (không phải tạo mới)
+        if not is_new:
+            # Chỉ cập nhật metadata, không tạo version mới
+            if not self.slug:
+                self.slug = self._generate_unique_slug(self.title, None)
+            super().save(*args, **kwargs)
+            return
+
+        # Chỉ tạo version mới khi thực sự cần (tạo tài liệu mới với parent)
+        if not self.version:
+            latest_version = Document.objects.filter(parent_document=self.parent_document).aggregate(
+                max_version=models.Max('version')
+            )['max_version'] or 0
+            self.version = latest_version + 1
+
+        if not self.slug:
+            suffix = f"v{self.version}" if self.version and (self.parent_document_id and self.version > 1) else None
+            self.slug = self._generate_unique_slug(self.title, suffix)
+
+        super().save(*args, **kwargs)
+    
+    def _calculate_file_hash(self):
+        import hashlib
+        if self.file:
+            try:
+                self.file.seek(0)
+                file_content = self.file.read()
+                self.file.seek(0)
+                return hashlib.sha256(file_content).hexdigest()
+            except:
+                return ''
+        return ''
+    
+    def _get_file_type(self):
+        """Get file type from extension"""
+        if self.file:
+            try:
+                ext = self.file.name.split('.')[-1].lower()
+                return ext
+            except:
+                return ''
+        return ''
+    
+    def get_latest_version(self):
+        try:
+            return Document.objects.filter(parent_document=self.parent_document).order_by('-version').first()
+        except:
+            return self
+    
+    def get_all_versions(self):
+        try:
+            return Document.objects.filter(parent_document=self.parent_document).order_by('-version')
+        except:
+            return [self]
+    
+    def is_latest_version(self):
+        try:
+            return self == self.get_latest_version()
+        except:
+            return True
+    
+    def get_file_icon(self):
+        """Get appropriate icon for file type"""
+        if self.file:
+            try:
+                ext = self.file.name.split('.')[-1].lower()
+                icon_map = {
+                    'pdf': 'fas fa-file-pdf',
+                    'doc': 'fas fa-file-word',
+                    'docx': 'fas fa-file-word',
+                    'xls': 'fas fa-file-excel',
+                    'xlsx': 'fas fa-file-excel',
+                    'ppt': 'fas fa-file-powerpoint',
+                    'pptx': 'fas fa-file-powerpoint',
+                    'txt': 'fas fa-file-alt',
+                    'jpg': 'fas fa-file-image',
+                    'jpeg': 'fas fa-file-image',
+                    'png': 'fas fa-file-image',
+                    'gif': 'fas fa-file-image',
+                    'zip': 'fas fa-file-archive',
+                    'rar': 'fas fa-file-archive',
+                    'csv': 'fas fa-file-csv',
+                }
+                return icon_map.get(ext, 'fas fa-file')
+            except:
+                return 'fas fa-file'
+        return 'fas fa-file'
+    
+    def get_file_size_display(self):
+        """Get human readable file size"""
+        if hasattr(self, 'file_size') and self.file_size:
+            try:
+                size = self.file_size
+                for unit in ['B', 'KB', 'MB', 'GB']:
+                    if size < 1024.0:
+                        return f"{size:.1f} {unit}"
+                    size /= 1024.0
+                return f"{size:.1f} TB"
+            except:
+                return "0 B"
+        return "0 B"
+    
+    def __str__(self):
+        return f"{self.title} (v{getattr(self, 'version', 1)})"
 
 class DocumentTag(models.Model):
     """Tags cho tài liệu"""
@@ -1618,3 +1657,53 @@ class Attendance(models.Model):
         Dùng khi người dùng xóa yêu cầu nghỉ => dữ liệu chấm công tương ứng cũng biến mất.
         """
         cls.objects.filter(leave_request=leave_request).delete()
+
+class DocumentAccessLog(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    document = models.ForeignKey(Document, on_delete=models.CASCADE)
+    action = models.CharField(max_length=20, choices=[
+        ('view', 'View'),
+        ('download', 'Download'),
+        ('share', 'Share'),
+    ])
+    timestamp = models.DateTimeField(auto_now_add=True)
+    ip_address = models.GenericIPAddressField(blank=True, null=True)
+    
+    class Meta:
+        ordering = ['-timestamp']
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.action} - {self.document.title}"
+
+class DocumentFileVersion(models.Model):
+    """Lưu trữ tất cả file của tài liệu"""
+    document = models.ForeignKey(Document, on_delete=models.CASCADE, 
+                                related_name='file_versions', verbose_name='Tài liệu')
+    file = models.FileField(upload_to='document_files/%Y/%m/%d/', verbose_name='File')
+    file_name = models.CharField(max_length=255, verbose_name='Tên file')
+    file_size = models.BigIntegerField(verbose_name='Kích thước file')
+    file_type = models.CharField(max_length=50, verbose_name='Loại file')
+    uploaded_by = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='Người upload')
+    uploaded_at = models.DateTimeField(auto_now_add=True, verbose_name='Thời gian upload')
+    is_current = models.BooleanField(default=False, verbose_name='File hiện tại')
+    change_note = models.TextField(blank=True, verbose_name='Ghi chú thay đổi')
+    version_number = models.PositiveIntegerField(verbose_name='Số phiên bản')
+    
+    class Meta:
+        verbose_name = 'Phiên bản file tài liệu'
+        verbose_name_plural = 'Phiên bản file tài liệu'
+        ordering = ['-uploaded_at']
+    
+    def __str__(self):
+        return f"{self.document.title} - {self.file_name} (v{self.version_number})"
+    
+    def get_file_size_display(self):
+        """Hiển thị kích thước file"""
+        if self.file_size < 1024:
+            return f"{self.file_size} B"
+        elif self.file_size < 1024 * 1024:
+            return f"{self.file_size / 1024:.1f} KB"
+        elif self.file_size < 1024 * 1024 * 1024:
+            return f"{self.file_size / (1024 * 1024):.1f} MB"
+        else:
+            return f"{self.file_size / (1024 * 1024 * 1024):.1f} GB"

@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import (
     QCalendarWidget, QGraphicsView, QGraphicsScene
 )
 from PyQt5.QtCore import Qt, QSize, QDate, QTimer
-from PyQt5.QtGui import QFont, QColor, QPalette, QPixmap, QTransform
+from PyQt5.QtGui import QFont, QColor, QPalette, QPixmap, QTransform, QPainter
 import calendar
 import glob
 import os
@@ -604,16 +604,18 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
         # Layout chứa phần nội dung chính (có 3 phần: trái, giữa, phải)
         content_main_layout = QHBoxLayout()
         content_main_layout.setContentsMargins(0, 0, 0, 0)
-        content_main_layout.setSpacing(10)
+        content_main_layout.setSpacing(0)
         
         # Panel bên trái - thông tin nghỉ phép
         left_panel = self.create_left_panel()
         content_main_layout.addWidget(left_panel)
+        # Thêm khoảng trống cố định để mép trái phiếu lương không bị sát/đè panel trái
+        content_main_layout.addSpacing(12)
 
         # Tạo scroll area cho phiếu lương (giữa)
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
-        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
         scroll.setFixedWidth(self.PHIEU_LUONG_WIDTH + 20)
         scroll.setStyleSheet("""
             QScrollArea {
@@ -657,24 +659,14 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
             }
         """)
         
-        # Tạo và cấu hình logo trong phiếu lương
-        logo_size_w = 60
-        logo_size_h = 60
-        self.logo_label = QLabel(phieu_luong_container)  # Đặt logo trong phiếu lương container
-        logo_pixmap = QPixmap("logo_hitech.png")
-        scaled_logo = logo_pixmap.scaled(logo_size_w, logo_size_h, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-        self.logo_label.setPixmap(scaled_logo)
-        self.logo_label.setFixedSize(logo_size_w, logo_size_h)
-        self.logo_label.setStyleSheet("background: transparent;")
-        self.logo_label.move(20, 20)  # Đặt vị trí tuyệt đối trong phiếu lương
-        self.logo_label.raise_()  # Đưa logo lên trên cùng
-        self.logo_label.show()
-        
+        # Logo được chèn trong create_title để căn chỉnh đẹp hơn
         # Lưu reference để tránh bị GC
         self.phieu_luong_container = phieu_luong_container
         phieu_layout = QVBoxLayout(phieu_luong_container)
         phieu_layout.setSpacing(1)  # Giảm spacing xuống tối thiểu
         phieu_layout.setContentsMargins(5, 5, 5, 5)  # Giảm margins xuống tối thiểu
+
+        # Hàng logo riêng đã bỏ vì logo sẽ được hiển thị chung với tiêu đề để căn đẹp hơn
 
         # Tiêu đề phiếu lương
         title = self.create_title()
@@ -682,7 +674,7 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
 
         # Thông tin tổng hợp (gộp thông tin cá nhân và kỳ lương)
         combined_info_panel = self.create_combined_info_panel()
-        phieu_layout.addWidget(combined_info_panel)
+        phieu_layout.addWidget(combined_info_panel, 0, Qt.AlignHCenter)
 
         # Các phần chi tiết lương
         # Tạo các bảng và gán tên
@@ -703,11 +695,11 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
         for title, table in sections:
             section = self.create_section(title, table)
             self.sections[title] = section  # Lưu section để cập nhật
-            phieu_layout.addWidget(section)
+            phieu_layout.addWidget(section, 0, Qt.AlignHCenter)
 
         # Tổng cộng I
         tong_cong = self.create_tong_cong_panel()
-        phieu_layout.addWidget(tong_cong)
+        phieu_layout.addWidget(tong_cong, 0, Qt.AlignHCenter)
 
         # Khấu trừ và thanh toán
         self.tableKhauTru = self.create_khau_tru_table()
@@ -720,12 +712,12 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
             self.sections = {}
         self.sections["E) CÁC KHOẢN KHẤU TRỪ"] = khau_tru
         self.sections["F) THANH TOÁN MUA SẮM"] = mua_sam
-        phieu_layout.addWidget(khau_tru)
-        phieu_layout.addWidget(mua_sam)
+        phieu_layout.addWidget(khau_tru, 0, Qt.AlignHCenter)
+        phieu_layout.addWidget(mua_sam, 0, Qt.AlignHCenter)
 
         # Thực nhận
         thuc_nhan = self.create_thuc_nhan_panel()
-        phieu_layout.addWidget(thuc_nhan)
+        phieu_layout.addWidget(thuc_nhan, 0, Qt.AlignHCenter)
 
         # (Đã chuyển hiển thị sang QGraphicsView để scale theo cửa sổ)
 
@@ -1096,6 +1088,10 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
             # Đảm bảo tổng cộng được cập nhật cuối cùng
             self.update_totals()
 
+            # Đồng bộ lại các section hiển thị sau khi load dữ liệu đã chỉnh sửa
+            self.update_section_display("C) PHỤ CẤP", self.tablePhuCap)
+            self.update_section_display("F) THANH TOÁN MUA SẮM", self.tableMuaSam)
+
             # Căn giữa toàn bộ bảng sau khi dữ liệu đã được điền
             self.center_all_tables()
             
@@ -1193,8 +1189,8 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
                             parent_layout.removeWidget(old_section)
                             old_section.deleteLater()
                             
-                            # Thêm section mới vào vị trí cũ
-                            parent_layout.insertWidget(i, new_section)
+                            # Thêm section mới vào vị trí cũ và căn giữa
+                            parent_layout.insertWidget(i, new_section, 0, Qt.AlignHCenter)
                             self.sections[title] = new_section
                             break
                 
@@ -1792,6 +1788,9 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
                 total_overtime_item = QTableWidgetItem(f"{total_overtime_amount:,.0f}")
                 total_overtime_item.setToolTip(f"🔍 CÔNG THỨC\nTổng thu nhập thêm giờ = {thanh_tien_150:,.0f} + {thanh_tien_200:,.0f} + {thanh_tien_300:,.0f} = {total_overtime_amount:,.0f}")
                 self.tableThemGio.setItem(3, 2, total_overtime_item)
+                self.tableThemGio.viewport().update()
+                # Cập nhật hiển thị section để phản ánh ô tổng sau khi ghi
+                self.update_section_display("B) THÊM GIỜ", self.tableThemGio)
             
             # print(f"150%: {ot_150_hours} giờ × {luong_1_gio:,.0f} × 1.5 = {thanh_tien_150:,.0f}")
             # print(f"200%: {sunday_200_hours} giờ × {luong_1_gio:,.0f} × 2.0 = {thanh_tien_200:,.0f}")
@@ -2394,10 +2393,10 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
             traceback.print_exc()
 
     def create_title(self):
-        """Tạo tiêu đề phiếu lương"""
+        """Tạo tiêu đề phiếu lương với logo cùng hàng"""
         # Tạo container chính
         main_container = QWidget()
-        main_container.setFixedHeight(80)  # Chiều cao cho phần title
+        main_container.setFixedHeight(80)
 
         # Layout chính
         main_layout = QVBoxLayout(main_container)
@@ -2407,23 +2406,37 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
         # Container cho tiêu đề
         title_container = QWidget()
         title_layout = QHBoxLayout(title_container)
-        title_layout.setContentsMargins(0, 0, 0, 0)
+        title_layout.setContentsMargins(10, 8, 10, 8)
+        title_layout.setSpacing(10)
 
-        # Thêm spacer bên trái để đẩy tiêu đề sang phải
-        spacer = QSpacerItem(0, 10, QSizePolicy.Fixed, QSizePolicy.Minimum)
-        title_layout.addItem(spacer)
+        # Logo bên trái (cùng hàng tiêu đề)
+        logo_label = QLabel()
+        pix = QPixmap("logo_hitech.png")
+        if not pix.isNull():
+            pix = pix.scaled(56, 56, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            logo_label.setPixmap(pix)
+        logo_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        logo_label.setStyleSheet("background: transparent;")
+        title_layout.addWidget(logo_label, 0, Qt.AlignLeft)
 
-        # Tiêu đề chính
+        # Tiêu đề ở giữa
         title_label = QLabel("PHIẾU LƯƠNG")
         title_label.setAlignment(Qt.AlignCenter)
         title_label.setStyleSheet("""
             font-size: 28px;
             font-weight: bold;
             color: #2196F3;
-            margin-top: 3px;
-            margin-bottom: 3px;
         """)
-        title_layout.addWidget(title_label)
+        
+        # Spacer để tiêu đề luôn ở giữa giữa logo và khoảng trống bên phải
+        title_layout.addStretch(1)
+        title_layout.addWidget(title_label, 0, Qt.AlignCenter)
+        title_layout.addStretch(1)
+
+        # Placeholder bên phải để cân đối chiều cao hàng
+        right_spacer = QLabel("")
+        right_spacer.setFixedSize(56, 56)
+        title_layout.addWidget(right_spacer, 0, Qt.AlignRight)
 
         # Thêm title container vào main layout
         main_layout.addWidget(title_container)
@@ -2451,26 +2464,27 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
         group_layout.setContentsMargins(0, 0, 0, 0)
         group_layout.setSpacing(0)
 
-        # Thêm spacer bên trái để đẩy nội dung sang phải
-        spacer = QSpacerItem(250, 10, QSizePolicy.Fixed, QSizePolicy.Minimum)
-        group_layout.addItem(spacer)
-
-        # Container cho nội dung thông tin
+        # Container cho nội dung thông tin (căn trái phải cân đối, không lệch)
         content_container = QWidget()
-        content_container.setFixedWidth(200)  # Giảm chiều rộng để không bị tràn
         content_layout = QHBoxLayout(content_container)
-        content_layout.setSpacing(30)  # Khoảng cách giữa 2 cột
-        content_layout.setContentsMargins(8, 5, 8, 5)  # Giảm khoảng cách từ chữ đến mép
+        content_layout.setSpacing(40)
+        content_layout.setContentsMargins(8, 5, 8, 5)
+
+        # Bên trái và phải chiếm rộng linh hoạt
+        left_widget = QWidget()
+        right_widget = QWidget()
+        left_widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+        right_widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
 
         # Thêm content container vào group layout
         group_layout.addWidget(content_container)
         
         # Giảm chiều cao để vừa đủ với nội dung
-        group.setMaximumHeight(80)  # Thu hẹp để fit với chữ
+        group.setMaximumHeight(90)
         
         # Layout cho cột trái
         left_layout = QFormLayout()
-        left_layout.setSpacing(5)  # Giảm spacing để gọn hơn
+        left_layout.setSpacing(5)
         
         # Tạo các label thông tin
         self.labelHoTen = QLabel("")
@@ -2484,7 +2498,7 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
         
         # Layout cho cột phải
         right_layout = QFormLayout()
-        right_layout.setSpacing(5)  # Giảm spacing để gọn hơn
+        right_layout.setSpacing(5)
         
         self.labelChucVu = QLabel("")
         self.labelPhongBan = QLabel("")
@@ -2492,10 +2506,8 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
         right_layout.addRow("Chức vụ:", self.labelChucVu)
         right_layout.addRow("Phòng ban:", self.labelPhongBan)
         
-        # Thêm 2 cột vào content layout
-        left_widget = QWidget()
+        # Gán layout cho 2 cột và thêm vào content layout
         left_widget.setLayout(left_layout)
-        right_widget = QWidget()
         right_widget.setLayout(right_layout)
         
         content_layout.addWidget(left_widget)
@@ -2573,7 +2585,7 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
         return group
 
     def create_combined_info_panel(self):
-        """Tạo panel thông tin tổng hợp (gộp thông tin cá nhân và kỳ lương)"""
+        """Tạo panel thông tin tổng hợp (gộp thông tin cá nhân và kỳ lương) với lưới thẳng hàng"""
         group = QGroupBox()
         group.setStyleSheet("""
             QGroupBox {
@@ -2588,12 +2600,12 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
             }
         """)
         
-        # Layout chính sử dụng QFormLayout để các cột thẳng hàng
-        main_layout = QHBoxLayout(group)
-        # Tăng bottom margin để tránh chữ chạm/đè viền dưới
-        main_layout.setContentsMargins(8, 4, 8, 10)
-        # Giữ khoảng cách rõ ràng giữa 2 cột
-        main_layout.setSpacing(30)
+        # Layout chính dùng QGridLayout để đảm bảo hàng/cột thẳng nhau
+        from PyQt5.QtWidgets import QGridLayout
+        grid = QGridLayout(group)
+        grid.setContentsMargins(8, 4, 8, 10)
+        grid.setHorizontalSpacing(6)
+        grid.setVerticalSpacing(5)
 
         # Tạo các label thông tin
         self.labelHoTen = QLabel("")
@@ -2612,42 +2624,59 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
         current_date = datetime.now()
         self.labelNgayXuat = QLabel(current_date.strftime("%d/%m/%Y %H:%M"))
 
-        # Đảm bảo các nhãn (label) hai cột có cùng bề rộng để căn thẳng hàng
-        label_width = 120
-        def make_label(text):
+        # Cột trái: Nhãn | ":" | Giá trị
+        left_label_width = 50
+        colon_label_left = QLabel(":"); colon_label_left.setAlignment(Qt.AlignCenter)
+        def make_left_label(text):
             lbl = QLabel(text)
-            lbl.setMinimumWidth(label_width)
-            lbl.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+            lbl.setMinimumWidth(left_label_width)
+            lbl.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
             return lbl
 
-        # Cột trái
-        left_layout = QFormLayout()
-        left_layout.setSpacing(5)
-        left_layout.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)
-        left_layout.addRow(make_label("Họ và tên:"), self.labelHoTen)
-        left_layout.addRow(make_label("Mã số:"), self.labelMSNV)
-        left_layout.addRow(make_label("Kỳ lương:"), self.labelThangNam)
-        
-        # Cột phải
-        right_layout = QFormLayout()
-        right_layout.setSpacing(5)
-        right_layout.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)
-        right_layout.addRow(make_label("Chức vụ:"), self.labelChucVu)
-        right_layout.addRow(make_label("Phòng ban:"), self.labelPhongBan)
-        right_layout.addRow(make_label("Ngày xuất:"), self.labelNgayXuat)
-        
-        # Tạo widget cho mỗi cột
-        left_widget = QWidget()
-        left_widget.setLayout(left_layout)
-        right_widget = QWidget()
-        right_widget.setLayout(right_layout)
-        
-        # Thêm các widget vào layout chính
-        main_layout.addWidget(left_widget)
-        main_layout.addWidget(right_widget)
-        
-        # Nới chiều cao để tránh bị đè viền dưới ở dòng cuối
+        grid.addWidget(make_left_label("Họ và tên"), 0, 0)
+        grid.addWidget(QLabel(":"), 0, 1)
+        grid.addWidget(self.labelHoTen, 0, 2)
+
+        grid.addWidget(make_left_label("Mã số"), 1, 0)
+        grid.addWidget(QLabel(":"), 1, 1)
+        grid.addWidget(self.labelMSNV, 1, 2)
+
+        grid.addWidget(make_left_label("Kỳ lương"), 2, 0)
+        grid.addWidget(QLabel(":"), 2, 1)
+        grid.addWidget(self.labelThangNam, 2, 2)
+
+        # Cột phải: Nhãn | ":" | Giá trị (căn cùng hàng với cột trái)
+        right_label_width = 50
+        def make_right_label(text):
+            lbl = QLabel(text)
+            lbl.setMinimumWidth(right_label_width)
+            lbl.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+            return lbl
+
+        grid.addWidget(make_right_label("Chức vụ"), 0, 3)
+        grid.addWidget(QLabel(":"), 0, 4)
+        grid.addWidget(self.labelChucVu, 0, 5)
+
+        grid.addWidget(make_right_label("Phòng ban"), 1, 3)
+        grid.addWidget(QLabel(":"), 1, 4)
+        grid.addWidget(self.labelPhongBan, 1, 5)
+
+        grid.addWidget(make_right_label("Ngày xuất"), 2, 3)
+        grid.addWidget(QLabel(":"), 2, 4)
+        grid.addWidget(self.labelNgayXuat, 2, 5)
+
+        # Tỉ lệ co giãn cột để giá trị căn trái và chiếm không gian
+        grid.setColumnStretch(0, 0)
+        grid.setColumnStretch(1, 0)
+        grid.setColumnStretch(2, 1)
+        grid.setColumnStretch(3, 0)
+        grid.setColumnStretch(4, 0)
+        grid.setColumnStretch(5, 1)
+
+        # Nới chiều cao hợp lý
         group.setMaximumHeight(80)
+        # Cố định chiều rộng để đồng bộ với các bảng khác
+        group.setFixedWidth(self.PHIEU_LUONG_WIDTH - 40)
         
         return group
 
@@ -2742,7 +2771,7 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
 
     def format_table(self, table):
         # Cố định kích thước bảng
-        table_width = self.PHIEU_LUONG_WIDTH - 40  # Tăng chiều rộng để bằng với tổng cộng/thực nhận
+        table_width = self.PHIEU_LUONG_WIDTH - 44  # Chừa thêm 4px để không cắt viền phải
         table.setFixedWidth(table_width)
 
         # Ẩn cột số thứ tự bên trái
@@ -2755,7 +2784,9 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
 
         table.setStyleSheet("""
             QTableWidget {
-                border: none;
+                border: 1px solid #dee2e6; /* Viền ngoài */
+                border-radius: 10px;        /* Bo góc bảng */
+                background-color: #ffffff;
                 gridline-color: #dee2e6;
                 font-family: "Times New Roman";
             }
@@ -2816,8 +2847,18 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
             col_width = int(table_width / num_columns)
             col_widths = [col_width] * num_columns
         
+        # Chừa biên phải 4px để không bị cắt viền khi render
+        try:
+            total_width = sum(col_widths)
+            if total_width >= table_width:
+                col_widths[-1] = max(10, col_widths[-1] - 8)
+        except Exception:
+            pass
         for col, width in enumerate(col_widths):
             table.setColumnWidth(col, width)
+        # Đảm bảo có khung ngoài rõ ràng
+        table.setFrameShape(QFrame.Box)
+        table.setLineWidth(1)
 
         # Cố định kích thước bảng - chiều cao = header + các dòng nội dung
         rows = table.rowCount()
@@ -2902,21 +2943,29 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
         """)
         layout = QHBoxLayout(group)
 
-        self.btnInPhieu = QPushButton("In phiếu lương")
+        self.btnInPhieu = QPushButton("Xem trước & Xuất PNG/PDF")
         self.btnInPhieu.setObjectName("print")
-        self.btnXuatExcel = QPushButton("Xuất Excel")
-        self.btnXuatExcel.setObjectName("excel")
+        self.btnCopyPNG = QPushButton("Copy PNG")
+        self.btnCopyPNG.setObjectName("excel")
+        self.btnXuatPNG = QPushButton("Tải PNG")
+        self.btnXuatPNG.setObjectName("excel")
+        self.btnXuatPDF = QPushButton("Xuất PDF")
+        self.btnXuatPDF.setObjectName("excel")
         self.btnGuiTongLuong = QPushButton("📊 Gửi sang Tổng lương")
         self.btnGuiTongLuong.setObjectName("print")
 
         layout.addStretch()
         layout.addWidget(self.btnInPhieu)
-        layout.addWidget(self.btnXuatExcel)
+        layout.addWidget(self.btnCopyPNG)
+        layout.addWidget(self.btnXuatPNG)
+        layout.addWidget(self.btnXuatPDF)
         layout.addWidget(self.btnGuiTongLuong)
 
         # Kết nối sự kiện
         self.btnInPhieu.clicked.connect(self.in_phieu_luong)
-        self.btnXuatExcel.clicked.connect(self.xuat_excel)
+        self.btnCopyPNG.clicked.connect(self.copy_full_payslip_png)
+        self.btnXuatPNG.clicked.connect(self.save_full_payslip_png)
+        self.btnXuatPDF.clicked.connect(self.export_current_payslip_pdf)
         self.btnGuiTongLuong.clicked.connect(self.gui_sang_tong_luong)
         self.comboNhanVien.currentIndexChanged.connect(self.update_employee_info)
         self.comboNhanVien.currentIndexChanged.connect(self.load_phieu_luong)
@@ -3149,7 +3198,7 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
         """)
         layout = QHBoxLayout(group)
         layout.setContentsMargins(5, 2, 5, 2)  # Tối ưu margins của tổng cộng
-        layout.addWidget(QLabel("(I)Tổng cộng (vnđ)=(A)+(B)+(C)+(D):"))
+        layout.addWidget(QLabel("(I) TỔNG CỘNG (VNĐ) = (A)+(B)+(C)+D"))
         tong = QLabel("")
         tong.setAlignment(Qt.AlignCenter)  # Căn giữa như cột thành tiền
         tong.setToolTip("🔍 CÔNG THỨC\nTổng cộng = Lương cơ bản + Thêm giờ + Phụ cấp + KPI")
@@ -3749,12 +3798,19 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
                         xang_xe_item.setToolTip(f"🔍 XĂNG XE\n💰 Số tiền: {new_value:,} VNĐ\n\n👤 Nhân viên: {self.current_employee}\n📅 Tháng: {month_year}")
                         self.tablePhuCap.setItem(4, 2, xang_xe_item)
                         self.update_totals()  # Cập nhật tổng cộng
+                        # Cập nhật section hiển thị ngay
+                        self.update_section_display("C) PHỤ CẤP", self.tablePhuCap)
                     
                     # Lưu dữ liệu xăng xe vào file
                     self.save_xang_xe_mua_sam_data("xang_xe", new_value)
                     
-                    # Cập nhật lại tổng cộng để đảm bảo hiển thị đúng
+                    # Nạp lại dữ liệu đã lưu để tránh bị overwrite bởi luồng khác (chỉ cần khi > 0)
+                    if new_value > 0:
+                        self.load_saved_xang_xe_mua_sam_data()
+                    
+                    # Tính lại và cập nhật section
                     self.update_totals()
+                    self.update_section_display("C) PHỤ CẤP", self.tablePhuCap)
                     
                 elif field_type == "mua_sam":
                     # Cập nhật giá trị mua sắm
@@ -3763,12 +3819,15 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
                         mua_sam_item.setToolTip(f"🔍 MUA SẮM\n💰 Số tiền: {new_value:,} VNĐ\n\n👤 Nhân viên: {self.current_employee}\n📅 Tháng: {month_year}")
                         self.tableMuaSam.setItem(0, 1, mua_sam_item)
                         self.update_totals()  # Cập nhật tổng cộng
+                        self.update_section_display("F) THANH TOÁN MUA SẮM", self.tableMuaSam)
                     
                     # Lưu dữ liệu mua sắm vào file
                     self.save_xang_xe_mua_sam_data("mua_sam", new_value)
                     
-                    # Cập nhật lại tổng cộng để đảm bảo hiển thị đúng
+                    # Nạp lại dữ liệu đã lưu và cập nhật section
+                    self.load_saved_xang_xe_mua_sam_data()
                     self.update_totals()
+                    self.update_section_display("F) THANH TOÁN MUA SẮM", self.tableMuaSam)
                 
         except Exception as e:
             print(f"Lỗi hiển thị dialog nhập liệu: {e}")
@@ -3799,10 +3858,18 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
             if data_key not in salary_data:
                 salary_data[data_key] = {}
             
-            # Lưu dữ liệu
+            # Lưu dữ liệu với quy ước:
+            # - xăng_xe = 0: chỉ hiệu lực cho phiên hiện tại (không ghi vào file để lần sau quay về giá trị tính toán)
+            # - > 0: ghi vào file để lần sau ưu tiên giá trị đã lưu
             if field_type == "xang_xe":
-                salary_data[data_key]["xang_xe"] = value
-                print(f"💾 Đã lưu xăng xe: {value:,} VNĐ cho {self.current_employee} - {month_year}")
+                if value > 0:
+                    salary_data[data_key]["xang_xe"] = value
+                    print(f"💾 Đã lưu xăng xe: {value:,} VNĐ cho {self.current_employee} - {month_year}")
+                else:
+                    # Xóa override nếu có để lần sau dùng giá trị tính toán
+                    if "xang_xe" in salary_data.get(data_key, {}):
+                        del salary_data[data_key]["xang_xe"]
+                    print(f"ℹ️ Không lưu xăng xe=0 cho {self.current_employee} - {month_year} (lần sau dùng giá trị tính toán)")
             elif field_type == "mua_sam":
                 salary_data[data_key]["mua_sam"] = value
                 print(f"💾 Đã lưu mua sắm: {value:,} VNĐ cho {self.current_employee} - {month_year}")
@@ -3842,13 +3909,16 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
             
             saved_data = salary_data[data_key]
             
-            # Load xăng xe
+            # Load xăng xe: chỉ override nếu > 0
             if "xang_xe" in saved_data and hasattr(self, 'tablePhuCap'):
                 xang_xe_value = saved_data["xang_xe"]
-                xang_xe_item = QTableWidgetItem(f"{xang_xe_value:,}")
-                xang_xe_item.setToolTip(f"🔍 XĂNG XE (Đã chỉnh sửa)\n💰 Số tiền: {xang_xe_value:,} VNĐ\n\n👤 Nhân viên: {self.current_employee}\n📅 Tháng: {month_year}")
-                self.tablePhuCap.setItem(4, 2, xang_xe_item)
-                print(f"📂 Đã load xăng xe đã lưu: {xang_xe_value:,} VNĐ")
+                if isinstance(xang_xe_value, (int, float)) and xang_xe_value > 0:
+                    xang_xe_item = QTableWidgetItem(f"{xang_xe_value:,}")
+                    xang_xe_item.setToolTip(f"🔍 XĂNG XE (Đã chỉnh sửa)\n💰 Số tiền: {xang_xe_value:,} VNĐ\n\n👤 Nhân viên: {self.current_employee}\n📅 Tháng: {month_year}")
+                    self.tablePhuCap.setItem(4, 2, xang_xe_item)
+                    print(f"📂 Đã load xăng xe đã lưu: {xang_xe_value:,} VNĐ")
+                else:
+                    print("ℹ️ Xăng xe đã lưu = 0 → giữ giá trị tính toán mặc định")
             
             # Load mua sắm
             if "mua_sam" in saved_data and hasattr(self, 'tableMuaSam'):
@@ -4147,84 +4217,209 @@ Số chủ nhật: {month_info['days_in_month'] - working_days}
             print(f"Lỗi cập nhật thực nhận: {e}")
 
     def in_phieu_luong(self):
-        """Chụp ảnh phiếu lương, hiển thị preview, cho phép lưu PNG hoặc copy clipboard"""
+        """Xem trước phiếu lương full, cho phép Lưu PNG / Copy PNG / Xuất PDF."""
         try:
-            print("=== BẮT ĐẦU IN PHIẾU LƯƠNG ===")
             # Gửi dữ liệu lương thực tế sang tab tổng lương
             self.send_salary_data_to_tong_luong()
-            
-            # Tìm widget phiếu lương (QGroupBox) trong content layout
+
+            # Tìm widget phiếu lương chính (ưu tiên widget gốc trong QGraphicsView)
             phieu_luong_widget = None
-            for child in self.findChildren(QGroupBox):
-                if child.title() == "":  # GroupBox không có tiêu đề là phiếu lương chính
-                    phieu_luong_widget = child
-                    break
-            print(f"Debug: Tìm thấy {len(self.findChildren(QGroupBox))} GroupBox")
+            if hasattr(self, '_scalable_source_widget') and self._scalable_source_widget is not None:
+                phieu_luong_widget = self._scalable_source_widget
+            elif hasattr(self, 'phieu_luong_container') and self.phieu_luong_container is not None:
+                phieu_luong_widget = self.phieu_luong_container
+            else:
+                for child in self.findChildren(QGroupBox):
+                    if child.title() == "":
+                        phieu_luong_widget = child
+                        break
             if phieu_luong_widget is None:
-                print("Debug: Không tìm thấy GroupBox phiếu lương")
-                QMessageBox.warning(self, "Lỗi", "Không tìm thấy phiếu lương để in!")
+                QMessageBox.warning(self, "Lỗi", "Không tìm thấy phiếu lương để xuất!")
                 return
-            print("Debug: Đã tìm thấy GroupBox phiếu lương")
 
-            # Render widget thành QPixmap
-            pixmap = phieu_luong_widget.grab()
+            # Render full widget (không bị crop)
+            def render_full_pixmap(widget):
+                try:
+                    # Cập nhật layout và đặt kích thước theo sizeHint để tránh bị cắt mép phải
+                    widget.adjustSize()
+                    size = widget.sizeHint()
+                    if size.width() <= 0 or size.height() <= 0:
+                        size = widget.size()
+                    if size.width() > 0 and size.height() > 0:
+                        # Thử grab trực tiếp trước (bắt được cả viền/khung)
+                        grab = widget.grab()
+                        if not grab.isNull() and grab.width() >= size.width():
+                            return grab
+                    # Fallback: render thủ công với padding nhỏ để tránh clip viền phải
+                    pad_w, pad_h = 8, 8
+                    pm = QPixmap(size.width() + pad_w, size.height() + pad_h)
+                    pm.fill(Qt.white)
+                    painter = QPainter(pm)
+                    painter.translate(4, 4)
+                    widget.render(painter)
+                    painter.end()
+                    return pm
+                except Exception:
+                    grab = widget.grab()
+                    return grab
 
-            # Scale nhỏ lại để preview (70% kích thước gốc)
-            scaled_pixmap = pixmap.scaled(
-                int(pixmap.width() * 0.5), 
-                int(pixmap.height() * 0.5), 
-                Qt.KeepAspectRatio, 
-                Qt.SmoothTransformation
-            )
+            pixmap = render_full_pixmap(phieu_luong_widget)
 
-            # Hiển thị preview popup
+            # Preview dialog
             preview_dialog = QDialog(self)
             preview_dialog.setWindowTitle("Xem trước phiếu lương")
             preview_dialog.setModal(True)
-            preview_dialog.resize(scaled_pixmap.width()+40, scaled_pixmap.height()+100)
+            scaled_pixmap = pixmap.scaled(int(pixmap.width()*0.6), int(pixmap.height()*0.6), Qt.KeepAspectRatio, Qt.SmoothTransformation)
 
             vbox = QVBoxLayout(preview_dialog)
             vbox.setContentsMargins(10, 10, 10, 10)
             vbox.setSpacing(10)
 
-            # Hiển thị ảnh preview (đã scale nhỏ)
             img_label = QLabel()
             img_label.setPixmap(scaled_pixmap)
             img_label.setAlignment(Qt.AlignCenter)
             vbox.addWidget(img_label)
 
-            # Nút chức năng
             hbox = QHBoxLayout()
             btn_save = QPushButton("Lưu PNG")
-            btn_copy = QPushButton("Copy hình ảnh")
-            btn_cancel = QPushButton("Đóng")
+            btn_copy = QPushButton("Copy PNG")
+            btn_pdf = QPushButton("Xuất PDF")
+            btn_close = QPushButton("Đóng")
             hbox.addStretch()
             hbox.addWidget(btn_save)
             hbox.addWidget(btn_copy)
-            hbox.addWidget(btn_cancel)
+            hbox.addWidget(btn_pdf)
+            hbox.addWidget(btn_close)
             vbox.addLayout(hbox)
 
-            # Xử lý lưu file
             def save_image():
-                from PyQt5.QtWidgets import QFileDialog
                 file_path, _ = QFileDialog.getSaveFileName(preview_dialog, "Lưu phiếu lương", "phieu_luong.png", "PNG Files (*.png)")
                 if file_path:
                     pixmap.save(file_path, "PNG")
-                    QMessageBox.information(preview_dialog, "Thành công", f"Đã lưu phiếu lương: {file_path}")
+                    QMessageBox.information(preview_dialog, "Thành công", f"Đã lưu: {file_path}")
 
-            # Xử lý copy clipboard
             def copy_image():
-                clipboard = QApplication.clipboard()
-                clipboard.setPixmap(pixmap)
+                QApplication.clipboard().setPixmap(pixmap)
                 QMessageBox.information(preview_dialog, "Đã copy", "Hình ảnh đã được copy vào clipboard!")
+
+            def export_pdf():
+                try:
+                    from PyQt5.QtPrintSupport import QPrinter
+                    file_path, _ = QFileDialog.getSaveFileName(preview_dialog, "Xuất PDF", "phieu_luong.pdf", "PDF Files (*.pdf)")
+                    if not file_path:
+                        return
+                    printer = QPrinter(QPrinter.HighResolution)
+                    printer.setOutputFormat(QPrinter.PdfFormat)
+                    printer.setOutputFileName(file_path)
+                    painter = QPainter(printer)
+                    size = phieu_luong_widget.sizeHint()
+                    if size.width() <= 0 or size.height() <= 0:
+                        size = phieu_luong_widget.size()
+                    page_rect = printer.pageRect()
+                    sx = page_rect.width() / size.width()
+                    sy = page_rect.height() / size.height()
+                    scale = min(sx, sy)
+                    painter.scale(scale, scale)
+                    phieu_luong_widget.render(painter)
+                    painter.end()
+                    QMessageBox.information(preview_dialog, "Thành công", f"Đã xuất PDF: {file_path}")
+                except Exception as ex:
+                    QMessageBox.warning(preview_dialog, "Lỗi", f"Không thể xuất PDF: {ex}")
 
             btn_save.clicked.connect(save_image)
             btn_copy.clicked.connect(copy_image)
-            btn_cancel.clicked.connect(preview_dialog.close)
+            btn_pdf.clicked.connect(export_pdf)
+            btn_close.clicked.connect(preview_dialog.close)
 
             preview_dialog.exec_()
         except Exception as e:
             QMessageBox.warning(self, "Lỗi", f"Không thể in phiếu lương: {e}")
+
+    def copy_full_payslip_png(self):
+        """Copy nhanh PNG full phiếu lương (không cần mở preview)."""
+        try:
+            target = None
+            for child in self.findChildren(QGroupBox):
+                if child.title() == "":
+                    target = child
+                    break
+            if target is None:
+                QMessageBox.warning(self, "Lỗi", "Không tìm thấy phiếu lương để copy!")
+                return
+            # Render full
+            target.adjustSize()
+            size = target.sizeHint()
+            if size.width() <= 0 or size.height() <= 0:
+                size = target.size()
+            pm = QPixmap(size)
+            pm.fill(Qt.transparent)
+            painter = QPainter(pm)
+            target.render(painter)
+            painter.end()
+            QApplication.clipboard().setPixmap(pm)
+            QMessageBox.information(self, "Đã copy", "Đã copy hình PNG của phiếu lương vào clipboard!")
+        except Exception as e:
+            QMessageBox.warning(self, "Lỗi", f"Không thể copy PNG: {e}")
+
+    def save_full_payslip_png(self):
+        """Lưu nhanh PNG full phiếu lương (không cần mở preview)."""
+        try:
+            target = None
+            for child in self.findChildren(QGroupBox):
+                if child.title() == "":
+                    target = child
+                    break
+            if target is None:
+                QMessageBox.warning(self, "Lỗi", "Không tìm thấy phiếu lương để lưu!")
+                return
+            target.adjustSize()
+            size = target.sizeHint()
+            if size.width() <= 0 or size.height() <= 0:
+                size = target.size()
+            pm = QPixmap(size)
+            pm.fill(Qt.transparent)
+            painter = QPainter(pm)
+            target.render(painter)
+            painter.end()
+            file_path, _ = QFileDialog.getSaveFileName(self, "Lưu phiếu lương (PNG)", "phieu_luong.png", "PNG Files (*.png)")
+            if file_path:
+                pm.save(file_path, "PNG")
+                QMessageBox.information(self, "Thành công", f"Đã lưu: {file_path}")
+        except Exception as e:
+            QMessageBox.warning(self, "Lỗi", f"Không thể lưu PNG: {e}")
+
+    def export_current_payslip_pdf(self):
+        """Xuất nhanh PDF full phiếu lương (không cần mở preview)."""
+        try:
+            target = None
+            for child in self.findChildren(QGroupBox):
+                if child.title() == "":
+                    target = child
+                    break
+            if target is None:
+                QMessageBox.warning(self, "Lỗi", "Không tìm thấy phiếu lương để xuất PDF!")
+                return
+            from PyQt5.QtPrintSupport import QPrinter
+            file_path, _ = QFileDialog.getSaveFileName(self, "Xuất PDF", "phieu_luong.pdf", "PDF Files (*.pdf)")
+            if not file_path:
+                return
+            printer = QPrinter(QPrinter.HighResolution)
+            printer.setOutputFormat(QPrinter.PdfFormat)
+            printer.setOutputFileName(file_path)
+            painter = QPainter(printer)
+            size = target.sizeHint()
+            if size.width() <= 0 or size.height() <= 0:
+                size = target.size()
+            page_rect = printer.pageRect()
+            sx = page_rect.width() / size.width()
+            sy = page_rect.height() / size.height()
+            scale = min(sx, sy)
+            painter.scale(scale, scale)
+            target.render(painter)
+            painter.end()
+            QMessageBox.information(self, "Thành công", f"Đã xuất PDF: {file_path}")
+        except Exception as e:
+            QMessageBox.warning(self, "Lỗi", f"Không thể xuất PDF: {e}")
 
     def xuat_excel(self):
         # Gửi dữ liệu lương thực tế sang tab tổng lương

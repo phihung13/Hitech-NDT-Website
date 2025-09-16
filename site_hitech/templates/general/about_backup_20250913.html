@@ -1,0 +1,668 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{% if about_page.meta_title %}{{ about_page.meta_title }}{% else %}{{ about_page.title|default:"Giới thiệu" }} - Hitech NDT{% endif %}{% endblock %}
+
+{% block meta_description %}{{ about_page.meta_description|default:"Giới thiệu về công ty Hitech NDT - Đơn vị hàng đầu trong lĩnh vực kiểm tra không phá hủy tại Việt Nam" }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.hero-about-section {
+    position: relative;
+    min-height: 60vh;
+    background: {% if about_page.hero_bg_image %}url('{{ about_page.hero_bg_image.url }}') center/cover no-repeat{% else %}linear-gradient(135deg, {{ about_page.hero_bg_color|default:"#1a365d" }}, #2c5282){% endif %};
+    color: {{ about_page.hero_text_color|default:"#ffffff" }};
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+}
+
+.hero-about-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 1;
+}
+
+.hero-about-content {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+}
+
+.hero-about-title {
+    font-size: 3.5rem;
+    font-weight: 800;
+    margin-bottom: 1rem;
+    color: #fff !important;
+    font-family: 'Roboto', 'Open Sans', Arial, sans-serif !important;
+    text-shadow: 0 4px 24px rgba(0,0,0,0.65), 0 1.5px 0 rgba(0,0,0,0.25);
+}
+
+.hero-about-subtitle {
+    font-size: 1.4rem;
+    font-weight: 300;
+    opacity: 0.95;
+    max-width: 600px;
+    margin: 0 auto;
+    color: #fff !important;
+    font-family: 'Roboto', 'Open Sans', Arial, sans-serif !important;
+    text-shadow: 0 2px 12px rgba(0,0,0,0.55), 0 1px 0 rgba(0,0,0,0.18);
+}
+
+.stats-section {
+    background: {{ about_page.stats_bg_color|default:"#f8f9fa" }};
+    color: {{ about_page.stats_text_color|default:"#333333" }};
+    padding: 80px 0;
+}
+
+.stat-item {
+    text-align: center;
+    padding: 2rem 1rem;
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+    height: 100%;
+}
+
+.stat-item:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+}
+
+.stat-icon {
+    font-size: 3rem;
+    color: var(--primary);
+    margin-bottom: 1rem;
+}
+
+.stat-number {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: var(--primary);
+    margin-bottom: 0.5rem;
+}
+
+.stat-label {
+    font-size: 1rem;
+    color: #666;
+    font-weight: 500;
+}
+
+.content-section {
+    background: {{ about_page.main_bg_color|default:"#ffffff" }};
+    padding: 100px 0;
+}
+
+.about-image-wrapper {
+    position: relative;
+    overflow: hidden;
+    border-radius: 20px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+}
+
+.about-image-wrapper img {
+    width: 100%;
+    height: auto;
+    transition: transform 0.3s ease;
+}
+
+.about-image-wrapper:hover img {
+    transform: scale(1.05);
+}
+
+.section-header {
+    text-align: center;
+    margin-bottom: 4rem;
+}
+
+.section-title {
+    font-size: 2.8rem;
+    font-weight: 700;
+    color: {{ about_page.heading_color|default:"#333333" }};
+    margin-bottom: 1rem;
+    position: relative;
+}
+
+.section-title::after {
+    content: '';
+    position: absolute;
+    bottom: -15px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80px;
+    height: 4px;
+    background: var(--primary);
+    border-radius: 2px;
+}
+
+.vmv-section {
+    background: {% if about_page.vmv_bg_image %}url('{{ about_page.vmv_bg_image.url }}') center/cover no-repeat, {{ about_page.vmv_bg_color|default:"#ffffff" }}{% else %}{{ about_page.vmv_bg_color|default:"#ffffff" }}{% endif %};
+    padding: 100px 0;
+    position: relative;
+}
+
+.vmv-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: {% if about_page.vmv_bg_image %}rgba(255, 255, 255, 0.95){% else %}transparent{% endif %};
+    z-index: 1;
+}
+
+.vmv-section .container {
+    position: relative;
+    z-index: 2;
+}
+
+.vmv-card {
+    background: white;
+    border-radius: 20px;
+    padding: 3rem 2rem;
+    text-align: center;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+    height: 100%;
+    border-top: 5px solid var(--primary);
+}
+
+.vmv-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 25px 50px rgba(0,0,0,0.15);
+}
+
+.vmv-icon {
+    font-size: 4rem;
+    margin-bottom: 2rem;
+    background: linear-gradient(45deg, var(--primary), var(--primary-dark));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.vmv-title {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    color: #333;
+}
+
+.timeline-section {
+    background: {% if about_page.timeline_bg_image %}url('{{ about_page.timeline_bg_image.url }}') center/cover no-repeat, {{ about_page.timeline_bg_color|default:"#f8f9fa" }}{% else %}{{ about_page.timeline_bg_color|default:"#f8f9fa" }}{% endif %};
+    padding: 100px 0;
+    position: relative;
+}
+
+.timeline-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    {% if about_page.timeline_bg_image %}
+        background: {{ about_page.timeline_overlay_color|default:"#f8f9fa" }};
+        opacity: {{ about_page.timeline_overlay_opacity|default:"0.95" }};
+    {% else %}
+        background: transparent;
+    {% endif %}
+    z-index: 1;
+}
+
+.timeline-section .container {
+    position: relative;
+    z-index: 2;
+}
+
+.timeline {
+    position: relative;
+    padding: 2rem 0;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: {{ about_page.timeline_accent_color|default:"#007bff" }};
+    transform: translateX(-50%);
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 3rem;
+    width: 50%;
+    padding: 0 2rem;
+}
+
+.timeline-item:nth-child(odd) {
+    left: 0;
+    text-align: right;
+}
+
+.timeline-item:nth-child(even) {
+    left: 50%;
+    text-align: left;
+}
+
+.timeline-content {
+    background: white;
+    padding: 2rem;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    position: relative;
+}
+
+.timeline-item:nth-child(odd) .timeline-content::after {
+    content: '';
+    position: absolute;
+    right: -15px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border-left: 15px solid white;
+    border-top: 15px solid transparent;
+    border-bottom: 15px solid transparent;
+}
+
+.timeline-item:nth-child(even) .timeline-content::after {
+    content: '';
+    position: absolute;
+    left: -15px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border-right: 15px solid white;
+    border-top: 15px solid transparent;
+    border-bottom: 15px solid transparent;
+}
+
+.timeline-year {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--primary);
+    margin-bottom: 0.5rem;
+}
+
+.timeline-title {
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    color: #333;
+}
+
+.timeline-text {
+    color: #666;
+    line-height: 1.6;
+}
+
+.timeline-dot {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 20px;
+    height: 20px;
+    background: var(--primary);
+    border: 4px solid white;
+    border-radius: 50%;
+    box-shadow: 0 0 10px rgba(0,0,0,0.2);
+}
+
+.achievements-section {
+    background: {{ about_page.achievements_bg_color|default:"#ffffff" }};
+    padding: 100px 0;
+}
+
+.achievement-item {
+    text-align: center;
+    padding: 2rem;
+    background: #f8f9fa;
+    border-radius: 15px;
+    margin-bottom: 2rem;
+    transition: all 0.3s ease;
+}
+
+.achievement-item:hover {
+    background: var(--primary);
+    color: white;
+    transform: translateY(-5px);
+}
+
+.cta-section {
+    background: {{ about_page.cta_bg_color|default:"#007bff" }};
+    color: {{ about_page.cta_text_color|default:"#ffffff" }};
+    padding: 80px 0;
+    text-align: center;
+}
+
+.cta-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+}
+
+.cta-subtitle {
+    font-size: 1.2rem;
+    margin-bottom: 2rem;
+    opacity: 0.9;
+}
+
+.cta-btn {
+    background: {{ about_page.cta_button_color|default:"#ffffff" }};
+    color: {{ about_page.cta_button_text_color|default:"#007bff" }};
+    padding: 1rem 3rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 50px;
+    text-decoration: none;
+    display: inline-block;
+    transition: all 0.3s ease;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+.cta-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+    color: {{ about_page.cta_button_text_color|default:"#007bff" }};
+}
+
+
+
+@media (max-width: 768px) {
+    .hero-about-title {
+        font-size: 2.5rem;
+    }
+    
+    .hero-about-subtitle {
+        font-size: 1.1rem;
+    }
+    
+    .timeline::before {
+        left: 30px;
+    }
+    
+    .timeline-item {
+        width: 100%;
+        left: 0 !important;
+        text-align: left !important;
+        padding-left: 60px;
+    }
+    
+    .timeline-content::after {
+        display: none;
+    }
+    
+    .timeline-dot {
+        left: 30px !important;
+    }
+    
+    .section-title {
+        font-size: 2.2rem;
+    }
+    
+    .stat-item {
+        margin-bottom: 2rem;
+    }
+}
+
+.fade-in {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: all 0.6s ease;
+}
+
+.fade-in.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-about-section">
+    <div class="container">
+        <div class="hero-about-content">
+            <h1 class="hero-about-title fade-in">{{ about_page.title|default:"Về Chúng Tôi" }}</h1>
+            {% if about_page.subtitle %}
+            <p class="hero-about-subtitle fade-in">{{ about_page.subtitle }}</p>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+<!-- Stats Section -->
+{% if about_page %}
+<section class="stats-section">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="stat-item fade-in">
+                    <div class="stat-icon">
+                        <i class="{{ about_page.stat1_icon|default:'fas fa-project-diagram' }}"></i>
+                    </div>
+                    <div class="stat-number">{{ about_page.stat1_number|default:"500+" }}</div>
+                    <div class="stat-label">{{ about_page.stat1_label|default:"Dự án hoàn thành" }}</div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="stat-item fade-in">
+                    <div class="stat-icon">
+                        <i class="{{ about_page.stat2_icon|default:'fas fa-calendar-alt' }}"></i>
+                    </div>
+                    <div class="stat-number">{{ about_page.stat2_number|default:"15+" }}</div>
+                    <div class="stat-label">{{ about_page.stat2_label|default:"Năm kinh nghiệm" }}</div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="stat-item fade-in">
+                    <div class="stat-icon">
+                        <i class="{{ about_page.stat3_icon|default:'fas fa-handshake' }}"></i>
+                    </div>
+                    <div class="stat-number">{{ about_page.stat3_number|default:"100+" }}</div>
+                    <div class="stat-label">{{ about_page.stat3_label|default:"Khách hàng tin tưởng" }}</div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="stat-item fade-in">
+                    <div class="stat-icon">
+                        <i class="{{ about_page.stat4_icon|default:'fas fa-clock' }}"></i>
+                    </div>
+                    <div class="stat-number">{{ about_page.stat4_number|default:"24/7" }}</div>
+                    <div class="stat-label">{{ about_page.stat4_label|default:"Hỗ trợ khách hàng" }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- Main Content Section -->
+<section class="content-section">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6 mb-5 mb-lg-0">
+                <div class="fade-in">
+                    <h2 class="section-title">{{ about_page.main_title|default:"Công ty của chúng tôi" }}</h2>
+                    <div class="about-content">
+                        {% if about_page.main_content %}
+                            {{ about_page.main_content|safe }}
+                        {% else %}
+                            <p>Hitech NDT là đơn vị hàng đầu trong lĩnh vực kiểm tra không phá hủy tại Việt Nam. Với đội ngũ kỹ sư giàu kinh nghiệm và trang thiết bị hiện đại, chúng tôi cam kết mang đến những dịch vụ chất lượng cao nhất cho khách hàng.</p>
+                            <p>Chúng tôi chuyên cung cấp các dịch vụ kiểm tra không phá hủy cho các ngành công nghiệp như dầu khí, hóa chất, điện lực, và xây dựng. Với sứ mệnh đảm bảo an toàn và chất lượng, chúng tôi luôn nỗ lực không ngừng để mang lại những giải pháp tối ưu nhất.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="about-image-wrapper fade-in">
+                    {% if about_page.main_image %}
+                        <img src="{{ about_page.main_image.url }}" alt="{{ about_page.main_title }}" class="img-fluid">
+                    {% else %}
+                        <img src="{% static 'images/placeholder.svg' %}" alt="About us" class="img-fluid">
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Vision Mission Values Section -->
+{% if about_page and about_page.vision %}
+<section class="vmv-section">
+    <div class="container">
+        <div class="section-header">
+            <h2 class="section-title fade-in">{{ about_page.vmv_title|default:"Tầm nhìn - Sứ mệnh - Giá trị" }}</h2>
+        </div>
+        <div class="row">
+            <div class="col-lg-4 mb-4">
+                <div class="vmv-card fade-in">
+                    <div class="vmv-icon">
+                        <i class="{{ about_page.vision_icon|default:'fas fa-eye' }}"></i>
+                    </div>
+                    <h3 class="vmv-title">{{ about_page.vision_title|default:"Tầm nhìn" }}</h3>
+                    <div class="vmv-content">{{ about_page.vision|safe }}</div>
+                </div>
+            </div>
+            {% if about_page.mission %}
+            <div class="col-lg-4 mb-4">
+                <div class="vmv-card fade-in">
+                    <div class="vmv-icon">
+                        <i class="{{ about_page.mission_icon|default:'fas fa-bullseye' }}"></i>
+                    </div>
+                    <h3 class="vmv-title">{{ about_page.mission_title|default:"Sứ mệnh" }}</h3>
+                    <div class="vmv-content">{{ about_page.mission|safe }}</div>
+                </div>
+            </div>
+            {% endif %}
+            {% if about_page.core_values %}
+            <div class="col-lg-4 mb-4">
+                <div class="vmv-card fade-in">
+                    <div class="vmv-icon">
+                        <i class="{{ about_page.values_icon|default:'fas fa-gem' }}"></i>
+                    </div>
+                    <h3 class="vmv-title">{{ about_page.values_title|default:"Giá trị cốt lõi" }}</h3>
+                    <div class="vmv-content">{{ about_page.core_values|safe }}</div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- Timeline Section -->
+{% if about_page and about_page.timeline %}
+<section class="timeline-section">
+    <div class="container">
+        <div class="section-header">
+            <h2 class="section-title fade-in">{{ about_page.timeline_section_title|default:"Cột mốc phát triển" }}</h2>
+            {% if about_page.timeline_section_subtitle %}
+            <p class="lead fade-in">{{ about_page.timeline_section_subtitle }}</p>
+            {% endif %}
+        </div>
+        <div class="timeline">
+            {% for item in about_page.get_timeline_items %}
+            <div class="timeline-item">
+                <div class="timeline-content fade-in">
+                    <div class="timeline-year">{{ item.year }}</div>
+                    <h4 class="timeline-title">{{ item.title }}</h4>
+                    <p class="timeline-text">{{ item.description }}</p>
+                </div>
+                <div class="timeline-dot"></div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- Achievements Section -->
+{% if about_page and about_page.achievements %}
+<section class="achievements-section">
+    <div class="container">
+        <div class="section-header">
+            <h2 class="section-title fade-in">{{ about_page.achievements_title|default:"Thành tựu & Chứng nhận" }}</h2>
+        </div>
+        <div class="row">
+            <div class="col-lg-8 mx-auto">
+                <div class="fade-in">
+                    {{ about_page.achievements|safe }}
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- Services Section -->
+{% if about_page and about_page.services_content %}
+<section class="services-section" style="background: {{ about_page.services_bg_color|default:'#f8f9fa' }}; padding: 100px 0;">
+    <div class="container">
+        <div class="section-header">
+            <h2 class="section-title fade-in">{{ about_page.services_title|default:"Dịch vụ của chúng tôi" }}</h2>
+            {% if about_page.services_subtitle %}
+            <p class="lead fade-in">{{ about_page.services_subtitle }}</p>
+            {% endif %}
+        </div>
+        <div class="row">
+            <div class="col-lg-10 mx-auto">
+                <div class="fade-in">
+                    {{ about_page.services_content|safe }}
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- Call to Action Section -->
+<section class="cta-section">
+    <div class="container">
+        <div class="fade-in">
+            <h2 class="cta-title">{{ about_page.cta_title|default:"Sẵn sàng hợp tác?" }}</h2>
+            <p class="cta-subtitle">{{ about_page.cta_subtitle|default:"Liên hệ với chúng tôi ngay hôm nay để được tư vấn miễn phí" }}</p>
+            <a href="{{ about_page.cta_button_url|default:'/lien-he/' }}" class="cta-btn">
+                {{ about_page.cta_button_text|default:"Liên hệ ngay" }}
+            </a>
+        </div>
+    </div>
+</section>
+
+<script>
+// Animation on scroll
+function animateOnScroll() {
+    const elements = document.querySelectorAll('.fade-in');
+    elements.forEach(element => {
+        const elementTop = element.getBoundingClientRect().top;
+        const elementVisible = 150;
+        
+        if (elementTop < window.innerHeight - elementVisible) {
+            element.classList.add('visible');
+        }
+    });
+}
+
+window.addEventListener('scroll', animateOnScroll);
+window.addEventListener('load', animateOnScroll);
+
+// Initial animation
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(animateOnScroll, 100);
+});
+</script>
+{% endblock %}

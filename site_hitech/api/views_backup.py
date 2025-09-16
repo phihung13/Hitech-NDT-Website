@@ -1,9 +1,9 @@
 from django.http import JsonResponse
-from .models import Course, Post, Category, Comment, ContactSettings, Tag, SiteSettings, AboutPage, HomePageSettings, UserProfile, Project, ProjectFile, ProjectProgress, CourseCategory, Equipment, PublicProject, Company, NDTMethod, Attendance, Document, DocumentCategory, DocumentTag, DocumentAccessLog, DocumentFileVersion
+from .models import Course, Post, Category, Comment, ContactSettings, Tag, SiteSettings, AboutPage, HomePageSettings, UserProfile, Project, ProjectFile, ProjectProgress, CourseCategory, Equipment, PublicProject, Company, NDTMethod, Attendance
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
-from .forms import PostForm, CourseForm, CommentForm, ProjectFileForm, ProjectUpdateForm, ProjectCreateForm, DocumentForm
+from .forms import PostForm, CourseForm, CommentForm, ProjectFileForm, ProjectUpdateForm, ProjectCreateForm
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
 from django.shortcuts import render
@@ -33,7 +33,6 @@ from decimal import Decimal
 from django.contrib.auth import REDIRECT_FIELD_NAME
 from django.contrib.auth.views import redirect_to_login
 from django.urls import reverse
-from django import forms
 
 def get_disk_usage():
     """Lấy thông tin dung lượng disk"""
@@ -337,13 +336,6 @@ def staff_login(request):
         if user is not None:
             if user.is_staff:  # Chỉ cho phép staff đăng nhập
                 auth_login(request, user)
-                # ép đi thiết lập lần đầu nếu cần
-                profile, _ = UserProfile.objects.get_or_create(user=user, defaults={
-                    'role': 'staff',
-                    'msnv': f'HTNV-{user.id:03d}'
-                })
-                if getattr(profile, 'must_change_password', False) or getattr(profile, 'must_set_email', False) or not user.email:
-                    return redirect('first_time_setup')
                 messages.success(request, f'Chào mừng {user.username}!')
                 return redirect('staff_dashboard')
             else:
@@ -352,52 +344,6 @@ def staff_login(request):
             messages.error(request, 'Tên đăng nhập hoặc mật khẩu không đúng.')
     
     return render(request, 'auth/login.html')
-
-@login_required
-def first_time_setup(request):
-    """Bắt buộc thiết lập email và đổi mật khẩu lần đầu"""
-    profile, _ = UserProfile.objects.get_or_create(user=request.user, defaults={
-        'role': 'staff',
-        'msnv': f'HTNV-{request.user.id:03d}'
-    })
-    
-    if request.method == 'POST':
-        new_email = request.POST.get('email', '').strip()
-        new_password = request.POST.get('new_password', '')
-        confirm_password = request.POST.get('confirm_password', '')
-        
-        if not new_email:
-            messages.error(request, 'Vui lòng nhập email.')
-            return render(request, 'auth/first_time_setup.html', {'user': request.user})
-        
-        if new_password != confirm_password or len(new_password) < 8:
-            messages.error(request, 'Mật khẩu không hợp lệ hoặc không trùng khớp (tối thiểu 8 ký tự).')
-            return render(request, 'auth/first_time_setup.html', {'user': request.user, 'email': new_email})
-        
-        # Cập nhật email và mật khẩu
-        request.user.email = new_email
-        request.user.set_password(new_password)
-        request.user.save()
-        
-        # Cập nhật cờ
-        profile.must_change_password = False
-        profile.must_set_email = False
-        profile.password_last_changed_at = timezone.now()
-        profile.save(update_fields=['must_change_password', 'must_set_email', 'password_last_changed_at'])
-        
-        # Re-authenticate sau khi đổi password
-        user = authenticate(request, username=request.user.username, password=new_password)
-        if user:
-            auth_login(request, user)
-        
-        messages.success(request, 'Thiết lập lần đầu thành công!')
-        return redirect('staff_dashboard')
-    
-    # GET: hiển thị form
-    return render(request, 'auth/first_time_setup.html', {
-        'user': request.user,
-        'email': request.user.email,
-    })
 
 @staff_required
 def staff_dashboard(request):
@@ -936,9 +882,13 @@ def projects_management(request):
 
 @login_required
 def staff_management(request):
-    """Trang quản lý nhân viên - Read-only for non-admin/manager"""
+    """Trang quản lý nhân viên - Chỉ Manager/Admin"""
     profile = getattr(request.user, 'user_profile', None)
-    user_role = getattr(profile, 'role', 'staff')
+    
+    # Kiểm tra quyền truy cập
+    if not profile or profile.role not in ['admin', 'manager']:
+        messages.error(request, 'Bạn không có quyền truy cập module quản lý nhân viên.')
+        return redirect('dashboard_overview')
     
     context = {
         'title': 'Quản lý nhân viên',
@@ -951,7 +901,7 @@ def staff_management(request):
             'Phân quyền hệ thống',
             'Đánh giá hiệu suất làm việc'
         ],
-        'user_role': user_role,
+        'user_role': profile.role,
         'coming_soon': True
     }
     return render(request, 'erp_modules/staff.html', context)
@@ -1049,323 +999,151 @@ def equipment_management(request):
 
 @login_required
 def documents_management(request):
-    """View for managing documents with versioning support"""
-    if request.method == 'POST':
-        print("=== DEBUG: POST request received ===")
-        print(f"Files: {request.FILES}")
-        print(f"POST data: {request.POST}")
-        
-        # Handle file upload manually
-        title = request.POST.get('title', '')
-        file = request.FILES.get('file')
-        description = request.POST.get('description', '')
-        category_id = request.POST.get('category')
-        parent_document_id = request.POST.get('parent_document_id')
-        change_note = request.POST.get('change_note', '')
-        
-        print(f"Title: {title}")
-        print(f"File: {file}")
-        print(f"Description: {description}")
-        print(f"Parent Document ID: {parent_document_id}")
-        print(f"Change Note: {change_note}")
-        
-        if file:
-            # Check if this is an update to existing document
-            if parent_document_id:
-                print("=== DEBUG: This is an UPDATE ===")
-                try:
-                    # This is an update - ghi đè lên tài liệu cũ
-                    document = Document.objects.get(id=parent_document_id)
-                    print(f"Document found: {document.title}")
-                    
-                    # Tắt trạng thái current của tất cả file cũ
-                    document.file_versions.update(is_current=False)
-                    
-                    # Tạo phiên bản file mới
-                    version_number = document.get_latest_version_number() + 1
-                    file_version = DocumentFileVersion.objects.create(
-                        document=document,
-                        file=file,
-                        file_name=file.name,
-                        file_size=file.size,
-                        file_type=file.name.split('.')[-1].lower() if '.' in file.name else '',
-                        uploaded_by=request.user,
-                        is_current=True,
-                        change_note=change_note or f'Cập nhật lên v{version_number}',
-                        version_number=version_number
-                    )
-                    
-                    # Cập nhật file hiện tại của document
-                    document.file = file
-                    document.description = description or document.description
-                    document.title = title or document.title
-                    document.created_by = request.user  # Cập nhật người upload gần nhất
-                    document.updated_at = timezone.now()
-                    document.file_size = file.size
-                    document.file_type = file_version.file_type
-                    
-                    print("=== DEBUG: Saving updated document ===")
-                    document.save()
-                    print(f"Document updated with ID: {document.id}, Version: v{version_number}")
-                    
-                    messages.success(request, f'Tài liệu đã được cập nhật thành công! Phiên bản mới: v{version_number}')
-                    return redirect('documents_management')
-                    
-                except Document.DoesNotExist:
-                    messages.error(request, 'Tài liệu không tồn tại.')
-                    return redirect('documents_management')
-                except Exception as e:
-                    print(f"=== DEBUG: Error during update: {str(e)} ===")
-                    messages.error(request, f'Lỗi khi cập nhật tài liệu: {str(e)}')
-                    return redirect('documents_management')
-            else:
-                # This is a new document upload
-                print("=== DEBUG: This is a NEW document ===")
-                try:
-                    category = DocumentCategory.objects.get(id=category_id) if category_id else None
-                    
-                    document = Document(
-                        title=title,
-                        file=file,
-                        description=description,
-                        category=category,
-                        created_by=request.user
-                    )
-                    
-                    print("=== DEBUG: Saving new document ===")
-                    document.save()
-                    print(f"New document saved with ID: {document.id}")
-                    
-                    # Tạo DocumentFileVersion cho file mới
-                    file_version = DocumentFileVersion.objects.create(
-                        document=document,
-                        file=file,
-                        file_name=file.name,
-                        file_size=file.size,
-                        file_type=file.name.split('.')[-1].lower() if '.' in file.name else '',
-                        uploaded_by=request.user,
-                        is_current=True,
-                        change_note='File gốc',
-                        version_number=1
-                    )
-                    
-                    messages.success(request, f'Tài liệu "{document.title}" đã được upload thành công!')
-                    return redirect('documents_management')
-                    
-                except Exception as e:
-                    messages.error(request, f'Lỗi khi upload tài liệu: {str(e)}')
-                    return redirect('documents_management')
-        else:
-            messages.error(request, 'Vui lòng chọn file để upload.')
-            return redirect('documents_management')
+    """Quản lý tài liệu nội bộ"""
+    from .models import Document, DocumentCategory, DocumentTag
+    from django.db.models import Q
     
-    # GET request - show documents list
-    documents = Document.objects.filter(is_active=True).order_by('-updated_at')
-    categories = DocumentCategory.objects.all()
+    # Get filter parameters
+    category_filter = request.GET.get('category')
+    tag_filter = request.GET.get('tag') 
+    search_query = request.GET.get('search')
+    
+    # Base queryset - only documents user can access
+    documents = Document.objects.filter(status='published')
+    accessible_docs = []
+    
+    for doc in documents:
+        if doc.can_access(request.user):
+            accessible_docs.append(doc.id)
+    
+    documents = Document.objects.filter(id__in=accessible_docs).select_related('category', 'created_by')
+    
+    # Apply filters
+    if category_filter:
+        documents = documents.filter(category__slug=category_filter)
+    
+    if tag_filter:
+        documents = documents.filter(tags__slug=tag_filter)
+        
+    if search_query:
+        documents = documents.filter(
+            Q(title__icontains=search_query) | 
+            Q(description__icontains=search_query) |
+            Q(document_code__icontains=search_query)
+        )
+    
+    # Get categories and tags for filters
+    categories = DocumentCategory.objects.filter(is_active=True).order_by('order', 'name')
+    tags = DocumentTag.objects.all().order_by('name')
+    
+    # Stats for dashboard
+    total_documents = documents.count()
+    user_downloads = 0
+    if hasattr(request.user, 'documentaccess_set'):
+        user_downloads = request.user.documentaccess_set.filter(action='download').count()
+    
+    # Recent documents
+    recent_docs = documents.order_by('-created_at')[:10]
     
     context = {
-        'documents': documents,
+        'title': 'Tài liệu nội bộ',
+        'documents': documents.order_by('-created_at'),
         'categories': categories,
-        'title': 'Quản lý tài liệu'
+        'tags': tags,
+        'recent_docs': recent_docs,
+        'total_documents': total_documents,
+        'user_downloads': user_downloads,
+        'current_category': category_filter,
+        'current_tag': tag_filter,
+        'search_query': search_query,
+        'user_role': getattr(request.user.user_profile, 'role', 'staff') if hasattr(request.user, 'user_profile') else 'staff'
     }
     return render(request, 'erp_modules/documents.html', context)
 
 @login_required
 def document_detail(request, slug):
-    """View for displaying document details with version history"""
-    document = get_object_or_404(Document, slug=slug, is_active=True)
+    """Chi tiết tài liệu"""
+    from .models import Document, DocumentAccess
     
-    # Tăng view count
+    document = get_object_or_404(Document, slug=slug, status='published')
+    
+    # Check access permission
+    if not document.can_access(request.user):
+        messages.error(request, 'Bạn không có quyền truy cập tài liệu này.')
+        return redirect('documents_management')
+    
+    # Log view access
+    DocumentAccess.objects.create(
+        document=document,
+        user=request.user,
+        action='view',
+        ip_address=get_client_ip(request),
+        user_agent=request.META.get('HTTP_USER_AGENT', '')
+    )
+    
+    # Increment view count
     document.view_count += 1
     document.save(update_fields=['view_count'])
     
-    # Lấy lịch sử file
-    file_versions = document.get_file_versions()
+    # Get related documents
+    related_docs = Document.objects.filter(
+        category=document.category, 
+        status='published'
+    ).exclude(id=document.id)[:5]
     
-    # Lấy version hiện tại từ DocumentFileVersion
-    current_file_version = document.current_file_version
-    current_version = current_file_version.version_number if current_file_version else 1
+    accessible_related = []
+    for doc in related_docs:
+        if doc.can_access(request.user):
+            accessible_related.append(doc)
     
     context = {
         'document': document,
-        'file_versions': file_versions,
-        'current_version': current_version,
+        'related_docs': accessible_related,
     }
     return render(request, 'documents/document_detail.html', context)
 
 @login_required
 def document_download(request, slug):
-    """Download document"""
-    try:
-        document = get_object_or_404(Document, slug=slug, is_active=True)
-    except:
-        # Fallback for documents without slug
-        document = get_object_or_404(Document, id=slug, is_active=True)
+    """Tải xuống tài liệu"""
+    from .models import Document, DocumentAccess
+    from django.http import FileResponse, Http404
+    import os
     
-    # Log download
-    try:
-        DocumentAccessLog.objects.create(
-            user=request.user,
-            document=document,
-            action='download'
-        )
-        
-        # Increment download count
-        document.download_count += 1
-        document.save(update_fields=['download_count'])
-    except:
-        pass
+    document = get_object_or_404(Document, slug=slug, status='published')
     
-    # Return file response
-    response = HttpResponse(document.file.read(), content_type='application/octet-stream')
-    response['Content-Disposition'] = f'attachment; filename="{document.title}.{document.file.name.split(".")[-1]}"'
-    return response
-
-@login_required
-def document_edit(request, slug):
-    """Edit document"""
-    document = get_object_or_404(Document, slug=slug, is_active=True)
+    # Check access permission
+    if not document.can_access(request.user):
+        raise Http404("Tài liệu không tồn tại hoặc bạn không có quyền truy cập")
     
-    # Check permissions
-    if not (request.user.is_superuser or request.user.is_staff or document.created_by == request.user):
-        messages.error(request, 'You do not have permission to edit this document.')
-        return redirect('documents_management')
+    # Check if file exists
+    if not document.file or not default_storage.exists(document.file.name):
+        messages.error(request, 'File tài liệu không tồn tại.')
+        return redirect('document_detail', slug=slug)
     
-    if request.method == 'POST':
-        form = DocumentForm(request.POST, request.FILES, instance=document)
-        if form.is_valid():
-            form.save()
-            messages.success(request, 'Document updated successfully!')
-            return redirect('document_detail', slug=document.slug)
-    else:
-        form = DocumentForm(instance=document)
-    
-    context = {
-        'form': form,
-        'document': document,
-        'title': f'Edit {document.title}'
-    }
-    return render(request, 'documents/document_edit.html', context)
-
-@login_required
-def document_delete(request, slug):
-    """Delete document"""
-    document = get_object_or_404(Document, slug=slug, is_active=True)
-    
-    # Check permissions
-    if not (request.user.is_superuser or document.created_by == request.user):
-        messages.error(request, 'You do not have permission to delete this document.')
-        return redirect('documents_management')
-    
-    if request.method == 'POST':
-        document.is_active = False
-        document.save()
-        messages.success(request, 'Document deleted successfully!')
-        return redirect('documents_management')
-    
-    context = {
-        'document': document,
-        'title': f'Delete {document.title}'
-    }
-    return render(request, 'documents/document_delete.html', context)
-
-@login_required
-def document_share(request, slug):
-    """Share document"""
-    document = get_object_or_404(Document, slug=slug, is_active=True)
-    
-    # Log share
-    DocumentAccessLog.objects.create(
-        user=request.user,
+    # Log download access
+    DocumentAccess.objects.create(
         document=document,
-        action='share'
+        user=request.user,
+        action='download',
+        ip_address=get_client_ip(request),
+        user_agent=request.META.get('HTTP_USER_AGENT', '')
     )
     
-    context = {
-        'document': document,
-        'title': f'Share {document.title}'
-    }
-    return render(request, 'documents/document_share.html', context)
-
-@login_required
-def document_upload(request):
-    """Upload new document"""
-    if request.method == 'POST':
-        form = DocumentForm(request.POST, request.FILES)
-        if form.is_valid():
-            document = form.save(commit=False)
-            document.created_by = request.user
-            document.save()
-            messages.success(request, 'Document uploaded successfully!')
-            return redirect('documents_management')
-    else:
-        form = DocumentForm()
+    # Increment download count
+    document.download_count += 1
+    document.save(update_fields=['download_count'])
     
-    context = {
-        'form': form,
-        'title': 'Upload tài liệu mới'
-    }
-    return render(request, 'documents/document_upload.html', context)
-
-@login_required
-def document_versions(request, document_id):
-    parent_doc = Document.objects.get(id=document_id)
-    versions = parent_doc.get_all_versions()
-    
-    context = {
-        'parent_doc': parent_doc,
-        'versions': versions,
-    }
-    return render(request, 'documents/document_versions.html', context)
-
-@login_required
-@require_http_methods(["POST"])
-def restore_document_version(request, document_id):
+    # Return file response
     try:
-        version_to_restore = Document.objects.get(id=document_id)
-        parent_doc = version_to_restore.parent_document
-        
-        # Create new version with the restored file
-        new_doc = Document(
-            title=parent_doc.title,
-            file=version_to_restore.file,
-            description=version_to_restore.description,
-            category=parent_doc.category,
-            created_by=request.user,
-            parent_document=parent_doc
+        response = FileResponse(
+            document.file.open('rb'),
+            as_attachment=True,
+            filename=os.path.basename(document.file.name)
         )
-        new_doc.save()
-        new_doc.tags.set(parent_doc.tags.all())
-        
-        return JsonResponse({
-            'success': True,
-            'message': f'Version restored successfully! New version: {new_doc.version}'
-        })
+        return response
     except Exception as e:
-        return JsonResponse({
-            'success': False,
-            'error': str(e)
-        })
-
-@login_required
-@require_http_methods(["DELETE"])
-def delete_document(request, document_id):
-    try:
-        document = Document.objects.get(id=document_id)
-        parent_doc = document.parent_document
-        
-        # Delete all versions of this document
-        Document.objects.filter(parent_document=parent_doc).delete()
-        
-        return JsonResponse({
-            'success': True,
-            'message': 'Document and all versions deleted successfully!'
-        })
-    except Exception as e:
-        return JsonResponse({
-            'success': False,
-            'error': str(e)
-        })
+        messages.error(request, f'Lỗi khi tải file: {str(e)}')
+        return redirect('document_detail', slug=slug)
 
 def get_client_ip(request):
     """Lấy IP của client"""
@@ -1382,8 +1160,10 @@ def document_upload(request):
     from .models import Document, DocumentCategory, DocumentTag
     from .forms import DocumentForm
     
-    # Cho phép tất cả nhân viên upload tài liệu
-    # Không cần kiểm tra role nữa - chỉ cần đăng nhập
+    # Kiểm tra quyền upload (chỉ manager và admin)
+    if not hasattr(request.user, 'user_profile') or request.user.user_profile.role not in ['admin', 'manager']:
+        messages.error(request, 'Bạn không có quyền upload tài liệu.')
+        return redirect('documents_management')
     
     if request.method == 'POST':
         form = DocumentForm(request.POST, request.FILES)
@@ -1391,18 +1171,9 @@ def document_upload(request):
             document = form.save(commit=False)
             document.created_by = request.user
             document.updated_by = request.user  # Set người cập nhật cuối
-            
-            # Kiểm tra role để quyết định status
-            user_profile = getattr(request.user, 'user_profile', None)
-            if user_profile and user_profile.role in ['admin', 'manager']:
-                document.status = 'published'  # Auto approve for admin/manager
-                document.approved_by = request.user
-                document.approved_at = timezone.now()
-            else:
-                document.status = 'published'  # Cho phép staff upload và publish luôn
-                document.approved_by = request.user
-                document.approved_at = timezone.now()
-            
+            document.status = 'published'  # Auto approve for admin/manager
+            document.approved_by = request.user
+            document.approved_at = timezone.now()
             document.save()
             form.save_m2m()  # Save tags
             
@@ -1493,39 +1264,174 @@ def document_delete(request, slug):
 
 @login_required
 def manage_categories(request):
-    """Manage document categories"""
-    categories = DocumentCategory.objects.all()
+    """Quản lý danh mục tài liệu"""
+    from .models import DocumentCategory
+    from .forms import DocumentCategoryForm
     
-    # Get document count for each category
+    # Kiểm tra quyền (chỉ admin)
+    if not hasattr(request.user, 'user_profile') or request.user.user_profile.role != 'admin':
+        messages.error(request, 'Bạn không có quyền quản lý danh mục.')
+        return redirect('documents_management')
+    
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        
+        if action == 'create':
+            form = DocumentCategoryForm(request.POST)
+            if form.is_valid():
+                form.save()
+                messages.success(request, f'Danh mục "{form.cleaned_data["name"]}" đã được tạo!')
+                return redirect('manage_categories')
+        
+        elif action == 'edit':
+            category_id = request.POST.get('category_id')
+            try:
+                category = DocumentCategory.objects.get(id=category_id)
+                form = DocumentCategoryForm(request.POST, instance=category)
+                if form.is_valid():
+                    form.save()
+                    messages.success(request, f'Danh mục "{form.cleaned_data["name"]}" đã được cập nhật!')
+                    return redirect('manage_categories')
+            except DocumentCategory.DoesNotExist:
+                messages.error(request, 'Danh mục không tồn tại!')
+            return redirect('manage_categories')
+        
+        elif action == 'delete':
+            category_id = request.POST.get('category_id')
+            delete_documents = request.POST.get('delete_documents') == 'yes'
+            
+            try:
+                category = DocumentCategory.objects.get(id=category_id)
+                
+                # Kiểm tra danh mục con
+                children_count = category.children.count()
+                if children_count > 0:
+                    messages.error(request, f'Không thể xóa danh mục "{category.name}" vì đang có {children_count} danh mục con!')
+                    return redirect('manage_categories')
+                
+                # Kiểm tra tài liệu
+                doc_count = category.documents.count()
+                if doc_count > 0:
+                    if delete_documents:
+                        # Xóa tất cả tài liệu trong danh mục
+                        deleted_docs = []
+                        for doc in category.documents.all():
+                            deleted_docs.append(doc.title)
+                            doc.delete()
+                        
+                        category_name = category.name
+                        category.delete()
+                        messages.success(request, f'Đã xóa danh mục "{category_name}" và {len(deleted_docs)} tài liệu!')
+                    else:
+                        # Chuyển tài liệu về danh mục mặc định hoặc danh mục khác
+                        default_category = DocumentCategory.objects.filter(
+                            slug='tai-lieu-tong-hop'
+                        ).first()
+                        
+                        if not default_category:
+                            # Tạo danh mục mặc định nếu chưa có
+                            default_category = DocumentCategory.objects.create(
+                                name='Tài liệu tổng hợp',
+                                slug='tai-lieu-tong-hop',
+                                description='Danh mục mặc định cho các tài liệu không phân loại',
+                                icon='fas fa-folder',
+                                order=999
+                            )
+                        
+                        # Chuyển tất cả tài liệu sang danh mục mặc định
+                        moved_docs = []
+                        for doc in category.documents.all():
+                            doc.category = default_category
+                            doc.save()
+                            moved_docs.append(doc.title)
+                        
+                        category_name = category.name
+                        category.delete()
+                        messages.success(
+                            request, 
+                            f'Đã xóa danh mục "{category_name}" và chuyển {len(moved_docs)} tài liệu về danh mục "{default_category.name}"!'
+                        )
+                else:
+                    # Xóa danh mục trống
+                    category_name = category.name
+                    category.delete()
+                    messages.success(request, f'Danh mục "{category_name}" đã được xóa!')
+                    
+            except DocumentCategory.DoesNotExist:
+                messages.error(request, 'Danh mục không tồn tại!')
+            return redirect('manage_categories')
+    
+    # GET request - hiển thị trang quản lý
+    form = DocumentCategoryForm()
+    categories = DocumentCategory.objects.all().order_by('order', 'name')
+    
+    # Thống kê cho mỗi danh mục
+    categories_stats = []
     for category in categories:
-        try:
-            doc_count = category.document_set.count()
-        except:
-            doc_count = 0
-        category.doc_count = doc_count
+        doc_count = category.documents.count()
+        children_count = category.children.count()
+        categories_stats.append({
+            'category': category,
+            'doc_count': doc_count,
+            'children_count': children_count,
+            'can_delete': children_count == 0  # Chỉ cần kiểm tra danh mục con
+        })
     
     context = {
-        'categories': categories,
-        'title': 'Quản lý danh mục'
+        'form': form,
+        'categories_stats': categories_stats,
+        'title': 'Quản lý danh mục tài liệu'
     }
     return render(request, 'management/manage_categories.html', context)
 
 @login_required
 def manage_tags(request):
-    """Manage document tags"""
-    tags = DocumentTag.objects.all()
+    """Quản lý tags tài liệu"""
+    from .models import DocumentTag
+    from .forms import DocumentTagForm
     
-    # Get document count for each tag
+    # Kiểm tra quyền (admin và manager)
+    if not hasattr(request.user, 'user_profile') or request.user.user_profile.role not in ['admin', 'manager']:
+        messages.error(request, 'Bạn không có quyền quản lý tags.')
+        return redirect('documents_management')
+    
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        
+        if action == 'create':
+            form = DocumentTagForm(request.POST)
+            if form.is_valid():
+                form.save()
+                messages.success(request, f'Tag "{form.cleaned_data["name"]}" đã được tạo!')
+                return redirect('manage_tags')
+        
+        elif action == 'delete':
+            tag_id = request.POST.get('tag_id')
+            try:
+                tag = DocumentTag.objects.get(id=tag_id)
+                tag_name = tag.name
+                tag.delete()
+                messages.success(request, f'Tag "{tag_name}" đã được xóa!')
+            except DocumentTag.DoesNotExist:
+                messages.error(request, 'Tag không tồn tại!')
+            return redirect('manage_tags')
+    
+    form = DocumentTagForm()
+    tags = DocumentTag.objects.all().order_by('name')
+    
+    # Thống kê sử dụng tags
+    tags_stats = []
     for tag in tags:
-        try:
-            doc_count = tag.document_set.count()
-        except:
-            doc_count = 0
-        tag.doc_count = doc_count
+        doc_count = tag.document_set.count()
+        tags_stats.append({
+            'tag': tag,
+            'doc_count': doc_count
+        })
     
     context = {
-        'tags': tags,
-        'title': 'Quản lý tags'
+        'form': form,
+        'tags_stats': tags_stats,
+        'title': 'Quản lý Tags tài liệu'
     }
     return render(request, 'management/manage_tags.html', context)
 
@@ -2852,6 +2758,18 @@ def get_handover_candidates(request):
     except Exception as e:
         return JsonResponse({'success': False, 'message': f'Lỗi: {str(e)}'}, status=400)
 
+def document_share(request, slug):
+    """Chia sẻ tài liệu: nếu chưa đăng nhập -> chuyển tới login kèm next, nếu đã đăng nhập -> vào chi tiết"""
+    from .models import Document
+
+    # Nếu chưa đăng nhập: đưa tới trang đăng nhập dashboard kèm next về chi tiết tài liệu
+    if not request.user.is_authenticated:
+        next_url = reverse('document_detail', args=[slug])
+        return redirect(f"{reverse('staff_login')}?next={next_url}")
+
+    # Đã đăng nhập: đi thẳng tới chi tiết
+    return redirect('document_detail', slug=slug)
+
 @csrf_exempt
 @require_http_methods(["PUT"])
 @login_required
@@ -3013,211 +2931,3 @@ def delete_attendance_data(request, date):
             'success': False,
             'message': f'Lỗi: {str(e)}'
         }, status=400)
-
-@login_required
-def documents_view(request):
-    """Legacy view for backward compatibility"""
-    return documents_management(request)
-
-@login_required
-def document_update(request, document_id):
-    if request.method == 'POST':
-        form = DocumentForm(request.POST, request.FILES)
-        if form.is_valid():
-            # Get the parent document
-            parent_doc = Document.objects.get(id=document_id)
-            
-            # Create new version
-            new_doc = form.save(commit=False)
-            new_doc.created_by = request.user
-            new_doc.parent_document = parent_doc
-            new_doc.version = None  # Will be auto-calculated
-            new_doc.title = parent_doc.title
-            new_doc.category = parent_doc.category
-            new_doc.tags.set(parent_doc.tags.all())
-            new_doc.access_level = getattr(parent_doc, 'access_level', 'public')
-            new_doc.allowed_roles = getattr(parent_doc, 'allowed_roles', 'all')
-            new_doc.status = getattr(parent_doc, 'status', 'published')
-            new_doc.slug = ''  # để model tự tạo slug mới
-            new_doc.save()
-            messages.success(request, f'Document updated successfully! New version: {new_doc.version}')
-            return redirect('documents')
-    else:
-        form = DocumentForm()
-    
-    parent_doc = Document.objects.get(id=document_id)
-    context = {
-        'form': form,
-        'parent_doc': parent_doc,
-    }
-    return render(request, 'documents/document_update.html', context)
-
-@login_required
-def document_versions(request, document_id):
-    parent_doc = Document.objects.get(id=document_id)
-    versions = parent_doc.get_all_versions()
-    
-    context = {
-        'parent_doc': parent_doc,
-        'versions': versions,
-    }
-    return render(request, 'documents/document_versions.html', context)
-
-
-@login_required
-@require_http_methods(["DELETE"])
-def delete_document(request, document_id):
-    try:
-        document = Document.objects.get(id=document_id)
-        parent_doc = document.parent_document
-        
-        # Delete all versions of this document
-        Document.objects.filter(parent_document=parent_doc).delete()
-        
-        return JsonResponse({
-            'success': True,
-            'message': 'Document and all versions deleted successfully!'
-        })
-    except Exception as e:
-        return JsonResponse({
-            'success': False,
-            'error': str(e)
-        })
-
-@login_required
-def notifications_api(request):
-    """Simple notifications API"""
-    return JsonResponse({
-        'success': True,
-        'notifications': [],
-        'count': 0
-    })
-
-@login_required
-def document_versions_api(request, document_id):
-    """API to get document versions"""
-    try:
-        document = Document.objects.get(id=document_id)
-        versions = document.get_all_versions()
-        
-        versions_data = []
-        for version in versions:
-            versions_data.append({
-                'id': version.id,
-                'version': version.version,
-                'updated_at': version.updated_at.strftime('%d/%m/%Y %H:%M'),
-                'created_by': version.created_by.get_full_name() or version.created_by.username,
-                'file_size': version.get_file_size_display(),
-                'file_url': version.file.url,
-                'is_latest': version.is_latest_version()
-            })
-        
-        return JsonResponse({
-            'success': True,
-            'versions': versions_data
-        })
-    except Exception as e:
-        return JsonResponse({
-            'success': False,
-            'error': str(e)
-        })
-
-class DocumentForm(forms.Form):
-    title = forms.CharField(max_length=200, widget=forms.TextInput(attrs={'class': 'form-control'}))
-    file = forms.FileField(widget=forms.FileInput(attrs={'class': 'form-control'}))
-    description = forms.CharField(required=False, widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 3}))
-    category = forms.ModelChoiceField(queryset=DocumentCategory.objects.all(), widget=forms.Select(attrs={'class': 'form-control'}))
-    tags = forms.ModelMultipleChoiceField(queryset=DocumentTag.objects.all(), required=False, widget=forms.CheckboxSelectMultiple(attrs={'class': 'form-check-input'}))
-
-@login_required
-def document_update_view(request, document_id):
-    """Dedicated view for updating documents"""
-    if request.method == 'POST':
-        try:
-            document = Document.objects.get(id=document_id)
-            file = request.FILES.get('file')
-            description = request.POST.get('description', '')
-            change_note = request.POST.get('change_note', '')
-            
-            if file:
-                # Tắt trạng thái current của tất cả file cũ
-                document.file_versions.update(is_current=False)
-                
-                # Tạo phiên bản file mới
-                version_number = document.get_latest_version_number() + 1
-                file_version = DocumentFileVersion.objects.create(
-                    document=document,
-                    file=file,
-                    file_name=file.name,
-                    file_size=file.size,
-                    file_type=file.name.split('.')[-1].lower() if '.' in file.name else '',
-                    uploaded_by=request.user,
-                    is_current=True,
-                    change_note=change_note or f'Cập nhật lên v{version_number}',
-                    version_number=version_number
-                )
-                
-                # Cập nhật file hiện tại của document
-                document.file = file
-                document.description = description or document.description
-                document.created_by = request.user  # Cập nhật người upload gần nhất
-                document.updated_at = timezone.now()
-                document.file_size = file.size
-                document.file_type = file_version.file_type
-                
-                document.save()
-                
-                messages.success(request, f'Tài liệu đã được cập nhật thành công! Phiên bản mới: v{version_number}')
-                return redirect('documents_management')
-            else:
-                messages.error(request, 'Vui lòng chọn file để cập nhật.')
-        except Exception as e:
-            messages.error(request, f'Lỗi khi cập nhật tài liệu: {str(e)}')
-    
-    return redirect('documents_management')
-
-@login_required
-@require_http_methods(["POST"])
-def document_update(request, document_id):
-	try:
-		parent_doc = Document.objects.get(id=document_id)
-		new_file = request.FILES.get('file')
-		description = request.POST.get('description', '')
-
-		if not new_file:
-			messages.error(request, 'Vui lòng chọn file để cập nhật.')
-			return redirect('documents_management')
-
-		# Đặt title theo tên file mới (không đuôi)
-		base_title = os.path.splitext(new_file.name)[0]
-
-		new_doc = Document(
-			title=base_title,
-			file=new_file,
-			description=description or parent_doc.description,
-			category=parent_doc.category,
-			created_by=request.user,
-			parent_document=parent_doc,
-			version=None
-		)
-		# copy các trường "di sản"
-		new_doc.access_level = getattr(parent_doc, 'access_level', 'public')
-		new_doc.allowed_roles = getattr(parent_doc, 'allowed_roles', 'all')
-		new_doc.status = getattr(parent_doc, 'status', 'published')
-		new_doc.slug = ''  # để model tự tạo slug mới duy nhất
-
-		new_doc.save()
-		new_doc.tags.set(parent_doc.tags.all())
-
-		messages.success(request, f'Đã tạo phiên bản mới v{new_doc.version} cho tài liệu.')
-		return redirect('documents_management')
-
-	except Exception as e:
-		messages.error(request, f'Lỗi khi cập nhật tài liệu: {e}')
-		return redirect('documents_management')
-
-
-@login_required
-def document_detail_by_id(request, pk):
-	document = get_object_or_404(Document, pk=pk, is_active=True)
-	return redirect('document_detail', slug=document.slug)

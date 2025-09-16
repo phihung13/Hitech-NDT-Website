@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from django.contrib.auth.views import PasswordResetView, PasswordResetDoneView, PasswordResetConfirmView, PasswordResetCompleteView
 
 from rest_framework_simplejwt.views import TokenRefreshView
 from .auth_views import register, login
@@ -82,6 +83,7 @@ urlpatterns = [
     path('staff/login/', views.staff_login, name='staff_login'),
     path('staff/logout/', views.staff_logout, name='staff_logout'),
     path('staff/dashboard/', views.staff_dashboard, name='staff_dashboard'),
+    path('staff/first-time-setup/', views.first_time_setup, name='first_time_setup'),
     
     # ERP Module URLs - tất cả có prefix dashboard/
     path('dashboard/', views.dashboard_overview, name='dashboard_overview'),
@@ -150,7 +152,7 @@ urlpatterns = [
     path('api/leave-requests/approve/', views.approve_leave_request, name='approve_leave_request'),
     path('api/leave-requests/<int:request_id>/delete/', views.delete_leave_request, name='delete_leave_request'),
     path('api/users/handovers/', views.get_handover_candidates, name='get_handover_candidates'),
-    path('api/notifications/', views.get_system_notifications, name='get_system_notifications'),
+    path('api/notifications/', views.notifications_api, name='notifications_api'),
     
     # Attendance URLs
     path('api/attendance/save/', views.save_attendance_data, name='save_attendance_data'),
@@ -159,4 +161,25 @@ urlpatterns = [
     path('api/attendance/', views.get_attendance_data, name='get_attendance_data'),
     path('api/attendance/export/', views.export_attendance_data, name='export_attendance_data'),
     path('api/attendance/export-json/', views.export_attendance_json, name='export_attendance_json'),
+    path('documents/', views.documents_management, name='documents_management'),
+    path('documents/upload/', views.document_upload, name='document_upload'),
+    path('documents/<slug:slug>/', views.document_detail, name='document_detail'),
+    path('documents/<slug:slug>/edit/', views.document_edit, name='document_edit'),
+    path('documents/<slug:slug>/delete/', views.document_delete, name='document_delete'),
+    path('documents/<slug:slug>/download/', views.document_download, name='document_download'),
+    path('documents/<slug:slug>/share/', views.document_share, name='document_share'),
+    path('documents/update/<int:document_id>/', views.document_update, name='document_update'),
+    path('documents/versions/<int:document_id>/', views.document_versions, name='document_versions'),
+    path('api/documents/<int:document_id>/restore/', views.restore_document_version, name='restore_document_version'),
+    path('api/documents/<int:document_id>/delete/', views.delete_document, name='delete_document'),
+    path('api/documents/<int:document_id>/versions/', views.document_versions_api, name='document_versions_api'),
+    path('documents/update/<int:document_id>/', views.document_update_view, name='document_update_view'),
+    path('documents/<int:pk>/', views.document_detail_by_id, name='document_detail_by_id'),
+
+    # Auth and staff
+    # Tạm thời tắt chức năng quên mật khẩu do chưa cấu hình email
+    # path('auth/password-reset/', PasswordResetView.as_view(template_name='auth/password_reset_form.html'), name='password_reset'),
+    # path('auth/password-reset/done/', PasswordResetDoneView.as_view(template_name='auth/password_reset_done.html'), name='password_reset_done'),
+    # path('auth/reset/<uidb64>/<token>/', PasswordResetConfirmView.as_view(template_name='auth/password_reset_confirm.html'), name='password_reset_confirm'),
+    # path('auth/reset/done/', PasswordResetCompleteView.as_view(template_name='auth/password_reset_complete.html'), name='password_reset_complete'),
 ]

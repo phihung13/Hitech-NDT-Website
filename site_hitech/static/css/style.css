@@ -2630,3 +2630,125 @@ textarea.form-control {
     }
 }
 
+.document-groups {
+    margin-top: 20px;
+}
+
+.document-group {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    padding: 20px;
+    background: #fff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.document-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #eee;
+}
+
+.document-header h3 {
+    margin: 0;
+    color: #333;
+}
+
+.document-meta {
+    display: flex;
+    gap: 15px;
+    font-size: 0.9em;
+    color: #666;
+}
+
+.document-meta span {
+    padding: 4px 8px;
+    background: #f8f9fa;
+    border-radius: 4px;
+}
+
+.version {
+    background: #007bff !important;
+    color: white !important;
+}
+
+.document-actions {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.document-actions .btn {
+    font-size: 0.9em;
+}
+
+.document-info {
+    margin-bottom: 15px;
+}
+
+.document-info p {
+    margin-bottom: 8px;
+    font-size: 0.9em;
+}
+
+.tag {
+    display: inline-block;
+    background: #e9ecef;
+    color: #495057;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 0.8em;
+    margin-right: 5px;
+}
+
+.versions-list {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+}
+
+.versions-list h4 {
+    margin-bottom: 15px;
+    color: #333;
+}
+
+.version-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    border: 1px solid #eee;
+    border-radius: 4px;
+    margin-bottom: 10px;
+    background: #f8f9fa;
+}
+
+.version-item.latest {
+    background: #d4edda;
+    border-color: #c3e6cb;
+}
+
+.version-info {
+    display: flex;
+    gap: 15px;
+    font-size: 0.9em;
+}
+
+.version-number {
+    font-weight: bold;
+    color: #007bff;
+}
+
+.version-actions {
+    display: flex;
+    gap: 5px;
+}
+
+.version-actions .btn {
+    font-size: 0.8em;
+    padding: 4px 8px;
+}
+

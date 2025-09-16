@@ -597,31 +597,40 @@ class DocumentTagForm(forms.ModelForm):
         }
 
 class DocumentSearchForm(forms.Form):
-    """Form tìm kiếm tài liệu nâng cao"""
-    search = forms.CharField(
+    query = forms.CharField(
+        max_length=100,
         required=False,
         widget=forms.TextInput(attrs={
             'class': 'form-control',
             'placeholder': 'Tìm kiếm tài liệu...'
         })
     )
+    
     category = forms.ModelChoiceField(
-        queryset=DocumentCategory.objects.filter(is_active=True),
+        queryset=DocumentCategory.objects.all(),
         required=False,
-        widget=forms.Select(attrs={'class': 'form-select'})
+        empty_label="Tất cả danh mục",
+        widget=forms.Select(attrs={'class': 'form-control'})
     )
-    access_level = forms.ChoiceField(
-        choices=[('', 'Tất cả')] + Document.ACCESS_LEVELS,
-        required=False,
-        widget=forms.Select(attrs={'class': 'form-select'})
-    )
-    file_type = forms.ChoiceField(
-        choices=[('', 'Tất cả')] + Document.FILE_TYPES,
-        required=False,
-        widget=forms.Select(attrs={'class': 'form-select'})
-    )
+    
     tags = forms.ModelMultipleChoiceField(
         queryset=DocumentTag.objects.all(),
         required=False,
-        widget=forms.CheckboxSelectMultiple
+        widget=forms.CheckboxSelectMultiple(attrs={'class': 'form-check-input'})
+    )
+    
+    date_from = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={
+            'class': 'form-control',
+            'type': 'date'
+        })
+    )
+    
+    date_to = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={
+            'class': 'form-control',
+            'type': 'date'
+        })
     )

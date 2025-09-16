@@ -331,41 +331,31 @@ class DocumentTagAdmin(admin.ModelAdmin):
 
 @admin.register(Document)
 class DocumentAdmin(admin.ModelAdmin):
-    list_display = ('title', 'category', 'file_type', 'access_level', 'status', 
-                   'created_by', 'created_at', 'download_count')
-    list_filter = ('category', 'file_type', 'access_level', 'status', 'created_at')
-    search_fields = ('title', 'description', 'document_code')
-    prepopulated_fields = {'slug': ('title',)}
-    filter_horizontal = ('tags',)
-    readonly_fields = ('file_size', 'download_count', 'view_count', 'created_at', 'updated_at')
-    date_hierarchy = 'created_at'
+    list_display = ['title', 'category', 'version', 'created_by', 'created_at', 'updated_at', 'is_active']
+    list_filter = ['category', 'created_at', 'is_active', 'tags']
+    search_fields = ['title', 'description']
+    readonly_fields = ['created_at', 'updated_at', 'version', 'file_size', 'file_hash']
+    filter_horizontal = ['tags']
     
-    fieldsets = [
-        ('Thông tin cơ bản', {
-            'fields': ['title', 'slug', 'category', 'description', 'file']
+    fieldsets = (
+        ('Basic Information', {
+            'fields': ('title', 'file', 'description', 'category')
         }),
         ('Metadata', {
-            'fields': ['document_code', 'version', 'file_type', 'file_size', 'tags']
+            'fields': ('tags', 'version', 'parent_document', 'is_active')
         }),
-        ('Quyền truy cập', {
-            'fields': ['access_level', 'allowed_roles']
+        ('File Information', {
+            'fields': ('file_size', 'file_hash'),
+            'classes': ('collapse',)
         }),
-        ('Trạng thái', {
-            'fields': ['status', 'approved_by', 'approved_at']
+        ('Timestamps', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
         }),
-        ('Thống kê', {
-            'fields': ['download_count', 'view_count', 'created_at', 'updated_at'],
-            'classes': ['collapse']
-        }),
-    ]
-    
-    def save_model(self, request, obj, form, change):
-        if not change:  # Khi tạo mới
-            obj.created_by = request.user
-        super().save_model(request, obj, form, change)
+    )
     
     def get_queryset(self, request):
-        return super().get_queryset(request).select_related('category', 'created_by', 'approved_by')
+        return super().get_queryset(request).select_related('category', 'created_by', 'parent_document').prefetch_related('tags')
 
 @admin.register(DocumentVersion)
 class DocumentVersionAdmin(admin.ModelAdmin):

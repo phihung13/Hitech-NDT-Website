@@ -5,12 +5,53 @@ from django.shortcuts import redirect
 from django.contrib import messages
 from django.http import HttpResponseForbidden
 
+def setup_required(view_func):
+    """Decorator bắt buộc hoàn thành setup lần đầu"""
+    @wraps(view_func)
+    @login_required
+    def _wrapped_view(request, *args, **kwargs):
+        # Bỏ qua kiểm tra cho trang setup chính
+        if request.resolver_match and request.resolver_match.url_name == 'first_time_setup':
+            return view_func(request, *args, **kwargs)
+            
+        # Kiểm tra profile tồn tại
+        if not hasattr(request.user, 'user_profile'):
+            from .models import UserProfile
+            profile, _ = UserProfile.objects.get_or_create(user=request.user, defaults={
+                'role': 'staff',
+                'msnv': f'HTNV-{request.user.id:03d}'
+            })
+        else:
+            profile = request.user.user_profile
+            
+        # Bắt buộc setup nếu chưa hoàn thành
+        if getattr(profile, 'must_change_password', False) or getattr(profile, 'must_set_email', False) or not request.user.email:
+            return redirect('first_time_setup')
+            
+        return view_func(request, *args, **kwargs)
+    return _wrapped_view
+
 def role_required(allowed_roles):
     """Decorator kiểm tra vai trò người dùng"""
     def decorator(view_func):
         @wraps(view_func)
         @login_required
         def _wrapped_view(request, *args, **kwargs):
+            # Kiểm tra setup trước
+            if not hasattr(request.user, 'user_profile'):
+                from .models import UserProfile
+                profile, _ = UserProfile.objects.get_or_create(user=request.user, defaults={
+                    'role': 'staff',
+                    'msnv': f'HTNV-{request.user.id:03d}'
+                })
+            else:
+                profile = request.user.user_profile
+                
+            # Bắt buộc setup nếu chưa hoàn thành (trừ trang setup)
+            if request.resolver_match and request.resolver_match.url_name != 'first_time_setup':
+                if getattr(profile, 'must_change_password', False) or getattr(profile, 'must_set_email', False) or not request.user.email:
+                    return redirect('first_time_setup')
+            
             if not hasattr(request.user, 'user_profile'):
                 messages.error(request, 'Tài khoản chưa được cấu hình đầy đủ.')
                 return redirect('home')
@@ -48,4 +89,15 @@ admin_required = role_required(['admin'])
 company_required = role_required(['admin', 'company'])
 manager_required = role_required(['admin', 'company', 'manager'])
 team_lead_required = role_required(['admin', 'company', 'manager', 'team_lead'])
-staff_required = role_required(['admin', 'company', 'manager', 'team_lead', 'staff']) 
+
+# Sửa staff_required để bao gồm kiểm tra setup
+def staff_required_with_setup(view_func):
+    """Decorator kết hợp kiểm tra vai trò staff và setup"""
+    @wraps(view_func)
+    @setup_required
+    @role_required(['admin', 'company', 'manager', 'team_lead', 'staff'])
+    def _wrapped_view(request, *args, **kwargs):
+        return view_func(request, *args, **kwargs)
+    return _wrapped_view
+
+staff_required = staff_required_with_setup 

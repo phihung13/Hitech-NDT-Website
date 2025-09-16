@@ -240,12 +240,16 @@
                     <p class="text-muted mb-0">Quản lý thông tin nhân viên, dự án và chứng chỉ</p>
                 </div>
                 <div class="d-flex gap-2">
+                    {% if user_role in 'admin manager' %}
                     <button class="btn btn-outline-primary" onclick="exportStaffData()">
                         <i class="fas fa-download me-2"></i>Xuất dữ liệu
                     </button>
                     <button class="btn add-staff-btn" onclick="showAddStaffModal()">
                         <i class="fas fa-plus me-2"></i>Thêm nhân viên
                     </button>
+                    {% else %}
+                    <span class="text-muted small">Chỉ xem</span>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -468,10 +472,12 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                {% if user_role in 'admin manager' %}
                 <button type="button" class="btn btn-primary" onclick="addStaff()">
                     <i class="fas fa-save me-2"></i>Lưu nhân viên
                 </button>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -597,12 +603,14 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                {% if user_role in 'admin manager' %}
                 <button type="button" class="btn btn-primary" onclick="editStaffFromDetail()">
                     <i class="fas fa-edit me-2"></i>Chỉnh sửa
                 </button>
                 <button type="button" class="btn btn-danger" onclick="deleteStaffFromDetail()">
                     <i class="fas fa-trash me-2"></i>Xóa
                 </button>
+                {% endif %}
             </div>
         </div>
     </div>

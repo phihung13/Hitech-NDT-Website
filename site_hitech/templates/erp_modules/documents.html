@@ -10,8 +10,8 @@
 {% block header_controls %}
 <span class="badge bg-primary me-3">{{ total_documents }} tài liệu</span>
 
-<!-- Management buttons for admin/manager -->
-{% if user_role == 'admin' or user_role == 'manager' %}
+<!-- Management buttons for all staff -->
+{% if user.is_authenticated %}
 <div class="btn-group me-2" role="group">
     <a href="{% url 'document_upload' %}" class="btn btn-success">
         <i class="fas fa-upload me-1"></i>Upload tài liệu
@@ -23,11 +23,9 @@
         <li><a class="dropdown-item" href="{% url 'manage_tags' %}">
             <i class="fas fa-tags me-2"></i>Quản lý Tags
         </a></li>
-        {% if user_role == 'admin' %}
         <li><a class="dropdown-item" href="{% url 'manage_categories' %}">
             <i class="fas fa-folder me-2"></i>Quản lý danh mục
         </a></li>
-        {% endif %}
     </ul>
 </div>
 {% endif %}
@@ -334,8 +332,6 @@
                 </div>
             </div>
         </div>
-        
-
     </div>
 
     <!-- Documents Grid -->
@@ -404,15 +400,15 @@
                     <!-- Stats -->
                     <div class="document-stats">
                         <div class="stat-item">
-                            <span class="stat-number">{{ document.view_count }}</span>
+                            <span class="stat-number">{{ document.view_count|default:0 }}</span>
                             <div><i class="fas fa-eye"></i> lượt xem</div>
                         </div>
                         <div class="stat-item">
-                            <span class="stat-number">{{ document.download_count }}</span>
+                            <span class="stat-number">{{ document.download_count|default:0 }}</span>
                             <div><i class="fas fa-download"></i> tải</div>
                         </div>
                         <div class="stat-item">
-                            <span class="stat-number">v{{ document.version }}</span>
+                            <span class="stat-number">v{{ document.get_latest_version.version|default:document.version|default:1 }}</span>
                             <div><i class="fas fa-tag"></i> version</div>
                         </div>
                     </div>
@@ -420,27 +416,37 @@
                     <div class="mt-auto">
                         <div class="document-actions">
                             <div class="d-grid gap-1">
+                                <!-- View button - goes to detail page -->
+                                {% if document.slug %}
                                 <a href="{% url 'document_detail' document.slug %}" class="btn btn-primary btn-compact">
-                                    <i class="fas fa-eye me-1"></i>Chi tiết
+                                    <i class="fas fa-eye me-1"></i>Xem
                                 </a>
+                                {% else %}
+                                <a href="{% url 'document_detail' document.id %}" class="btn btn-primary btn-compact">
+                                    <i class="fas fa-eye me-1"></i>Xem
+                                </a>
+                                {% endif %}
+                                
+                                <!-- Download button - downloads file -->
                                 <a href="{% url 'document_download' document.slug %}" class="btn btn-success btn-compact">
                                     <i class="fas fa-download me-1"></i>Tải xuống
                                 </a>
-                                <button type="button" class="btn btn-outline-primary btn-compact" onclick="copyShareLink('{% url 'document_share' document.slug %}')">
+                                
+                                <!-- Share button -->
+                                <button type="button" class="btn btn-outline-primary btn-compact" onclick="copyShareLink('{{ document.file.url }}')">
                                     <i class="fas fa-share-alt me-1"></i>Chia sẻ
                                 </button>
                                 
                                 <!-- Edit/Delete buttons for authorized users -->
                                 {% if user_role == 'admin' or user_role == 'manager' or document.created_by == user %}
                                 <div class="btn-group w-100" role="group">
-                                    <a href="{% url 'document_edit' document.slug %}" class="btn btn-outline-warning btn-compact">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
+                                    <button type="button" class="btn btn-outline-warning btn-compact" onclick="updateDocument({{ document.id }})">
+                                        <i class="fas fa-upload"></i>
+                                    </button>
                                     {% if user_role == 'admin' or document.created_by == user %}
-                                    <a href="{% url 'document_delete' document.slug %}" class="btn btn-outline-danger btn-compact" 
-                                       onclick="return confirm('Bạn có chắc muốn xóa tài liệu này?')">
+                                    <button type="button" class="btn btn-outline-danger btn-compact" onclick="deleteDocument({{ document.id }})">
                                         <i class="fas fa-trash"></i>
-                                    </a>
+                                    </button>
                                     {% endif %}
                                 </div>
                                 {% endif %}
@@ -465,6 +471,58 @@
     </div>
     {% endif %}
 
+    <!-- Version History Modal -->
+    <div class="modal fade" id="versionHistoryModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Lịch sử phiên bản</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="versionHistoryContent">
+                    <!-- Version history will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Update Document Modal -->
+    <div class="modal fade" id="updateDocumentModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Cập nhật tài liệu</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="updateDocumentForm" method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <input type="hidden" name="parent_document_id" id="parentDocumentId">
+                    <div class="modal-body">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Tệp mới sẽ tạo thành phiên bản mới và giữ nguyên tất cả phiên bản cũ.
+                        </div>
+                        <div class="mb-3">
+                            <label for="id_file" class="form-label">File mới <span class="text-danger">*</span></label>
+                            <input type="file" class="form-control" name="file" id="id_file" required>
+                            <div class="form-text">Chọn file mới để thay thế file hiện tại</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="id_description" class="form-label">Mô tả (tùy chọn)</label>
+                            <textarea class="form-control" name="description" id="id_description" rows="3" placeholder="Mô tả cho phiên bản mới..."></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-upload me-1"></i>Cập nhật tài liệu
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- Recent Documents Section -->
     {% if recent_docs and not search_query %}
     <div class="card shadow mb-4">
@@ -483,9 +541,15 @@
                         </div>
                         <div class="flex-grow-1">
                             <div class="font-weight-bold">
+                                {% if doc.slug %}
                                 <a href="{% url 'document_detail' doc.slug %}" class="text-decoration-none">
                                     {{ doc.title|truncatechars:30 }}
                                 </a>
+                                {% else %}
+                                <a href="{{ doc.file.url }}" class="text-decoration-none" target="_blank">
+                                    {{ doc.title|truncatechars:30 }}
+                                </a>
+                                {% endif %}
                             </div>
                             <div class="small text-muted">{{ doc.category.name }} • {{ doc.created_at|date:"d/m/Y" }}</div>
                         </div>
@@ -500,6 +564,7 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="{% static 'js/documents.js' %}"></script>
 <script>
 function copyShareLink(path) {
     const url = window.location.origin + path;
@@ -547,5 +612,19 @@ $(document).ready(function() {
     // Tooltips for access level badges
     $('[data-bs-toggle="tooltip"]').tooltip();
 });
+
+// Update document
+function updateDocument(documentId) {
+    console.log("=== DEBUG: updateDocument called with ID:", documentId);
+    document.getElementById('parentDocumentId').value = documentId;
+    
+    // Set form action to the dedicated update view
+    const form = document.getElementById('updateDocumentForm');
+    form.action = `/documents/update/${documentId}/`; // POST-only endpoint
+    
+    console.log("=== DEBUG: Form action set to:", form.action);
+    const modal = new bootstrap.Modal(document.getElementById('updateDocumentModal'));
+    modal.show();
+}
 </script>
 {% endblock %} 
