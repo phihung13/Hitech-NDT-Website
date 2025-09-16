@@ -356,7 +356,7 @@
                         </div>
                         <div class="update-user">
                             <i class="fas fa-user me-1"></i>
-                            {% if document.updated_by %}{{ document.updated_by.get_full_name|default:document.updated_by.username }}{% else %}{{ document.created_by.get_full_name|default:document.created_by.username }}{% endif %}
+                            {{ document.created_by.get_full_name|default:document.created_by.username }}
                         </div>
                     </div>
                     

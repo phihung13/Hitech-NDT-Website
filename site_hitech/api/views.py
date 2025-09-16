@@ -1390,18 +1390,9 @@ def document_upload(request):
         if form.is_valid():
             document = form.save(commit=False)
             document.created_by = request.user
-            document.updated_by = request.user  # Set người cập nhật cuối
             
-            # Kiểm tra role để quyết định status
-            user_profile = getattr(request.user, 'user_profile', None)
-            if user_profile and user_profile.role in ['admin', 'manager']:
-                document.status = 'published'  # Auto approve for admin/manager
-                document.approved_by = request.user
-                document.approved_at = timezone.now()
-            else:
-                document.status = 'published'  # Cho phép staff upload và publish luôn
-                document.approved_by = request.user
-                document.approved_at = timezone.now()
+            # Đặt trạng thái mặc định là published theo logic mới
+            document.status = 'published'
             
             document.save()
             form.save_m2m()  # Save tags
