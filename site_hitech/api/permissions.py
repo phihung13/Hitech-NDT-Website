@@ -95,7 +95,7 @@ def staff_required_with_setup(view_func):
     """Decorator kết hợp kiểm tra vai trò staff và setup"""
     @wraps(view_func)
     @setup_required
-    @role_required(['admin', 'company', 'manager', 'team_lead', 'staff'])
+    @role_required(['admin', 'company', 'manager', 'team_lead', 'employee'])
     def _wrapped_view(request, *args, **kwargs):
         return view_func(request, *args, **kwargs)
     return _wrapped_view

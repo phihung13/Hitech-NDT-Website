@@ -444,6 +444,7 @@ class AboutPage(models.Model):
 
 class UserProfile(models.Model):
     ROLE_CHOICES = [
+        ('admin', 'Admin'),
         ('employee', 'Technician'),
         ('employee_rd', 'R&D Technician'),
         ('manager', 'Site Manager'),
@@ -549,7 +550,7 @@ class UserProfile(models.Model):
             self.can_view_analytics = True
             self.can_manage_settings = False
             self.user.is_staff = True
-        elif self.role == 'staff':
+        elif self.role == 'employee':
             self.can_edit_all_posts = False
             self.can_delete_posts = False
             self.can_publish_posts = False
@@ -1462,7 +1463,7 @@ class LeaveRequest(models.Model):
             return []  # Công ty không cần phê duyệt
         if requester_role == 'manager':
             return ['company']  # Quản lý chỉ cần công ty phê duyệt
-        if requester_role == 'staff':
+        if requester_role == 'employee':
             return ['handover', 'manager', 'company']  # Nhân viên cần tất cả 3 cấp
         return ['handover', 'manager', 'company']  # Mặc định
 

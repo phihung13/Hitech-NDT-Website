@@ -410,7 +410,7 @@ def staff_dashboard(request):
     profile, created = UserProfile.objects.get_or_create(
         user=request.user,
         defaults={
-            'role': 'staff',
+            'role': 'employee',
             'msnv': f'HTNV-{request.user.id:03d}'  # Tạo MSNV mặc định
         }
     )
@@ -436,7 +436,7 @@ def staff_dashboard(request):
     maintenance_equipment = Equipment.objects.filter(status='maintenance').count()
     
     # Thống kê cá nhân
-    if profile.role == 'staff':
+    if profile.role == 'employee':
         user_posts = Post.objects.filter(author=request.user)
         user_courses = Course.objects.filter(instructor=request.user)
         # Dự án mà user tham gia
@@ -802,7 +802,7 @@ def dashboard_overview(request):
     profile, created = UserProfile.objects.get_or_create(
         user=request.user,
         defaults={
-            'role': 'staff',
+            'role': 'employee',
             'msnv': f'HTNV-{request.user.id:03d}'  # Tạo MSNV mặc định
         }
     )
@@ -823,7 +823,7 @@ def dashboard_overview(request):
     completed_projects = projects.filter(status='completed').count()
     
     # Phân quyền xem dữ liệu
-    if profile.role == 'staff':
+    if profile.role == 'employee':
         user_posts = Post.objects.filter(author=request.user)
         user_courses = Course.objects.filter(instructor=request.user)
         user_projects = Project.objects.filter(staff=request.user)
@@ -863,7 +863,7 @@ def projects_management(request):
         return redirect('home')
     
     # Lấy dữ liệu dự án dựa trên quyền
-    if profile.role == 'staff':
+    if profile.role == 'employee':
         projects = Project.objects.filter(staff=request.user).select_related('company', 'project_manager')
     else:
         projects = Project.objects.all().select_related('company', 'project_manager')
@@ -3344,7 +3344,27 @@ def staff_api_list(request):
             qs = qs.filter(current_project_id=project)
         if active in ['true','false','1','0']:
             qs = qs.filter(is_active=active in ['true','1'])
-        data = [model_to_dict(x) for x in qs]
+        # Trả về dữ liệu rõ ràng, đảm bảo có id dạng chuỗi
+        data = [{
+            'id': str(x.id),
+            'name': x.name,
+            'cccd': x.cccd,
+            'msnv': x.msnv,
+            'phone': x.phone,
+            'birth_date': x.birth_date.isoformat() if x.birth_date else None,
+            'hometown': x.hometown,
+            'role': x.role,
+            'education': x.education,
+            'dependents': x.dependents,
+            'bank_account': x.bank_account,
+            'bank': x.bank,
+            'join_date': x.join_date.isoformat() if x.join_date else None,
+            'current_project': x.current_project_id,
+            'project_position': x.project_position,
+            'certificates': x.certificates,
+            'avatar_data_url': x.avatar_data_url,
+            'is_active': x.is_active,
+        } for x in qs]
         return JsonResponse({'success': True, 'results': data})
     # POST create
     payload = request.POST or request.GET
@@ -3373,7 +3393,7 @@ def staff_api_list(request):
             avatar_data_url=payload.get('avatar') or None,
             is_active=True,
         )
-        return JsonResponse({'success': True, 'data': model_to_dict(emp)}, status=201)
+        return JsonResponse({'success': True, 'data': {'id': str(emp.id)}}, status=201)
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=400)
 
@@ -3384,9 +3404,18 @@ def staff_api_detail(request, employee_id):
         emp = EmployeeProfile.objects.get(pk=employee_id)
     except EmployeeProfile.DoesNotExist:
         return JsonResponse({'success': False, 'error': 'Not found'}, status=404)
+
+    # Kiểm tra quyền sửa/xóa
+    requester_profile = getattr(request.user, 'user_profile', None)
+    requester_role = getattr(requester_profile, 'role', 'employee')
+    can_modify = requester_role in ['admin', 'company', 'manager', 'employee_rd']
+
     if request.method == 'GET':
         return JsonResponse({'success': True, 'data': model_to_dict(emp)})
+
     if request.method in ['PUT','PATCH']:
+        if not can_modify:
+            return JsonResponse({'success': False, 'error': 'Forbidden'}, status=403)
         payload = {}
         if request.content_type == 'application/json':
             try:
@@ -3418,6 +3447,9 @@ def staff_api_detail(request, employee_id):
             return JsonResponse({'success': True, 'data': model_to_dict(emp)})
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
     # DELETE
+    if not can_modify:
+        return JsonResponse({'success': False, 'error': 'Forbidden'}, status=403)
     emp.delete()
     return JsonResponse({'success': True})

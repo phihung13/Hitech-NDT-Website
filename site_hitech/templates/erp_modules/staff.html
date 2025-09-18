@@ -276,7 +276,7 @@
                     <p class="text-muted mb-0">Quản lý thông tin nhân viên, dự án và chứng chỉ</p>
                 </div>
                 <div class="d-flex gap-2">
-                    {% if user_role in 'admin manager' %}
+                    {% if user_role == 'admin' or user_role == 'manager' or user_role == 'company' or user_role == 'employee_rd' %}
                     <button class="btn btn-outline-primary" onclick="exportStaffData()">
                         <i class="fas fa-download me-2"></i>Xuất dữ liệu
                     </button>
@@ -641,7 +641,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
-                {% if user_role in 'admin manager' %}
+                {% if user_role == 'admin' or user_role == 'manager' or user_role == 'company' or user_role == 'employee_rd' %}
                 <button type="button" class="btn btn-primary" onclick="editStaffFromDetail()">
                     <i class="fas fa-edit me-2"></i>Chỉnh sửa
                 </button>
@@ -910,7 +910,7 @@ function loadProjectData() {
         try {
             projects = JSON.parse(projectData);
         } catch (e) {
-            console.log('Error parsing project data:', e);
+            // Silenced to reduce console noise
         }
     }
     
@@ -975,21 +975,23 @@ function renderStaffCards() {
     
     let html = '';
     filteredStaff.forEach(staff => {
+        const staffId = staff.id || staff.msnv; // fallback nếu thiếu id
+        if (!staffId) { return; }
         const roleClass = `role-${staff.role}`;
         const statusClass = staff.isActive ? 'status-active' : 'status-inactive';
         const statusText = staff.isActive ? 'Đang hoạt động' : 'Không hoạt động';
         
         html += `
         <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
-            <div class="staff-card" onclick="showStaffDetail('${staff.id}')" style="cursor: pointer;">
+            <div class="staff-card" onclick="showStaffDetail('${staffId}')" style="cursor: pointer;">
                 <div class="p-3 text-center">
                     <div class="staff-avatar-upload mb-3">
                         <img src="${staff.avatar || '{% static "images/avatar-default.png" %}'}" 
-                             alt="${staff.name}" class="staff-avatar" id="avatar-${staff.id}">
+                             alt="${staff.name}" class="staff-avatar" id="avatar-${staffId}">
                         <div class="upload-overlay">
                             <i class="fas fa-eye"></i>
                         </div>
-                        <input type="file" accept="image/*" onchange="uploadAvatar('${staff.id}', this)" onclick="event.stopPropagation()">
+                        <input type="file" accept="image/*" onchange="uploadAvatar('${staffId}', this)" onclick="event.stopPropagation()">
                     </div>
                     
                     <h6 class="mb-1 fw-bold">${staff.name}</h6>
@@ -1143,11 +1145,18 @@ function addStaff() {
 }
 
 function editStaff(staffId) {
-    const staff = staffData.find(s => s.id === staffId);
-    if (!staff) return;
+    const staff = staffData.find(s => s.id === staffId || s.msnv === staffId);
+    if (!staff) {
+        if (window.Swal) Swal.fire('Lỗi', 'Không tìm thấy nhân viên để chỉnh sửa.', 'error');
+        return;
+    }
+    if (!staff.id) {
+        if (window.Swal) Swal.fire('Lỗi', 'Bản ghi thiếu ID. Không thể chỉnh sửa.', 'error');
+        return;
+    }
     
     // Fill form with staff data
-    document.getElementById('editStaffId').value = staff.id;
+    document.getElementById('editStaffId').value = staff.id; // dùng UUID để PATCH
     document.getElementById('editStaffName').value = staff.name;
     document.getElementById('editStaffCCCD').value = staff.cccd || '';
     document.getElementById('editStaffMSNV').value = staff.msnv || '';
@@ -1288,7 +1297,7 @@ function exportStaffData() {
         Swal.fire('Thành công!', 'Đã xuất dữ liệu nhân viên thành công.', 'success');
     })
     .catch(error => {
-        console.error('Lỗi xuất dữ liệu:', error);
+        // Silenced to reduce console noise
         Swal.fire('Lỗi!', 'Không thể xuất dữ liệu. Vui lòng thử lại.', 'error');
     });
 }
@@ -1309,8 +1318,13 @@ function getCookie(name) {
 }
 
 function showStaffDetail(staffId) {
-    const staff = staffData.find(s => s.id === staffId);
-    if (!staff) return;
+    const staff = staffData.find(s => s.id === staffId || s.msnv === staffId);
+    if (!staff) {
+        if (window.Swal) {
+            Swal.fire('Lỗi', 'Không tìm thấy thông tin nhân viên.', 'error');
+        }
+        return;
+    }
     
     // Fill detail modal with staff data
     document.getElementById('detailAvatar').src = staff.avatar || '{% static "images/avatar-default.png" %}';
@@ -1349,8 +1363,8 @@ function showStaffDetail(staffId) {
         certificatesElement.innerHTML = '<p class="text-muted">Chưa có chứng chỉ</p>';
     }
     
-    // Store current staff ID for edit/delete functions
-    window.currentDetailStaffId = staffId;
+    // Store current staff ID strictly as UUID; if thiếu, cảnh báo khi thao tác
+    window.currentDetailStaffId = staff.id || null;
     
     // Show modal
     const modal = new bootstrap.Modal(document.getElementById('staffDetailModal'));
@@ -1358,21 +1372,25 @@ function showStaffDetail(staffId) {
 }
 
 function editStaffFromDetail() {
-    if (window.currentDetailStaffId) {
-        editStaff(window.currentDetailStaffId);
-        // Close detail modal
-        const detailModal = bootstrap.Modal.getInstance(document.getElementById('staffDetailModal'));
-        detailModal.hide();
+    if (!window.currentDetailStaffId) {
+        if (window.Swal) Swal.fire('Lỗi', 'Bản ghi thiếu ID. Không thể chỉnh sửa.', 'error');
+        return;
     }
+    editStaff(window.currentDetailStaffId);
+    // Close detail modal
+    const detailModal = bootstrap.Modal.getInstance(document.getElementById('staffDetailModal'));
+    if (detailModal) detailModal.hide();
 }
 
 function deleteStaffFromDetail() {
-    if (window.currentDetailStaffId) {
-        deleteStaff(window.currentDetailStaffId);
-        // Close detail modal
-        const detailModal = bootstrap.Modal.getInstance(document.getElementById('staffDetailModal'));
-        detailModal.hide();
+    if (!window.currentDetailStaffId) {
+        if (window.Swal) Swal.fire('Lỗi', 'Bản ghi thiếu ID. Không thể xóa.', 'error');
+        return;
     }
+    deleteStaff(window.currentDetailStaffId);
+    // Close detail modal
+    const detailModal = bootstrap.Modal.getInstance(document.getElementById('staffDetailModal'));
+    if (detailModal) detailModal.hide();
 }
 
 function uploadDetailAvatar(input) {
