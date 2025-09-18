@@ -8,7 +8,6 @@
 {% endblock %}
 
 {% block header_controls %}
-<span class="badge bg-primary me-3">{{ total_documents }} tài liệu</span>
 
 <!-- Management buttons for all staff -->
 {% if user.is_authenticated %}
@@ -36,6 +35,9 @@
     .documents-container {
         margin-top: 10px;
         padding-top: 10px;
+        max-width: 1100px;
+        margin-left: auto;
+        margin-right: auto;
     }
     
     .document-card {
@@ -155,6 +157,22 @@
         font-weight: 500;
     }
     
+    /* Compact document card on mobile */
+    @media (max-width: 576px) {
+        .document-card { min-height: auto; }
+        .document-card .card-body { padding: 10px !important; }
+        .document-icon { font-size: 1.6rem; margin-bottom: 6px; }
+        .document-title { font-size: 0.95rem; height: 2.4em; }
+        /* Chỉ giữ lại dòng danh mục, ẩn các meta khác và mô tả để rút ngắn thẻ */
+        .document-meta-item { padding: 3px 6px; margin-bottom: 4px; font-size: 0.72rem; }
+        .document-meta-item:nth-of-type(n+2) { display: none; }
+        .update-info { display: none; }
+        .document-description { display: none; }
+        .document-stats { padding: 6px 8px; margin-bottom: 6px; }
+        .stat-item { font-size: 0.72rem; }
+        .btn-compact { padding: 6px 10px; font-size: 0.78rem; }
+    }
+    
     .update-info {
         background: linear-gradient(135deg, #e3f2fd, #bbdefb);
         border-radius: 10px;
@@ -186,15 +204,22 @@
         background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
         color: white;
         border-radius: 15px;
-        padding: 20px;
+        padding: 14px;
         text-align: center;
+        min-height: 110px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
     }
     
     .stats-icon {
-        font-size: 2.5rem;
-        opacity: 0.8;
-        margin-bottom: 10px;
+        font-size: 1.8rem;
+        opacity: 0.85;
+        margin-bottom: 6px;
     }
+    .documents-stats .h4 { font-size: 1.15rem; margin-bottom: 2px; }
+    .documents-stats .small { font-size: 0.8rem; opacity: 0.95; }
     
     .category-filter {
         border: none;
@@ -256,13 +281,35 @@
         margin-bottom: 20px;
         opacity: 0.5;
     }
+    /* Compact stats row */
+    .documents-stats .col-xl-3.col-md-6 { margin-bottom: 12px; }
+    @media (max-width: 992px) {
+        .documents-stats .col-xl-3.col-md-6 { flex: 0 0 33.333%; max-width: 33.333%; }
+    }
+    @media (max-width: 768px) {
+        .documents-stats .col-xl-3.col-md-6 { flex: 0 0 50%; max-width: 50%; }
+    }
+    /* Compact documents grid */
+    .documents-grid .col-lg-3.col-md-4.col-sm-6 { margin-bottom: 12px; }
+    @media (max-width: 1200px) {
+        .documents-grid .col-lg-3.col-md-4.col-sm-6 { flex: 0 0 25%; max-width: 25%; }
+    }
+    @media (max-width: 992px) {
+        .documents-grid .col-lg-3.col-md-4.col-sm-6 { flex: 0 0 33.333%; max-width: 33.333%; }
+    }
+    @media (max-width: 768px) {
+        .documents-grid .col-lg-3.col-md-4.col-sm-6 { flex: 0 0 50%; max-width: 50%; }
+    }
+    @media (max-width: 576px) {
+        .documents-grid .col-lg-3.col-md-4.col-sm-6 { flex: 0 0 50%; max-width: 50%; }
+    }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid documents-container">
     <!-- Stats Row -->
-    <div class="row mb-4">
+    <div class="row mb-4 documents-stats">
         <div class="col-xl-3 col-md-6 mb-3">
             <div class="stats-card">
                 <div class="stats-icon">
@@ -336,7 +383,7 @@
 
     <!-- Documents Grid -->
     {% if documents %}
-    <div class="row">
+    <div class="row documents-grid">
         {% for document in documents %}
         <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
             <div class="document-card h-100">

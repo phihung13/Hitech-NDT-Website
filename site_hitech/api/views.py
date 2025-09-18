@@ -35,6 +35,9 @@ from django.contrib.auth import REDIRECT_FIELD_NAME
 from django.contrib.auth.views import redirect_to_login
 from django.urls import reverse
 from django import forms
+from django.utils.decorators import method_decorator
+from django.forms.models import model_to_dict
+from .models import EmployeeProfile
 
 def get_disk_usage():
     """Lấy thông tin dung lượng disk"""
@@ -3319,3 +3322,102 @@ def document_update(request, document_id):
 def document_detail_by_id(request, pk):
 	document = get_object_or_404(Document, pk=pk, is_active=True)
 	return redirect('document_detail', slug=document.slug)
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def staff_api_list(request):
+    """List/Create EmployeeProfile. Trả JSON.
+    GET: ?search=&project=&role=&active=
+    POST: name, msnv, ... (JSON hoặc form)
+    """
+    if request.method == 'GET':
+        qs = EmployeeProfile.objects.all()
+        search = request.GET.get('search')
+        role = request.GET.get('role')
+        project = request.GET.get('project')
+        active = request.GET.get('active')
+        if search:
+            qs = qs.filter(Q(name__icontains=search) | Q(msnv__icontains=search) | Q(phone__icontains=search))
+        if role:
+            qs = qs.filter(role=role)
+        if project:
+            qs = qs.filter(current_project_id=project)
+        if active in ['true','false','1','0']:
+            qs = qs.filter(is_active=active in ['true','1'])
+        data = [model_to_dict(x) for x in qs]
+        return JsonResponse({'success': True, 'results': data})
+    # POST create
+    payload = request.POST or request.GET
+    if request.content_type == 'application/json':
+        try:
+            payload = json.loads(request.body.decode('utf-8'))
+        except Exception:
+            payload = {}
+    try:
+        emp = EmployeeProfile.objects.create(
+            name=payload.get('name','').strip(),
+            cccd=payload.get('cccd') or None,
+            msnv=payload.get('msnv','').strip(),
+            phone=payload.get('phone') or None,
+            birth_date=payload.get('birthDate') or None,
+            hometown=payload.get('hometown') or None,
+            role=payload.get('role') or 'employee',
+            education=payload.get('education') or None,
+            dependents=int(payload.get('dependents') or 0),
+            bank_account=payload.get('bankAccount') or None,
+            bank=payload.get('bank') or None,
+            join_date=payload.get('joinDate') or None,
+            current_project_id=payload.get('currentProject') or None,
+            project_position=payload.get('projectPosition') or None,
+            certificates=payload.get('certificates') or None,
+            avatar_data_url=payload.get('avatar') or None,
+            is_active=True,
+        )
+        return JsonResponse({'success': True, 'data': model_to_dict(emp)}, status=201)
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+@login_required
+@require_http_methods(["GET", "PUT", "PATCH", "DELETE"])
+def staff_api_detail(request, employee_id):
+    try:
+        emp = EmployeeProfile.objects.get(pk=employee_id)
+    except EmployeeProfile.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Not found'}, status=404)
+    if request.method == 'GET':
+        return JsonResponse({'success': True, 'data': model_to_dict(emp)})
+    if request.method in ['PUT','PATCH']:
+        payload = {}
+        if request.content_type == 'application/json':
+            try:
+                payload = json.loads(request.body.decode('utf-8'))
+            except Exception:
+                payload = {}
+        else:
+            payload = request.POST
+        for field, key in [
+            ('name','name'),('cccd','cccd'),('msnv','msnv'),('phone','phone'),
+            ('hometown','hometown'),('role','role'),('education','education'),
+            ('bank_account','bankAccount'),('bank','bank'),('project_position','projectPosition'),
+            ('certificates','certificates'),('avatar_data_url','avatar')
+        ]:
+            if key in payload:
+                setattr(emp, field, payload.get(key))
+        if 'dependents' in payload:
+            emp.dependents = int(payload.get('dependents') or 0)
+        if 'currentProject' in payload:
+            emp.current_project_id = payload.get('currentProject') or None
+        if 'isActive' in payload:
+            emp.is_active = bool(payload.get('isActive'))
+        if 'birthDate' in payload:
+            emp.birth_date = payload.get('birthDate') or None
+        if 'joinDate' in payload:
+            emp.join_date = payload.get('joinDate') or None
+        try:
+            emp.save()
+            return JsonResponse({'success': True, 'data': model_to_dict(emp)})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=400)
+    # DELETE
+    emp.delete()
+    return JsonResponse({'success': True})

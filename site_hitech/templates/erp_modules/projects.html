@@ -11,9 +11,9 @@
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid">
+<div class="container-fluid projects-container">
     <!-- Statistics Overview -->
-    <div class="row mb-4">
+    <div class="row mb-4 projects-stats">
         <div class="col-md-2 col-sm-6 mb-3">
             <div class="card border-0 shadow-sm">
                 <div class="card-body text-center">
@@ -100,7 +100,7 @@
             </div>
 
             <!-- Projects Grid -->
-            <div class="row">
+            <div class="row projects-grid">
                 <!-- Create New Project Card -->
                 <div class="col-lg-4 col-md-6 mb-4">
                     <a href="{% url 'create_project' %}" class="text-decoration-none">
@@ -313,6 +313,35 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+/***** Projects compact layout *****/
+.container-fluid.projects-container { max-width: 1100px; margin-left: auto; margin-right: auto; }
+
+/***** Stats row *****/
+@media (max-width: 992px) {
+  .projects-stats .col-md-2 { flex: 0 0 25%; max-width: 25%; }
+}
+@media (max-width: 768px) {
+  .projects-stats { row-gap: 8px; }
+  .projects-stats .col-sm-6, .projects-stats .col-md-2 { flex: 0 0 33.333%; max-width: 33.333%; }
+}
+@media (max-width: 576px) {
+  .projects-stats .col-sm-6, .projects-stats .col-md-2 { flex: 0 0 50%; max-width: 50%; }
+}
+
+/***** Cards grid *****/
+.projects-grid .col-lg-4.col-md-6 { margin-bottom: 12px; }
+@media (max-width: 768px) {
+  .projects-grid { row-gap: 12px; }
+  .projects-grid .col-lg-4.col-md-6 { flex: 0 0 50%; max-width: 50%; }
+}
+@media (max-width: 576px) {
+  .projects-grid .col-lg-4.col-md-6 { flex: 0 0 100%; max-width: 100%; }
+}
+</style>
 {% endblock %}
 
 {% block extra_js %}

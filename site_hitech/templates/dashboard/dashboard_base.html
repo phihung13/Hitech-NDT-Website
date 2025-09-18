@@ -216,6 +216,13 @@
         .content-body {
             padding: 30px;
         }
+        /* Center the main dashboard content */
+        .content-body > .container-fluid,
+        .content-body > .container {
+            max-width: 1100px;
+            margin-left: auto;
+            margin-right: auto;
+        }
 
         .user-info {
             padding: 15px 20px;
@@ -262,65 +269,52 @@
         }
 
         /* Responsive */
+        @media (max-width: 992px) {
+            .content-header { padding: 14px 16px; }
+            .content-body { padding: 16px; }
+            .nav-link { padding: 10px 12px; }
+            .back-to-website { padding: 10px 12px; border-radius: 10px; }
+            .main-content { background: #f7f9fb; }
+            .notification-dropdown .dropdown-menu { width: 92vw; right: -8px; }
+            .btn { padding: 10px 14px; }
+        }
         @media (max-width: 768px) {
             .sidebar {
-                width: 70px;
+                width: 260px;
             }
-
-            .sidebar:hover {
-                width: 280px;
-            }
-
-            .sidebar .nav-link span {
-                opacity: 0;
-                visibility: hidden;
-                transition: all 0.3s ease;
-            }
-
-            .sidebar:hover .nav-link span {
-                opacity: 1;
-                visibility: visible;
-            }
-
+            .sidebar:hover { width: 260px; }
+            .sidebar .nav-link span { opacity: 1; visibility: visible; }
             .brand-name,
             .brand-subtitle,
             .nav-section-title,
             .user-details,
-            .back-to-website span {
-                opacity: 0;
-                visibility: hidden;
-                transition: all 0.3s ease;
-            }
-
-            .sidebar:hover .brand-name,
-            .sidebar:hover .brand-subtitle,
-            .sidebar:hover .nav-section-title,
-            .sidebar:hover .user-details,
-            .sidebar:hover .back-to-website span {
-                opacity: 1;
-                visibility: visible;
-            }
-
-            .main-content {
-                margin-left: 70px;
-                width: calc(100% - 70px);
-            }
+            .back-to-website span { opacity: 1; visibility: visible; }
+            .main-content { margin-left: 0; width: 100%; }
         }
-
         @media (max-width: 576px) {
-            .sidebar {
-                transform: translateX(-100%);
-            }
-
-            .sidebar.show {
-                transform: translateX(0);
-            }
-
-            .main-content {
-                margin-left: 0;
-                width: 100%;
-            }
+            .sidebar { transform: translateX(-100%); box-shadow: 8px 0 24px rgba(0,0,0,0.15); }
+            .sidebar.show { transform: translateX(0); }
+            .main-content { margin-left: 0; width: 100%; }
+            .content-header { padding: 12px; }
+            .content-body { padding: 16px 12px 24px; }
+            h1.h3 { font-size: 1.15rem; }
+            .btn { padding: 10px 14px; font-size: 0.95rem; }
+            .notification-dropdown .btn { width: 38px; height: 38px; }
+            /* Stack header title and controls */
+            .content-header .d-flex.justify-content-between { flex-direction: column; align-items: stretch; gap: 8px; }
+            .content-header .d-flex.justify-content-between > .d-flex { justify-content: space-between; width: 100%; }
+            /* Center page title on mobile */
+            .content-header h1 { text-align: center; }
+            /* Narrower centered container on mobile */
+            .content-body > .container-fluid,
+            .content-body > .container { max-width: 720px; }
         }
+        /* Backdrop for mobile sidebar */
+        .sidebar-backdrop { display:none; position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.35); z-index: 900; }
+        .sidebar-backdrop.show { display:block; }
+        /* Floating toggle button */
+        .sidebar-toggle-fixed { position: fixed; top: 12px; left: 12px; z-index: 1100; background: #ffffff; border: 1px solid #e5e7eb; width: 42px; height: 42px; border-radius: 10px; display: flex; align-items: center; justify-content: center; box-shadow: 0 6px 18px rgba(0,0,0,0.12); color: #1f2937; }
+        .sidebar-toggle-fixed:active { transform: scale(0.98); }
 
         /* Scrollbar styling */
         .sidebar::-webkit-scrollbar {
@@ -531,10 +525,12 @@
     </style>
 </head>
     <body class="dashboard-page logged-in">
+        <div class="sidebar-backdrop"></div>
         <div class="dashboard-wrapper">
         <!-- Sidebar -->
         <div class="sidebar" id="sidebar">
             <div class="sidebar-header">
+
                 <!-- Back to Website Button -->
                 <a href="/" class="back-to-website">
                     <i class="fas fa-globe"></i>
@@ -713,12 +709,12 @@
                             </ul>
                         </div>
                         
-                        <!-- Mobile sidebar toggle -->
-                        <button class="btn btn-outline-primary d-md-none me-3" id="sidebarToggle">
-                            <i class="fas fa-bars"></i>
-                        </button>
                         <!-- Breadcrumb or additional controls -->
                         {% block header_controls %}{% endblock %}
+                        <!-- Mobile sidebar toggle (right aligned) -->
+                        <button class="btn btn-outline-primary d-md-none ms-auto" id="sidebarToggle">
+                            <i class="fas fa-bars"></i>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -755,19 +751,26 @@
                 }
             });
 
-            // Mobile sidebar toggle
-            $('#sidebarToggle').click(function() {
-                $('#sidebar').toggleClass('show');
-            });
+            // Mobile sidebar toggle (header button)
+            $('#sidebarToggle').click(function() { toggleSidebar(); });
 
             // Close sidebar when clicking outside on mobile
             $(document).click(function(e) {
                 if ($(window).width() <= 576) {
                     if (!$(e.target).closest('.sidebar, #sidebarToggle').length) {
-                        $('#sidebar').removeClass('show');
+                        closeSidebar();
                     }
                 }
             });
+
+            function toggleSidebar(){
+                $('#sidebar').toggleClass('show');
+                $('.sidebar-backdrop').toggleClass('show');
+            }
+            function closeSidebar(){
+                $('#sidebar').removeClass('show');
+                $('.sidebar-backdrop').removeClass('show');
+            }
 
             // Smooth scrolling for sidebar
             $('.nav-link').click(function(e) {

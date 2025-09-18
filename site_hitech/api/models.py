@@ -6,6 +6,7 @@ from django.core.exceptions import ValidationError
 from colorfield.fields import ColorField
 import hashlib
 from django.utils import timezone
+import uuid
 
 
 class SiteSettings(models.Model):
@@ -1712,3 +1713,41 @@ class DocumentFileVersion(models.Model):
             return f"{self.file_size / (1024 * 1024):.1f} MB"
         else:
             return f"{self.file_size / (1024 * 1024 * 1024):.1f} GB"
+
+class EmployeeProfile(models.Model):
+    """Hồ sơ Nhân viên dùng cho module Staff (độc lập User)."""
+    ROLE_CHOICES = [
+        ('employee', 'Technician'),
+        ('employee_rd', 'R&D Technician'),
+        ('manager', 'Site Manager'),
+        ('company', 'Technical Manager'),
+        ('team_lead', 'NDT Team Leader'),
+    ]
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=150)
+    cccd = models.CharField(max_length=20, blank=True, null=True)
+    msnv = models.CharField(max_length=20, unique=True)
+    phone = models.CharField(max_length=20, blank=True, null=True)
+    birth_date = models.DateField(blank=True, null=True)
+    hometown = models.CharField(max_length=150, blank=True, null=True)
+    role = models.CharField(max_length=50, choices=ROLE_CHOICES, default='employee')
+    education = models.CharField(max_length=50, blank=True, null=True)
+    dependents = models.PositiveIntegerField(default=0)
+    bank_account = models.CharField(max_length=50, blank=True, null=True)
+    bank = models.CharField(max_length=100, blank=True, null=True)
+    join_date = models.DateField(blank=True, null=True)
+    current_project = models.ForeignKey('Project', on_delete=models.SET_NULL, null=True, blank=True)
+    project_position = models.CharField(max_length=100, blank=True, null=True)
+    certificates = models.TextField(blank=True, null=True)
+    avatar_data_url = models.TextField(blank=True, null=True, help_text='Ảnh base64 từ client')
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Nhân viên'
+        verbose_name_plural = 'Nhân viên'
+        ordering = ['-updated_at']
+
+    def __str__(self):
+        return f"{self.name} ({self.msnv})"

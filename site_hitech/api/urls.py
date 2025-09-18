@@ -173,6 +173,9 @@ urlpatterns = [
     path('api/documents/<int:document_id>/restore/', views.restore_document_version, name='restore_document_version'),
     path('api/documents/<int:document_id>/delete/', views.delete_document, name='delete_document'),
     path('api/documents/<int:document_id>/versions/', views.document_versions_api, name='document_versions_api'),
+    # Staff API (EmployeeProfile)
+    path('api/staff/', views.staff_api_list, name='staff_api_list'),
+    path('api/staff/<uuid:employee_id>/', views.staff_api_detail, name='staff_api_detail'),
     path('documents/update/<int:document_id>/', views.document_update_view, name='document_update_view'),
     path('documents/<int:pk>/', views.document_detail_by_id, name='document_detail_by_id'),
 

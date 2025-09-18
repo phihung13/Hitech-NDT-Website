@@ -858,16 +858,47 @@ function setupEventListeners() {
 }
 
 function loadStaffData() {
-    // Load from localStorage hoặc khởi tạo rỗng
-    const savedStaff = localStorage.getItem('staffData');
-    if (savedStaff) {
-        staffData = JSON.parse(savedStaff);
-    } else {
+    // Load từ API thay vì localStorage
+    fetch('/api/staff/', {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(res => {
+        if (!res.ok) throw new Error('Không tải được danh sách nhân viên');
+        return res.json();
+    })
+    .then(data => {
+        if (data && data.success) {
+            staffData = (data.results || []).map(x => ({
+                id: x.id,
+                name: x.name,
+                cccd: x.cccd || '',
+                msnv: x.msnv || '',
+                phone: x.phone || '',
+                birthDate: x.birth_date || '',
+                hometown: x.hometown || '',
+                role: x.role || 'employee',
+                education: x.education || '',
+                dependents: (x.dependents != null ? String(x.dependents) : ''),
+                bankAccount: x.bank_account || '',
+                bank: x.bank || '',
+                joinDate: x.join_date || '',
+                currentProject: x.current_project || '',
+                projectPosition: x.project_position || '',
+                certificates: x.certificates || '',
+                avatar: x.avatar_data_url || null,
+                isActive: !!x.is_active,
+            }));
+        } else {
+            staffData = [];
+        }
+        filteredStaff = [...staffData];
+        renderStaffCards();
+    })
+    .catch(() => {
         staffData = [];
-    }
-    
-    filteredStaff = [...staffData];
-    renderStaffCards();
+        filteredStaff = [];
+        renderStaffCards();
+    });
 }
 
 function loadProjectData() {
@@ -929,7 +960,7 @@ function updateProjectFilter(projects) {
     }
 }
 
-// Hàm placeholder (không seed dữ liệu mẫu nữa)
+// Hàm placeholder (không dùng nữa)
 function createDemoStaffData() {
     staffData = [];
 }
@@ -1064,33 +1095,13 @@ function showAddStaffModal() {
 }
 
 function addStaff() {
-    console.log('addStaff called'); // Thêm dòng này
-    
     const form = document.getElementById('addStaffForm');
-    if (!form.checkValidity()) {
-        console.log('Form validation failed');
-        form.reportValidity();
-        return;
-    }
-    
-    console.log('Form is valid, proceeding...');
-    
-    // Kiểm tra MSNV bắt buộc
+    if (!form.checkValidity()) { form.reportValidity(); return; }
+
     const msnv = document.getElementById('staffMSNV').value.trim();
-    if (!msnv) {
-        Swal.fire('Lỗi!', 'Vui lòng nhập Mã số nhân viên (MSNV).', 'error');
-        return;
-    }
-    
-    // Kiểm tra MSNV trùng lặp
-    const existingStaff = staffData.find(staff => staff.msnv === msnv);
-    if (existingStaff) {
-        Swal.fire('Lỗi!', `MSNV "${msnv}" đã tồn tại. Vui lòng sử dụng MSNV khác.`, 'error');
-        return;
-    }
-    
-    const newStaff = {
-        id: Date.now().toString(),
+    if (!msnv) { Swal.fire('Lỗi!', 'Vui lòng nhập Mã số nhân viên (MSNV).', 'error'); return; }
+
+    const payload = {
         name: document.getElementById('staffName').value,
         cccd: document.getElementById('staffCCCD').value,
         msnv: msnv,
@@ -1107,24 +1118,28 @@ function addStaff() {
         projectPosition: document.getElementById('staffProjectPosition').value,
         certificates: document.getElementById('staffCertificates').value,
         avatar: window.addStaffAvatar || null,
-        isActive: true
     };
-    
-    staffData.push(newStaff);
-    localStorage.setItem('staffData', JSON.stringify(staffData));
-    
-    // Reset avatar
-    window.addStaffAvatar = null;
-    
-    // Close modal
-    const modal = bootstrap.Modal.getInstance(document.getElementById('addStaffModal'));
-    modal.hide();
-    
-    // Refresh display
-    filterStaff();
-    
-    // Show success message
-    Swal.fire('Thành công!', 'Đã thêm nhân viên mới.', 'success');
+
+    fetch('/api/staff/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken'),
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(res => res.json().then(d => ({ ok: res.ok, data: d })))
+    .then(({ ok, data }) => {
+        if (!ok || !data.success) throw new Error(data.error || 'Không thể tạo nhân viên');
+        // Đóng modal và reload danh sách
+        const modal = bootstrap.Modal.getInstance(document.getElementById('addStaffModal'));
+        if (modal) modal.hide();
+        window.addStaffAvatar = null;
+        return loadStaffData();
+    })
+    .then(() => Swal.fire('Thành công!', 'Đã thêm nhân viên mới.', 'success'))
+    .catch(err => Swal.fire('Lỗi!', err.message, 'error'));
 }
 
 function editStaff(staffId) {
@@ -1161,27 +1176,10 @@ function editStaff(staffId) {
 
 function updateStaff() {
     const staffId = document.getElementById('editStaffId').value;
-    const staffIndex = staffData.findIndex(s => s.id === staffId);
-    
-    if (staffIndex === -1) return;
-    
-    // Kiểm tra MSNV bắt buộc
     const msnv = document.getElementById('editStaffMSNV').value.trim();
-    if (!msnv) {
-        Swal.fire('Lỗi!', 'Vui lòng nhập Mã số nhân viên (MSNV).', 'error');
-        return;
-    }
-    
-    // Kiểm tra MSNV trùng lặp (trừ nhân viên hiện tại)
-    const existingStaff = staffData.find(staff => staff.msnv === msnv && staff.id !== staffId);
-    if (existingStaff) {
-        Swal.fire('Lỗi!', `MSNV "${msnv}" đã tồn tại. Vui lòng sử dụng MSNV khác.`, 'error');
-        return;
-    }
-    
-    // Update staff data
-    staffData[staffIndex] = {
-        ...staffData[staffIndex],
+    if (!msnv) { Swal.fire('Lỗi!', 'Vui lòng nhập Mã số nhân viên (MSNV).', 'error'); return; }
+
+    const payload = {
         name: document.getElementById('editStaffName').value,
         cccd: document.getElementById('editStaffCCCD').value,
         msnv: msnv,
@@ -1197,23 +1195,28 @@ function updateStaff() {
         currentProject: document.getElementById('editStaffProject').value,
         projectPosition: document.getElementById('editStaffProjectPosition').value,
         certificates: document.getElementById('editStaffCertificates').value,
-        avatar: window.editStaffAvatar || staffData[staffIndex].avatar
+        avatar: window.editStaffAvatar || null,
     };
-    
-    localStorage.setItem('staffData', JSON.stringify(staffData));
-    
-    // Reset avatar
-    window.editStaffAvatar = null;
-    
-    // Close modal
-    const modal = bootstrap.Modal.getInstance(document.getElementById('editStaffModal'));
-    modal.hide();
-    
-    // Refresh display
-    filterStaff();
-    
-    // Show success message
-    Swal.fire('Thành công!', 'Đã cập nhật thông tin nhân viên.', 'success');
+
+    fetch(`/api/staff/${staffId}/`, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken'),
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(res => res.json().then(d => ({ ok: res.ok, data: d })))
+    .then(({ ok, data }) => {
+        if (!ok || !data.success) throw new Error(data.error || 'Không thể cập nhật nhân viên');
+        const modal = bootstrap.Modal.getInstance(document.getElementById('editStaffModal'));
+        if (modal) modal.hide();
+        window.editStaffAvatar = null;
+        return loadStaffData();
+    })
+    .then(() => Swal.fire('Thành công!', 'Đã cập nhật thông tin nhân viên.', 'success'))
+    .catch(err => Swal.fire('Lỗi!', err.message, 'error'));
 }
 
 function deleteStaff(staffId) {
@@ -1227,12 +1230,21 @@ function deleteStaff(staffId) {
         confirmButtonText: 'Xóa',
         cancelButtonText: 'Hủy'
     }).then((result) => {
-        if (result.isConfirmed) {
-            staffData = staffData.filter(s => s.id !== staffId);
-            localStorage.setItem('staffData', JSON.stringify(staffData));
-            filterStaff();
-            Swal.fire('Đã xóa!', 'Nhân viên đã được xóa.', 'success');
-        }
+        if (!result.isConfirmed) return;
+        fetch(`/api/staff/${staffId}/`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(res => res.json().then(d => ({ ok: res.ok, data: d })))
+        .then(({ ok, data }) => {
+            if (!ok || !data.success) throw new Error(data.error || 'Không thể xóa nhân viên');
+            return loadStaffData();
+        })
+        .then(() => Swal.fire('Đã xóa!', 'Nhân viên đã được xóa.', 'success'))
+        .catch(err => Swal.fire('Lỗi!', err.message, 'error'));
     });
 }
 
@@ -1376,13 +1388,8 @@ function uploadDetailAvatar(input) {
         const staffIndex = staffData.findIndex(s => s.id === window.currentDetailStaffId);
         if (staffIndex !== -1) {
             staffData[staffIndex].avatar = e.target.result;
-            localStorage.setItem('staffData', JSON.stringify(staffData));
-            
-            // Update the card avatar too
-            const cardAvatar = document.getElementById(`avatar-${window.currentDetailStaffId}`);
-            if (cardAvatar) {
-                cardAvatar.src = e.target.result;
-            }
+            // No need to call loadStaffData() here, as we are updating a single item
+            // localStorage.setItem('staffData', JSON.stringify(staffData)); 
         }
     };
     reader.readAsDataURL(file);
@@ -1477,7 +1484,8 @@ function uploadAvatar(staffId, input) {
         const staffIndex = staffData.findIndex(s => s.id === staffId);
         if (staffIndex !== -1) {
             staffData[staffIndex].avatar = e.target.result;
-            localStorage.setItem('staffData', JSON.stringify(staffData));
+            // No need to call loadStaffData() here, as we are updating a single item
+            // localStorage.setItem('staffData', JSON.stringify(staffData)); 
         }
     };
     reader.readAsDataURL(file);
