@@ -31,3 +31,16 @@ def trim(value):
     if value:
         return value.strip()
     return value
+
+@register.filter
+def role_display(value):
+    """Map internal role keys to human-friendly display names."""
+    mapping = {
+        'admin': 'Admin',
+        'employee': 'Technician',
+        'employee_rd': 'R&D Technician',
+        'manager': 'Site Manager',
+        'company': 'Technical Manager',
+        'team_lead': 'NDT Team Leader',
+    }
+    return mapping.get(value, value)

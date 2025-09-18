@@ -1,4 +1,5 @@
 {% load static %}
+{% load custom_filters %}
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -561,9 +562,7 @@
                     <div class="user-details">
                         <div class="user-name">{{ user.get_full_name|default:user.username }}</div>
                         <div class="user-role">
-                            {% if user.user_profile.role == 'admin' %}Quản trị viên
-                            {% elif user.user_profile.role == 'manager' %}Quản lý
-                            {% else %}Nhân viên{% endif %}
+                            {% if user.user_profile.role %}{{ user.user_profile.role|role_display }}{% else %}User{% endif %}
                             {% if user.user_profile.msnv %}
                                 • MSNV: {{ user.user_profile.msnv }}
                             {% endif %}
@@ -895,11 +894,14 @@ window.DashboardUI = {
     
     getRoleDisplayName: function() {
         const roleNames = {
-            'admin': 'Quản trị viên',
-            'manager': 'Quản lý', 
-            'staff': 'Nhân viên'
+            'admin': 'Admin',
+            'employee': 'Technician',
+            'employee_rd': 'R&D Technician',
+            'manager': 'Site Manager',
+            'company': 'Technical Manager',
+            'team_lead': 'NDT Team Leader'
         };
-        return roleNames[DASHBOARD_USER.role] || 'Người dùng';
+        return roleNames[DASHBOARD_USER.role] || 'User';
     },
     
     // Show access denied message

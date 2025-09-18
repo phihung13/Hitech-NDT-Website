@@ -331,6 +331,7 @@ def admin_chat_view(request):
 def staff_login(request):
     """View đăng nhập cho nhân viên qua web interface"""
     if request.user.is_authenticated:
+        # Đã đăng nhập, luôn cho vào dashboard
         return redirect('staff_dashboard')
     
     if request.method == 'POST':
@@ -339,19 +340,17 @@ def staff_login(request):
         
         user = authenticate(request, username=username, password=password)
         if user is not None:
-            if user.is_staff:  # Chỉ cho phép staff đăng nhập
-                auth_login(request, user)
-                # ép đi thiết lập lần đầu nếu cần
-                profile, _ = UserProfile.objects.get_or_create(user=user, defaults={
-                    'role': 'staff',
-                    'msnv': f'HTNV-{user.id:03d}'
-                })
-                if getattr(profile, 'must_change_password', False) or getattr(profile, 'must_set_email', False) or not user.email:
-                    return redirect('first_time_setup')
-                messages.success(request, f'Chào mừng {user.username}!')
-                return redirect('staff_dashboard')
-            else:
-                messages.error(request, 'Bạn không có quyền truy cập hệ thống nội bộ.')
+            # Cho phép đăng nhập cho mọi user hợp lệ
+            auth_login(request, user)
+            # ép đi thiết lập lần đầu nếu cần
+            profile, _ = UserProfile.objects.get_or_create(user=user, defaults={
+                'role': 'employee',
+                'msnv': f'HTNV-{user.id:03d}'
+            })
+            if getattr(profile, 'must_change_password', False) or getattr(profile, 'must_set_email', False) or not user.email:
+                return redirect('first_time_setup')
+            messages.success(request, f'Chào mừng {user.username}!')
+            return redirect('staff_dashboard')
         else:
             messages.error(request, 'Tên đăng nhập hoặc mật khẩu không đúng.')
     
@@ -436,7 +435,7 @@ def staff_dashboard(request):
     maintenance_equipment = Equipment.objects.filter(status='maintenance').count()
     
     # Thống kê cá nhân
-    if profile.role == 'employee':
+    if profile.role in ['employee', 'employee_rd']:
         user_posts = Post.objects.filter(author=request.user)
         user_courses = Course.objects.filter(instructor=request.user)
         # Dự án mà user tham gia
@@ -823,7 +822,7 @@ def dashboard_overview(request):
     completed_projects = projects.filter(status='completed').count()
     
     # Phân quyền xem dữ liệu
-    if profile.role == 'employee':
+    if profile.role in ['employee', 'employee_rd']:
         user_posts = Post.objects.filter(author=request.user)
         user_courses = Course.objects.filter(instructor=request.user)
         user_projects = Project.objects.filter(staff=request.user)
@@ -863,7 +862,7 @@ def projects_management(request):
         return redirect('home')
     
     # Lấy dữ liệu dự án dựa trên quyền
-    if profile.role == 'employee':
+    if profile.role in ['employee', 'employee_rd']:
         projects = Project.objects.filter(staff=request.user).select_related('company', 'project_manager')
     else:
         projects = Project.objects.all().select_related('company', 'project_manager')

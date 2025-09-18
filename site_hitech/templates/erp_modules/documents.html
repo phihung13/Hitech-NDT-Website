@@ -1,5 +1,6 @@
 {% extends 'dashboard/dashboard_base.html' %}
 {% load static %}
+{% load custom_filters %}
 
 {% block title %}{{ title }} - Dashboard{% endblock %}
 
@@ -342,7 +343,7 @@
                 <div class="stats-icon">
                     <i class="fas fa-user-shield"></i>
                 </div>
-                <div class="h4 mb-0">{{ user_role|capfirst }}</div>
+                <div class="h4 mb-0">{{ request.user.user_profile.role|role_display }}</div>
                 <div class="small">Vai trò của bạn</div>
             </div>
         </div>

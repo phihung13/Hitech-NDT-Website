@@ -41,7 +41,7 @@ def role_required(allowed_roles):
             if not hasattr(request.user, 'user_profile'):
                 from .models import UserProfile
                 profile, _ = UserProfile.objects.get_or_create(user=request.user, defaults={
-                    'role': 'staff',
+                    'role': 'employee',
                     'msnv': f'HTNV-{request.user.id:03d}'
                 })
             else:
@@ -59,7 +59,7 @@ def role_required(allowed_roles):
             user_role = request.user.user_profile.role
             if user_role not in allowed_roles:
                 messages.error(request, 'Bạn không có quyền truy cập trang này.')
-                return redirect('staff_dashboard')
+                return redirect('staff_login')
             
             return view_func(request, *args, **kwargs)
         return _wrapped_view
@@ -95,7 +95,7 @@ def staff_required_with_setup(view_func):
     """Decorator kết hợp kiểm tra vai trò staff và setup"""
     @wraps(view_func)
     @setup_required
-    @role_required(['admin', 'company', 'manager', 'team_lead', 'employee'])
+    @role_required(['admin', 'company', 'manager', 'team_lead', 'employee', 'employee_rd'])
     def _wrapped_view(request, *args, **kwargs):
         return view_func(request, *args, **kwargs)
     return _wrapped_view
