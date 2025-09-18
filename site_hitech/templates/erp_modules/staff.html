@@ -88,6 +88,10 @@
     .role-manager { background: linear-gradient(135deg, #f093fb, #f5576c); color: white; }
     .role-team-lead { background: linear-gradient(135deg, #4facfe, #00f2fe); color: white; }
     .role-staff { background: linear-gradient(135deg, #43e97b, #38f9d7); color: white; }
+    /* Bổ sung class khớp với giá trị dropdown */
+    .role-team_lead { background: linear-gradient(135deg, #4facfe, #00f2fe); color: white; }
+    .role-employee_rd { background: linear-gradient(135deg, #43e97b, #38f9d7); color: white; }
+    .role-employee { background: linear-gradient(135deg, #43e97b, #38f9d7); color: white; }
     
     .project-badge {
         background: linear-gradient(135deg, #fa709a, #fee140);
@@ -224,6 +228,38 @@
         line-height: 1.2;
         color: #6c757d;
     }
+
+    .role-tag {
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 500;
+    }
+
+    .role-tag.company {
+        background-color: #667eea; /* Màu xanh dương */
+        color: white;
+    }
+
+    .role-tag.manager {
+        background-color: #f093fb; /* Màu hồng */
+        color: white;
+    }
+
+    .role-tag.team-lead {
+        background-color: #4facfe; /* Màu xanh nước biển */
+        color: white;
+    }
+
+    .role-tag.employee-rd {
+        background-color: #8b5cf6; /* Màu tím */
+        color: white;
+    }
+
+    .role-tag.employee {
+        background-color: #43e97b; /* Màu xanh lá */
+        color: white;
+    }
 </style>
 {% endblock %}
 
@@ -272,10 +308,11 @@
                             <label class="form-label fw-bold">Vai trò</label>
                             <select class="form-select" id="filterRole">
                                 <option value="">Tất cả vai trò</option>
-                                <option value="company">Công ty</option>
-                                <option value="manager">Quản lý</option>
-                                <option value="team_lead">Trưởng nhóm</option>
-                                <option value="staff">Nhân viên</option>
+                                <option value="company">Technical Manager</option>
+                                <option value="manager">Site Manager</option>
+                                <option value="team_lead">NDT Team Leader</option>
+                                <option value="employee_rd">R&D Technician</option>
+                                <option value="employee">Technician</option>
                             </select>
                         </div>
                     </div>
@@ -373,10 +410,11 @@
                                         <label class="form-label fw-bold">Chức vụ</label>
                                         <select class="form-select" id="staffRole" required>
                                             <option value="">Chọn chức vụ</option>
-                                            <option value="company">Công ty</option>
-                                            <option value="manager">Quản lý</option>
-                                            <option value="team_lead">Trưởng nhóm</option>
-                                            <option value="staff">Nhân viên</option>
+                                            <option value="company">Technical Manager</option>
+                                            <option value="manager">Site Manager</option>
+                                            <option value="team_lead">NDT Team Leader</option>
+                                            <option value="employee_rd">R&D Technician</option>
+                                            <option value="employee">Technician</option>
                                         </select>
                                     </div>
                                 </div>
@@ -680,10 +718,11 @@
                                         <label class="form-label fw-bold">Chức vụ</label>
                                         <select class="form-select" id="editStaffRole" required>
                                             <option value="">Chọn chức vụ</option>
-                                            <option value="company">Công ty</option>
-                                            <option value="manager">Quản lý</option>
-                                            <option value="team_lead">Trưởng nhóm</option>
-                                            <option value="staff">Nhân viên</option>
+                                            <option value="company">Technical Manager</option>
+                                            <option value="manager">Site Manager</option>
+                                            <option value="team_lead">NDT Team Leader</option>
+                                            <option value="employee_rd">R&D Technician</option>
+                                            <option value="employee">Technician</option>
                                         </select>
                                     </div>
                                 </div>
@@ -819,12 +858,12 @@ function setupEventListeners() {
 }
 
 function loadStaffData() {
-    // Load from localStorage or create demo data
+    // Load from localStorage hoặc khởi tạo rỗng
     const savedStaff = localStorage.getItem('staffData');
     if (savedStaff) {
         staffData = JSON.parse(savedStaff);
     } else {
-        createDemoStaffData();
+        staffData = [];
     }
     
     filteredStaff = [...staffData];
@@ -890,91 +929,9 @@ function updateProjectFilter(projects) {
     }
 }
 
+// Hàm placeholder (không seed dữ liệu mẫu nữa)
 function createDemoStaffData() {
-    staffData = [
-        {
-            id: '1',
-            name: 'Nguyễn Văn A',
-            cccd: '123456789012',
-            msnv: 'NV001',
-            phone: '0901234567',
-            birthDate: '1980-05-15',
-            hometown: 'Hà Nội',
-            role: 'company',
-            education: 'university',
-            dependents: '2',
-            bankAccount: '1234567890',
-            bank: 'Vietcombank',
-            joinDate: '2020-01-15',
-            currentProject: 'project1',
-            projectPosition: 'Giám đốc dự án',
-            certificates: 'NDT Level III - UT\nNDT Level III - RT\nISO 9712 Lead Auditor',
-            avatar: null,
-            isActive: true
-        },
-        {
-            id: '2',
-            name: 'Trần Thị B',
-            cccd: '123456789013',
-            msnv: 'NV002',
-            phone: '0901234568',
-            birthDate: '1985-08-20',
-            hometown: 'TP.HCM',
-            role: 'manager',
-            education: 'university',
-            dependents: '1',
-            bankAccount: '1234567891',
-            bank: 'BIDV',
-            joinDate: '2021-03-20',
-            currentProject: 'project2',
-            projectPosition: 'Quản lý kỹ thuật',
-            certificates: 'NDT Level II - UT\nNDT Level II - RT\nNDT Level II - PT',
-            avatar: null,
-            isActive: true
-        },
-        {
-            id: '3',
-            name: 'Lê Văn C',
-            cccd: '123456789014',
-            msnv: 'NV003',
-            phone: '0901234569',
-            birthDate: '1990-03-10',
-            hometown: 'Đà Nẵng',
-            role: 'team_lead',
-            education: 'college',
-            dependents: '0',
-            bankAccount: '1234567892',
-            bank: 'Agribank',
-            joinDate: '2022-01-10',
-            currentProject: 'project3',
-            projectPosition: 'Trưởng nhóm kỹ thuật',
-            certificates: 'NDT Level II - UT\nNDT Level II - RT',
-            avatar: null,
-            isActive: true
-        },
-        {
-            id: '4',
-            name: 'Phạm Thị D',
-            cccd: '123456789015',
-            msnv: 'NV004',
-            phone: '0901234570',
-            birthDate: '1995-12-25',
-            hometown: 'Cần Thơ',
-            role: 'staff',
-            education: 'university',
-            dependents: '0',
-            bankAccount: '1234567893',
-            bank: 'Techcombank',
-            joinDate: '2023-06-15',
-            currentProject: 'project1',
-            projectPosition: 'Kỹ sư kiểm tra',
-            certificates: 'NDT Level I - UT\nNDT Level I - RT',
-            avatar: null,
-            isActive: true
-        }
-    ];
-    
-    localStorage.setItem('staffData', JSON.stringify(staffData));
+    staffData = [];
 }
 
 function renderStaffCards() {
@@ -1031,10 +988,11 @@ function renderStaffCards() {
 
 function getRoleDisplayName(role) {
     const roleNames = {
-        'company': 'Công ty',
-        'manager': 'Quản lý',
-        'team_lead': 'Trưởng nhóm',
-        'staff': 'Nhân viên'
+        'company': 'Technical Manager',
+        'manager': 'Site Manager', 
+        'team_lead': 'NDT Team Leader',
+        'employee_rd': 'R&D Technician',
+        'employee': 'Technician'
     };
     return roleNames[role] || role;
 }
@@ -1106,11 +1064,16 @@ function showAddStaffModal() {
 }
 
 function addStaff() {
+    console.log('addStaff called'); // Thêm dòng này
+    
     const form = document.getElementById('addStaffForm');
     if (!form.checkValidity()) {
+        console.log('Form validation failed');
         form.reportValidity();
         return;
     }
+    
+    console.log('Form is valid, proceeding...');
     
     // Kiểm tra MSNV bắt buộc
     const msnv = document.getElementById('staffMSNV').value.trim();

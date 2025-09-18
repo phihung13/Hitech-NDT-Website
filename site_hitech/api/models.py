@@ -443,14 +443,19 @@ class AboutPage(models.Model):
 
 class UserProfile(models.Model):
     ROLE_CHOICES = [
-        ('company', 'Công ty'),
-        ('manager', 'Quản lý'),
-        ('team_lead', 'Trưởng nhóm'),
-        ('staff', 'Nhân viên'),
+        ('employee', 'Technician'),
+        ('employee_rd', 'R&D Technician'),
+        ('manager', 'Site Manager'),
+        ('company', 'Technical Manager'),
+        ('team_lead', 'NDT Team Leader'),
     ]
     
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='user_profile')
-    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='staff', verbose_name='Vai trò')
+    role = models.CharField(
+        max_length=50,
+        choices=ROLE_CHOICES,
+        default='employee'
+    )
     msnv = models.CharField(max_length=20, blank=True, null=True, verbose_name='Mã số nhân viên', help_text='Mã số nhân viên duy nhất')
     department = models.CharField(max_length=100, blank=True, null=True, verbose_name='Phòng ban')
     phone = models.CharField(max_length=20, blank=True, null=True, verbose_name='Số điện thoại')

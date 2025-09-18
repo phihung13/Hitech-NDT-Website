@@ -2752,3 +2752,21 @@ textarea.form-control {
     padding: 4px 8px;
 }
 
+.role-tag.team-lead {
+    background-color: #10b981; /* Màu xanh lá */
+    color: white;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.role-tag.employee-rd {
+    background-color: #8b5cf6; /* Màu tím */
+    color: white;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+}
+

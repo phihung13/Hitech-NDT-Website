@@ -408,7 +408,7 @@
                             <div><i class="fas fa-download"></i> tải</div>
                         </div>
                         <div class="stat-item">
-                            <span class="stat-number">v{{ document.get_latest_version.version|default:document.version|default:1 }}</span>
+                            <span class="stat-number">v{{ document.current_file_version.version_number|default:1 }}</span>
                             <div><i class="fas fa-tag"></i> version</div>
                         </div>
                     </div>
@@ -433,16 +433,13 @@
                                 </a>
                                 
                                 <!-- Share button -->
-                                <button type="button" class="btn btn-outline-primary btn-compact" onclick="copyShareLink('{{ document.file.url }}')">
+                                <button type="button" class="btn btn-outline-primary btn-compact" onclick="copyShareLink('{% url 'document_detail' document.slug %}')">
                                     <i class="fas fa-share-alt me-1"></i>Chia sẻ
                                 </button>
                                 
                                 <!-- Edit/Delete buttons for authorized users -->
                                 {% if user_role == 'admin' or user_role == 'manager' or document.created_by == user %}
                                 <div class="btn-group w-100" role="group">
-                                    <button type="button" class="btn btn-outline-warning btn-compact" onclick="updateDocument({{ document.id }})">
-                                        <i class="fas fa-upload"></i>
-                                    </button>
                                     {% if user_role == 'admin' or document.created_by == user %}
                                     <button type="button" class="btn btn-outline-danger btn-compact" onclick="deleteDocument({{ document.id }})">
                                         <i class="fas fa-trash"></i>
@@ -567,7 +564,15 @@
 <script src="{% static 'js/documents.js' %}"></script>
 <script>
 function copyShareLink(path) {
-    const url = window.location.origin + path;
+    let url = path || '';
+    // Nếu path là URL tuyệt đối thì giữ nguyên, nếu là đường dẫn thì ghép với origin
+    if (!/^https?:\/\//i.test(url)) {
+        if (url.startsWith('/')) {
+            url = window.location.origin + url;
+        } else {
+            url = window.location.origin + '/' + url.replace(/^\/+/, '');
+        }
+    }
     navigator.clipboard.writeText(url).then(function() {
         if (window.toastr) {
             toastr.success('Đã sao chép link chia sẻ');

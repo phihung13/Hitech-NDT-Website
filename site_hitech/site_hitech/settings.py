@@ -237,7 +237,7 @@ SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 SESSION_COOKIE_AGE = 86400  # Session hết hạn sau 1 ngày
 
 # Cấu hình URL đăng nhập
-LOGIN_URL = '/admin/login/'
+LOGIN_URL = '/staff/login/'
 
 # Production optimizations
 if not DEBUG:

@@ -43,10 +43,10 @@
                                         <i class="{{ category.icon }}"></i>
                                     </td>
                                     <td>
-                                        <button class="btn btn-sm btn-warning me-1" onclick="editCategory({{ category.id }})">
+                                        <button class="btn btn-sm btn-warning me-1" onclick="editCategory({{ category.id }}, '{{ category.name|escapejs }}', '{{ category.description|escapejs }}', '{{ category.icon|escapejs }}')">
                                             <i class="fas fa-edit"></i>
                                         </button>
-                                        <button class="btn btn-sm btn-danger" onclick="deleteCategory({{ category.id }})">
+                                        <button class="btn btn-sm btn-danger" onclick="deleteCategory({{ category.id }}, '{{ category.name|escapejs }}', {{ category.doc_count }})">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </td>
@@ -78,6 +78,7 @@
             </div>
             <form method="post" action="{% url 'manage_categories' %}">
                 {% csrf_token %}
+                <input type="hidden" name="action" value="add">
                 <div class="modal-body">
                     <div class="mb-3">
                         <label for="name" class="form-label">Tên danh mục</label>
@@ -100,20 +101,103 @@
         </div>
     </div>
 </div>
+
+<!-- Edit Category Modal -->
+<div class="modal fade" id="editCategoryModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Chỉnh sửa danh mục</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'manage_categories' %}">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="edit">
+                <input type="hidden" name="category_id" id="edit_category_id">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="edit_name" class="form-label">Tên danh mục</label>
+                        <input type="text" class="form-control" name="name" id="edit_name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_description" class="form-label">Mô tả</label>
+                        <textarea class="form-control" name="description" id="edit_description" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_icon" class="form-label">Icon</label>
+                        <input type="text" class="form-control" name="icon" id="edit_icon" placeholder="fas fa-folder">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-warning">Cập nhật danh mục</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Category Modal -->
+<div class="modal fade" id="deleteCategoryModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Xác nhận xóa danh mục</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'manage_categories' %}">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="delete">
+                <input type="hidden" name="category_id" id="delete_category_id">
+                <div class="modal-body">
+                    <p>Bạn có chắc muốn xóa danh mục <strong id="delete_category_name"></strong>?</p>
+                    <div id="delete_warning" class="alert alert-warning" style="display: none;">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Danh mục này có <span id="delete_doc_count"></span> tài liệu. Không thể xóa!
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-danger" id="confirm_delete_btn">Xóa danh mục</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-function editCategory(categoryId) {
-    // Implement edit functionality
-    alert('Chức năng chỉnh sửa đang được phát triển');
+function editCategory(categoryId, name, description, icon) {
+    document.getElementById('edit_category_id').value = categoryId;
+    document.getElementById('edit_name').value = name;
+    document.getElementById('edit_description').value = description;
+    document.getElementById('edit_icon').value = icon;
+    
+    var editModal = new bootstrap.Modal(document.getElementById('editCategoryModal'));
+    editModal.show();
 }
 
-function deleteCategory(categoryId) {
-    if (confirm('Bạn có chắc muốn xóa danh mục này?')) {
-        // Implement delete functionality
-        alert('Chức năng xóa đang được phát triển');
+function deleteCategory(categoryId, name, docCount) {
+    document.getElementById('delete_category_id').value = categoryId;
+    document.getElementById('delete_category_name').textContent = name;
+    
+    var warningDiv = document.getElementById('delete_warning');
+    var confirmBtn = document.getElementById('confirm_delete_btn');
+    
+    if (docCount > 0) {
+        document.getElementById('delete_doc_count').textContent = docCount;
+        warningDiv.style.display = 'block';
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = 'Không thể xóa';
+    } else {
+        warningDiv.style.display = 'none';
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = 'Xóa danh mục';
     }
+    
+    var deleteModal = new bootstrap.Modal(document.getElementById('deleteCategoryModal'));
+    deleteModal.show();
 }
 </script>
 {% endblock %}

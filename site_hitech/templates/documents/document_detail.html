@@ -12,7 +12,7 @@
     <a href="{% url 'document_download' document.slug %}" class="btn btn-success">
         <i class="fas fa-download me-1"></i>Tải xuống
     </a>
-    <button type="button" class="btn btn-outline-primary" onclick="copyShareLink('{{ document.file.url }}')">
+    <button type="button" class="btn btn-outline-primary" onclick="copyShareLink('{% url 'document_detail' document.slug %}')">
         <i class="fas fa-share-alt me-1"></i>Chia sẻ
     </button>
     {% if user.is_authenticated and user.is_staff %}
@@ -215,7 +215,15 @@ function restoreVersion(versionId) {
 }
 
 // Copy share link
-function copyShareLink(url) {
+function copyShareLink(path) {
+    let url = path || '';
+    if (!/^https?:\/\//i.test(url)) {
+        if (url.startsWith('/')) {
+            url = window.location.origin + url;
+        } else {
+            url = window.location.origin + '/' + url.replace(/^\/+/, '');
+        }
+    }
     navigator.clipboard.writeText(url).then(function() {
         if (window.toastr) {
             toastr.success('Đã sao chép link chia sẻ');

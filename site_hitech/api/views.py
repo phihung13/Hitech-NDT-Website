@@ -22,6 +22,7 @@ from django.core.files.storage import default_storage
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from django.utils import translation
+from django.utils.text import slugify
 import json
 from datetime import timedelta, date, datetime
 import shutil
@@ -320,7 +321,7 @@ def post_comment(request, post_id):
             
     return redirect('blog_detail', post_id=post_id)
 
-@staff_member_required
+@staff_member_required(login_url='staff_login')
 def admin_chat_view(request):
     return render(request, 'admin/chat.html')
 
@@ -1195,12 +1196,26 @@ def document_detail(request, slug):
 
 @login_required
 def document_download(request, slug):
-    """Download document"""
+    """Download document - tải file phiên bản mới nhất"""
     try:
         document = get_object_or_404(Document, slug=slug, is_active=True)
     except:
         # Fallback for documents without slug
         document = get_object_or_404(Document, id=slug, is_active=True)
+    
+    # Lấy file phiên bản hiện tại từ DocumentFileVersion
+    current_file_version = document.current_file_version
+    
+    if current_file_version:
+        # Tải file từ DocumentFileVersion
+        file_to_download = current_file_version.file
+        file_name = current_file_version.file_name
+        file_size = current_file_version.file_size
+    else:
+        # Fallback về file gốc nếu không có DocumentFileVersion
+        file_to_download = document.file
+        file_name = document.file.name.split('/')[-1] if document.file.name else document.title
+        file_size = document.file.size if document.file else 0
     
     # Log download
     try:
@@ -1216,10 +1231,15 @@ def document_download(request, slug):
     except:
         pass
     
-    # Return file response
-    response = HttpResponse(document.file.read(), content_type='application/octet-stream')
-    response['Content-Disposition'] = f'attachment; filename="{document.title}.{document.file.name.split(".")[-1]}"'
-    return response
+    # Return file response với tên file chính xác
+    if file_to_download:
+        response = HttpResponse(file_to_download.read(), content_type='application/octet-stream')
+        response['Content-Disposition'] = f'attachment; filename="{file_name}"'
+        response['Content-Length'] = file_size
+        return response
+    else:
+        messages.error(request, 'Không tìm thấy file để tải xuống.')
+        return redirect('document_detail', slug=slug)
 
 @login_required
 def document_edit(request, slug):
@@ -1289,21 +1309,62 @@ def document_share(request, slug):
 
 @login_required
 def document_upload(request):
-    """Upload new document"""
+    """Upload tài liệu mới"""
+    from .models import Document, DocumentCategory, DocumentTag, DocumentFileVersion
+    from .forms import DocumentForm
+    
+    # Cho phép tất cả nhân viên upload tài liệu
+    # Không cần kiểm tra role nữa - chỉ cần đăng nhập
+    
     if request.method == 'POST':
         form = DocumentForm(request.POST, request.FILES)
         if form.is_valid():
             document = form.save(commit=False)
             document.created_by = request.user
+            
+            # Đặt trạng thái mặc định là published theo logic mới
+            document.status = 'published'
+            
             document.save()
-            messages.success(request, 'Document uploaded successfully!')
-            return redirect('documents_management')
+            form.save_m2m()  # Save tags
+            
+            # Tạo DocumentFileVersion cho file đầu tiên
+            if document.file:
+                try:
+                    file_version = DocumentFileVersion.objects.create(
+                        document=document,
+                        file=document.file,
+                        file_name=document.file.name.split('/')[-1],
+                        file_size=document.file.size,
+                        file_type=document.file.name.split('.')[-1].lower(),
+                        uploaded_by=request.user,
+                        is_current=True,
+                        version_number=1,
+                        change_note="Upload file đầu tiên"
+                    )
+                except Exception as e:
+                    print(f"Lỗi tạo DocumentFileVersion: {e}")
+            
+            messages.success(request, f'Tài liệu "{document.title}" đã được upload thành công!')
+            return redirect('document_detail', slug=document.slug)
+        else:
+            messages.error(request, 'Có lỗi xảy ra. Vui lòng kiểm tra lại thông tin.')
     else:
         form = DocumentForm()
     
+    # Get categories and tags for context
+    categories = DocumentCategory.objects.filter(is_active=True).order_by('order', 'name')
+    tags = DocumentTag.objects.all().order_by('name')
+    
+    # Kiểm tra xem có danh mục nào không
+    has_categories = categories.exists()
+    
     context = {
         'form': form,
-        'title': 'Upload tài liệu mới'
+        'categories': categories,
+        'tags': tags,
+        'title': 'Upload tài liệu mới',
+        'has_categories': has_categories
     }
     return render(request, 'documents/document_upload.html', context)
 
@@ -1377,50 +1438,6 @@ def get_client_ip(request):
     return ip
 
 @login_required
-def document_upload(request):
-    """Upload tài liệu mới"""
-    from .models import Document, DocumentCategory, DocumentTag
-    from .forms import DocumentForm
-    
-    # Cho phép tất cả nhân viên upload tài liệu
-    # Không cần kiểm tra role nữa - chỉ cần đăng nhập
-    
-    if request.method == 'POST':
-        form = DocumentForm(request.POST, request.FILES)
-        if form.is_valid():
-            document = form.save(commit=False)
-            document.created_by = request.user
-            
-            # Đặt trạng thái mặc định là published theo logic mới
-            document.status = 'published'
-            
-            document.save()
-            form.save_m2m()  # Save tags
-            
-            messages.success(request, f'Tài liệu "{document.title}" đã được upload thành công!')
-            return redirect('document_detail', slug=document.slug)
-        else:
-            messages.error(request, 'Có lỗi xảy ra. Vui lòng kiểm tra lại thông tin.')
-    else:
-        form = DocumentForm()
-    
-    # Get categories and tags for context
-    categories = DocumentCategory.objects.filter(is_active=True).order_by('order', 'name')
-    tags = DocumentTag.objects.all().order_by('name')
-    
-    # Kiểm tra xem có danh mục nào không
-    has_categories = categories.exists()
-    
-    context = {
-        'form': form,
-        'categories': categories,
-        'tags': tags,
-        'title': 'Upload tài liệu mới',
-        'has_categories': has_categories
-    }
-    return render(request, 'documents/document_upload.html', context)
-
-@login_required
 def document_edit(request, slug):
     """Chỉnh sửa tài liệu"""
     from .models import Document
@@ -1485,6 +1502,96 @@ def document_delete(request, slug):
 @login_required
 def manage_categories(request):
     """Manage document categories"""
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        
+        if action == 'add':
+            # Xử lý thêm danh mục mới
+            name = request.POST.get('name')
+            description = request.POST.get('description', '')
+            icon = request.POST.get('icon', 'fas fa-folder')
+            
+            if name:
+                try:
+                    # Tạo slug từ tên danh mục
+                    slug = slugify(name)
+                    
+                    # Kiểm tra slug đã tồn tại chưa
+                    counter = 1
+                    original_slug = slug
+                    while DocumentCategory.objects.filter(slug=slug).exists():
+                        slug = f"{original_slug}-{counter}"
+                        counter += 1
+                    
+                    # Tạo danh mục mới
+                    category = DocumentCategory.objects.create(
+                        name=name,
+                        slug=slug,
+                        description=description,
+                        icon=icon
+                    )
+                    messages.success(request, f'Đã thêm danh mục "{name}" thành công!')
+                except Exception as e:
+                    messages.error(request, f'Lỗi khi thêm danh mục: {str(e)}')
+        
+        elif action == 'edit':
+            # Xử lý sửa danh mục
+            category_id = request.POST.get('category_id')
+            name = request.POST.get('name')
+            description = request.POST.get('description', '')
+            icon = request.POST.get('icon', 'fas fa-folder')
+            
+            if category_id and name:
+                try:
+                    category = DocumentCategory.objects.get(id=category_id)
+                    old_name = category.name
+                    
+                    # Cập nhật thông tin
+                    category.name = name
+                    category.description = description
+                    category.icon = icon
+                    
+                    # Tạo slug mới nếu tên thay đổi
+                    if old_name != name:
+                        slug = slugify(name)
+                        counter = 1
+                        original_slug = slug
+                        while DocumentCategory.objects.filter(slug=slug).exclude(id=category_id).exists():
+                            slug = f"{original_slug}-{counter}"
+                            counter += 1
+                        category.slug = slug
+                    
+                    category.save()
+                    messages.success(request, f'Đã cập nhật danh mục "{name}" thành công!')
+                except DocumentCategory.DoesNotExist:
+                    messages.error(request, 'Không tìm thấy danh mục!')
+                except Exception as e:
+                    messages.error(request, f'Lỗi khi cập nhật danh mục: {str(e)}')
+        
+        elif action == 'delete':
+            # Xử lý xóa danh mục
+            category_id = request.POST.get('category_id')
+            
+            if category_id:
+                try:
+                    category = DocumentCategory.objects.get(id=category_id)
+                    category_name = category.name
+                    
+                    # Kiểm tra xem danh mục có tài liệu không
+                    doc_count = category.document_set.count()
+                    if doc_count > 0:
+                        messages.error(request, f'Không thể xóa danh mục "{category_name}" vì còn {doc_count} tài liệu!')
+                    else:
+                        category.delete()
+                        messages.success(request, f'Đã xóa danh mục "{category_name}" thành công!')
+                except DocumentCategory.DoesNotExist:
+                    messages.error(request, 'Không tìm thấy danh mục!')
+                except Exception as e:
+                    messages.error(request, f'Lỗi khi xóa danh mục: {str(e)}')
+        
+        return redirect('manage_categories')
+    
+    # GET request - hiển thị danh sách
     categories = DocumentCategory.objects.all()
     
     # Get document count for each category
